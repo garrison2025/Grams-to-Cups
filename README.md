@@ -90,7 +90,7 @@ Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 
 - `reports/seo-21-index-review.csv`: explicit per-page editorial checklist for the 21 currently index-eligible pages without primary or strict secondary keyword mappings in the supplied **partial** sample, preserving the distinct screenshot/page evidence from the original plan.
 - `reports/seo-21-index-review-summary.json`: evidence-gap buckets, with trust/navigation pages separated from acquisition-keyword pages.
 
-The GitHub Actions **Site build and tests** workflow attaches the five reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
+The GitHub Actions **Site build and tests** workflow attaches the nine reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
 
 **Coverage warning:** 27 of 65 index candidates have no original suggested URL in the partial supplied keyword sample. Strict secondary food-phrase matching recovered observed conversion queries for 6 of those pages, leaving 21 without direct or secondary keyword evidence. Such absence in a partial export is not proof of zero search demand. Some are navigational, methodology or trust pages; absence from the sample is not proof of zero demand. See the per-page report before deciding whether each deserves separate indexing.
 
