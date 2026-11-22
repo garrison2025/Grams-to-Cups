@@ -110,6 +110,28 @@ for(const item of refs.records){
  assert.ok(html.includes('Original published entry:'),'missing provenance on '+route);
  assert.ok(html.includes(item.label.replaceAll('&','&amp;').replaceAll("'",'&#39;')),'wrong source label on '+route);
 }
+// A source-to-result ledger for all 24 food references, never a claim of lab
+// density measurements or of an up-to-date external source change.
+const ingredientData=JSON.parse(fs.readFileSync(path.join(root,'src/ingredients.json'),'utf8'));
+const sourceLedger=refs.records.map(reference=>{
+ const food=ingredientData.find(row=>row.id===reference.id);
+ assert.ok(food,'Missing source-backed ingredient in live data: '+reference.id);
+ assert.equal(food.referenceGrams,reference.grams);
+ assert.equal(food.referenceAmount,reference.amount);
+ assert.equal(food.referenceUnit,reference.unit);
+ assert.equal(food.sourceEntry,reference.label);
+ assert.equal(food.sourceUrl,refs.source);
+ return {id:reference.id,label:reference.label,displayName:food.name,
+  sourceUrl:food.sourceUrl,reviewedAt:food.reviewedAt,
+  state:food.state,method:food.method,referenceGrams:reference.grams,
+  referenceAmount:reference.amount,referenceUnit:reference.unit,
+  limitations:food.note,
+  sourceLockMatch:true,derivedDensityMeasurement:false};
+});
+assert.equal(sourceLedger.length,24,'All 24 ingredient evidence entries are required');
+fs.writeFileSync(path.join(reportDir,'ingredient-source-evidence.json'),
+ JSON.stringify({source:refs.source,sourceReviewedAt:refs.checked,entries:sourceLedger,
+  limitation:'Source-locked recipe chart values, not independent lab densities, physical constants, or evidence of current external chart updates.'},null,2)+'\n');
 const methods=pageHtml('/cooking/sources-and-methods/');
 assert.ok(methods.includes('Source entries used by this website'),'missing original references table');
 for(const ref of refs.records)assert.ok(methods.includes(ref.label.replaceAll('&','&amp;').replaceAll("'",'&#39;')),'missing methods row '+ref.id);
