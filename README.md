@@ -30,6 +30,13 @@ npm test
 
 GitHub Actions runs both a safe preview build and a simulated approved production build on each main push.
 
+## One-time public release verification
+
+- `npm run build` now includes a strict **publication audit** checking 81 individual pages, metadata, canonical, JSON-LD, robots, privacy headers, the exact 65-entry production sitemap, and unexpected third-party JS/CSS.
+- A missing `SITE_URL`, or a placeholder hostname such as `example.com`, blocks an explicitly approved production build. `example.com` is permitted **only inside GitHub CI simulation**.
+- After the real site is deployed, open **GitHub → Actions → Live Cloudflare Pages release verification → Run workflow**. Supply the exact public HTTPS origin and choose whether it is supposed to be indexed. The native Node smoke test checks the live site, not merely the static generator. It has **not** been run for a real host because no deployed URL has been confirmed in this repository.
+- Alternatively run `npm run smoke:live` with `LIVE_SITE_URL` and `LIVE_EXPECT_INDEX` environment variables. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Cloudflare Pages
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for exact production settings and QA gates.
@@ -79,7 +86,7 @@ Avoid cloning third-party prose. Original calculation tools and source-backed ex
 
 ## Data model and accuracy
 
-`src/ingredients.json` contains 24 ingredient **recipe-reference** entries from the [King Arthur Baking Ingredient Weight Chart](https://www.kingarthurbaking.com/learn/ingredient-weight-chart) (reviewed 2026-11-22). It is not one universal grams↔cups factor. All entries now include the exact original chart item label (`sourceEntry`), displayed on ingredient pages and the methods table, and a separate verified measurement lock at `research/ingredient-reference-lock.json`. The full suite has 13 dependency-free tests.
+`src/ingredients.json` contains 24 ingredient **recipe-reference** entries from the [King Arthur Baking Ingredient Weight Chart](https://www.kingarthurbaking.com/learn/ingredient-weight-chart) (reviewed 2026-11-22). It is not one universal grams↔cups factor. All entries now include the exact original chart item label (`sourceEntry`), displayed on ingredient pages and the methods table, and a separate verified measurement lock at `research/ingredient-reference-lock.json`. The full suite has 15 dependency-free tests, including missing-KD interpretation and CSV formula-injection protection.
 
 Examples:
 - All-purpose flour: 120 g per US cup (spoon/level).
@@ -110,10 +117,14 @@ public/app.js                Browser calculator and recipe interaction
 public/styles.css            Responsive + print styles
 scripts/build.mjs            Generate complete static site, robots, sitemap
 scripts/audit.mjs            Page/link/meta/index gate audit
+scripts/publication-audit.mjs Strong production / preview metadata and sitemap validation
+scripts/live-smoke.mjs       Opt-in HTTPS deployed-host verification
+src/seo-evidence.mjs         Safe keyword CSV parsing and missing-KD handling
 scripts/keyword-audit.mjs    Reproducible keyword intent/evidence gate and reports
 tests/site.test.mjs          Reference-lock, Unicode fractions, batch safety and regression tests
  tests/browser.test.mjs       Chromium desktop/mobile functional audit (CI-only Playwright)
 research/semrush-us-2300-sample.csv  User-provided partial Semrush exports
 .github/workflows/ci.yml     Preview + production test builds
+.github/workflows/live-release.yml  Manual live-website verification
 dist/                        Generated output (not committed)
 ```
