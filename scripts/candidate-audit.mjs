@@ -54,6 +54,7 @@ const output=[[
  'plan_id','family','planned_url','primary_keyword','plan_us_search_volume','plan_primary_kd',
  'plan_competitor_count','route_exists','eligible_for_production_index','canonical_target_if_published',
  'partial_sample_keyword_rows_mapped','secondary_exact_ingredient_intent_rows',
+ 'source_sample_ranking_evidence','source_screenshot_page_evidence','source_release_condition',
  'evidence_class','editorial_decision'
 ]];
 const count={candidateCount:76,indexCandidates:0,noindexSupport:0,
@@ -65,6 +66,10 @@ for(const item of candidates){
   assert.ok(item[k]===null||(Number.isInteger(item[k])&&item[k]>=0),'Unverified metric should be null: '+item.id+' '+k);
  }
  assert.ok(Number.isInteger(item.observedCompetitorCount)&&item.observedCompetitorCount>=0);
+ for(const field of ['sampleRankingEvidence','screenshotPageEvidence','sourceDisposition'])
+  assert.ok(typeof item[field]==='string'&&item[field].length>0,'Original Appendix A evidence missing: '+item.id+' '+field);
+ if(item.observedCompetitorCount===0)
+  assert.equal(item.sampleRankingEvidence,'无精确主词排名','No claimed ranking when source competitor count is zero');
  const page=index.get(item.url);
  assert.ok(page,'Appendix A route missing: #'+item.id+' '+item.url);
  const observed=evidenceByUrl.get(item.url);
@@ -95,11 +100,55 @@ for(const item of candidates){
  else count.withoutKeywordObservation++;
  output.push([item.id,item.family,item.url,item.primaryKeyword,item.primaryUSVolume??'',
   item.primaryKD??'',item.observedCompetitorCount,'yes',eligible?'yes':'no',canonical,
-  mapped,secondary,evidenceClass,decision]);
+  mapped,secondary,item.sampleRankingEvidence,item.screenshotPageEvidence,
+  item.sourceDisposition,evidenceClass,decision]);
  // Even when a candidate is usable but noindex, never turn a simulated
  // Semrush primary keyword volume into permission to index or redirect.
  assert.equal(primaryRoute,item.url==='/cooking/grams-to-cups/'?'/':item.url);
 }
+// These are not 21 failed pages. They are the index-eligible routes that have
+// neither a provisional keyword target nor a strict secondary ingredient match
+// in the imported partial Semrush export. Preserve independent screenshot/page
+// evidence and separate navigational trust pages from SEO acquisition targets.
+const trustPages=new Set(['/','/cooking/','/cooking/sources-and-methods/','/about/','/privacy/','/contact/']);
+const reviewHeader=['url','role','plan_id','primary_keyword','source_primary_volume','source_primary_kd',
+ 'source_ranking_evidence','source_competitor_page_screenshot','index_candidate',
+ 'independent_page_feature','review_bucket','editorial_next_check'];
+const indexGapReview=[reviewHeader];
+const reviewBuckets={};
+for(const page of manifest.pages){
+ if(!page.indexCandidate)continue;
+ const report=evidenceByUrl.get(page.url);
+ assert.ok(report,'Missing page evidence for '+page.url);
+ if(Number(report[mappedIx])!==0||Number(report[secondaryIx])!==0)continue;
+ const candidate=candidates.find(c=>c.url===page.url);
+ const isTrust=trustPages.has(page.url);
+ const screenshot=candidate?.screenshotPageEvidence||'';
+ const observedScreenshot=!!screenshot&&screenshot!=='未在截图中单独识别';
+ let role=isTrust?'navigation_or_trust':candidate?.family==='Ingredient'?'source_backed_ingredient':
+  candidate?.family==='Guide'?'measuring_chart_or_guide':'functional_calculator';
+ const html=read('dist/'+(page.url==='/'?'index.html':page.url.slice(1)+'index.html'));
+ const feature=/<table(?:\s|>)/i.test(html)?'readable_reference_table':
+  /data-calc(?:\s|>)/.test(html)?'interactive_conversion_form':
+  /data-chart/.test(html)?'interactive_chart':
+  /data-batch/.test(html)?'interactive_batch_tool':'navigational_or_explanatory_content';
+ const highKd=candidate?.primaryKD!==null&&candidate?.primaryKD!==undefined&&candidate.primaryKD>29;
+ const bucket=isTrust?'trust_or_navigation_does_not_require_sample_keyword':
+  highKd?'high_primary_kd_without_low_kd_sample_support':
+  observedScreenshot?'competitor_page_seen_keyword_gap':
+  'no_direct_or_source_screenshot_keyword_evidence';
+ const check=isTrust?'Check accuracy, useful navigation and non-duplicated trust content; not a traffic keyword proof':
+  highKd?'Find a genuinely relevant KD<=29 search intent or retain as a functional noindex support page':
+  observedScreenshot?'Compare actual competitor page intent, useful functions and original content before editorial index approval':
+  'Verify page-level demand and unique intent; keep functionality without assuming Google ranking potential';
+ reviewBuckets[bucket]=(reviewBuckets[bucket]||0)+1;
+ indexGapReview.push([page.url,role,candidate?.id||'',candidate?.primaryKeyword||'',
+  candidate?.primaryUSVolume??'',candidate?.primaryKD??'',
+  candidate?.sampleRankingEvidence||'',screenshot,page.indexCandidate?'yes':'no',
+  feature,bucket,check]);
+}
+assert.equal(indexGapReview.length-1,21,'Expected 21 source-evidence review cases: check changes before approving index policy');
+
 const unexpected=manifest.pages.filter(p=>!candidates.some(c=>c.url===p.url)).map(p=>p.url).sort();
 assert.deepEqual(unexpected,['/','/about/','/contact/','/cooking/batch-converter/','/privacy/'].sort(),
  'Unexpected routes outside the original Appendix A candidate list');
@@ -107,6 +156,11 @@ assert.equal(count.indexCandidates+count.noindexSupport,76);
 const reportPath=path.join(root,'reports');
 fs.mkdirSync(reportPath,{recursive:true});
 fs.writeFileSync(path.join(reportPath,'seo-76-candidate-decisions.csv'),'\ufeff'+output.map(r=>r.map(csvSafeCell).join(',')).join('\r\n')+'\r\n');
+fs.writeFileSync(path.join(reportPath,'seo-21-index-review.csv'),'\ufeff'+indexGapReview.map(r=>r.map(csvSafeCell).join(',')).join('\r\n')+'\r\n');
+fs.writeFileSync(path.join(reportPath,'seo-21-index-review-summary.json'),JSON.stringify({
+ candidateCount:indexGapReview.length-1,reviewBuckets,
+ note:'Neither a missing keyword mapping nor source screenshot absence proves zero demand. These are publication-editorial checklists, not confirmed search rankings or evidence of successful indexing.'
+},null,2)+'\n');
 fs.writeFileSync(path.join(reportPath,'seo-76-candidate-summary.json'),JSON.stringify({
  source:baseline.source,partialSampleNotFullDomainCoverage:true,
  ...count,additionalSiteRoutes:unexpected,
@@ -114,6 +168,7 @@ fs.writeFileSync(path.join(reportPath,'seo-76-candidate-summary.json'),JSON.stri
 },null,2)+'\n');
 console.log('Appendix A reconciliation passed:',count.candidateCount,'planned routes,',count.indexCandidates,
  'index candidates,',count.noindexSupport,'noindex support routes,',unexpected.length,'additional routes.');
+console.log('21 unresolved index-candidate editorial review buckets:',JSON.stringify(reviewBuckets));
 console.log('Evidence classes:',JSON.stringify({primarySampleMapped:count.primarySampleMapped,
  secondaryOnlyMapped:count.secondaryOnlyMapped,planOnlyEstimate:count.planOnlyEstimate,
  withoutKeywordObservation:count.withoutKeywordObservation}));
