@@ -47,7 +47,8 @@ function renderCalculator(form){
     ?'Based on '+refText+' of '+ingredient?.name+'. This is an approximate recipe measurement.'
     :'These units have a defined conversion; an ingredient reference is not needed.';
   setText(note,(fraction?'Approximately '+fraction+' '+shortLabel(to,standard)+'. ':'')+context);
-  setText($('[data-meta-ingredient]',form),isCrossDimension?ingredient?.name:'Standard units');
+  setText($('[data-meta-kind]',form),isCrossDimension?'Ingredient':'Conversion');
+  setText($('[data-meta-ingredient]',form),isCrossDimension?ingredient?.name:'Fixed units');
   setText($('[data-meta-reference]',form),isCrossDimension?refText:'Defined unit relationship');
   const wrap=$('[data-meter-wrap]',form);
   if(wrap){
@@ -61,7 +62,7 @@ function renderCalculator(form){
    }
   }
   if(error)error.hidden=true;
-  return {n,amount,from,to,ingredient,standard,unit:unitDescription(to,standard),context};
+  return {n,amount,from,to,ingredient,standard,isCrossDimension,unit:unitDescription(to,standard),context};
  }catch(ex){
   setText(result,'—');
   setText($('[data-result-unit]',form),'');
@@ -94,14 +95,14 @@ for(const form of $$('[data-calc]')){
  });
  $('[data-copy]',form)?.addEventListener('click',async()=>{
   const d=update();if(!d)return;
-  const text=d.amount+' '+unitDescription(d.from,d.standard)+' of '+(d.ingredient?.name||'the measurement')+' ≈ '+formatAmount(d.n,4)+' '+d.unit+'. '+d.context;
+  const text=d.amount+' '+unitDescription(d.from,d.standard)+(d.isCrossDimension?' of '+d.ingredient?.name:'')+' ≈ '+formatAmount(d.n,4)+' '+d.unit+'. '+d.context;
   try{await navigator.clipboard.writeText(text);setText($('[data-feedback]',form),'Copied conversion and its context.')}
   catch{setText($('[data-feedback]',form),'Clipboard unavailable. Select the displayed result to copy it.')}
  });
  $('[data-share]',form)?.addEventListener('click',async()=>{
   const d=update();if(!d)return;
   const u=new URL(location.href);u.search='';
-  for(const [k,v] of [['amount',d.amount],['ingredient',d.ingredient?.id],['standard',d.standard],['from',d.from],['to',d.to]])if(v)u.searchParams.set(k,v);
+  for(const [k,v] of [['amount',d.amount],['ingredient',d.isCrossDimension?d.ingredient?.id:null],['standard',d.standard],['from',d.from],['to',d.to]])if(v)u.searchParams.set(k,v);
   try{
    if(navigator.share)await navigator.share({title:document.title,url:u.href});
    else{await navigator.clipboard.writeText(u.href);setText($('[data-feedback]',form),'Shareable link copied.');}
