@@ -87,8 +87,13 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  const foodButtons=[['all-purpose-flour','Flour'],['granulated-sugar','Sugar'],['butter','Butter'],['long-grain-rice-dry','Rice']]
  .map(([id,label])=>'<button class="ingredient-chip" type="button" data-ingredient-preset="'+e(id)+'" aria-pressed="'+String(id===ingredient)+'">'+e(label)+'</button>').join('');
  const amountButtons=quickAmounts.map(n=>'<button class="amount-chip" type="button" data-amount-preset="'+n+'" aria-pressed="'+String(Number(amount)===n)+'">'+n+' '+e(from)+'</button>').join('');
- let preview='—';
- try{preview=f(convertQuantity(Number(amount),from,to,{ingredient:ref,standard:'us'}));}catch{}
+ let preview='—',previewValue=null;
+ try{previewValue=convertQuantity(Number(amount),from,to,{ingredient:ref,standard:'us'});preview=f(previewValue);}catch{}
+ const showMeter=to==='cup'&&previewValue>0&&previewValue<=1;
+ const meterPercent=showMeter?Math.round(previewValue*100):0;
+ const referenceText=f(ref.referenceGrams)+' g per '+f(ref.referenceAmount)+' '+(ref.referenceUnit==='cup'?'US cup':'US tablespoon');
+ const initialNote=crossDimension?'Based on '+referenceText+' of '+ref.name+'. This is an approximate recipe measurement.':
+  'These units have a defined conversion; an ingredient reference is not needed.';
  const shortUnit=({cup:'US cups',g:'g',kg:'kg',oz:'oz',ml:'mL',tbsp:'tbsp',tsp:'tsp','fl-oz':'US fl oz'})[to]||to;
  return '<div class="calc-card" id="converter"><div class="calc-top"><strong><span class="live-dot" aria-hidden="true"></span>'+e(heading)+'</strong><span class="muted">PRIVATE · INSTANT</span></div>'+
  '<form class="calc-body" data-calc novalidate><div class="form-grid">'+
@@ -104,9 +109,9 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  '<div class="result" role="group" aria-label="Live conversion result">'+
  '<div class="result-label">YOUR CONVERSION</div>'+
  '<div class="result-amount" aria-live="polite" aria-atomic="true"><output class="result-number" data-result>'+e(preview)+'</output><span class="result-unit" data-result-unit>'+e(shortUnit)+'</span></div>'+
- '<p class="result-text" data-result-note>Based on '+e(ref.name)+' — '+e(ref.method)+'. Approximate cooking reference.</p>'+
- '<div class="cup-meter-wrap" data-meter-wrap><div class="cup-meter" aria-hidden="true"><div class="cup-meter-fill" data-meter-fill style="width:83%"></div></div><div class="cup-meter-label" data-meter-label>Proportion of one cup</div></div>'+
- '<div class="result-meta"><span>Ingredient: <b data-meta-ingredient>'+e(ref.name)+'</b></span><span>Reference: <b data-meta-reference>'+e(ref.referenceGrams)+' g / '+e(ref.referenceAmount)+' '+e(ref.referenceUnit)+'</b></span></div>'+
+ '<p class="result-text" data-result-note>'+e(initialNote)+'</p>'+
+ '<div class="cup-meter-wrap" data-meter-wrap'+(showMeter?'':' hidden')+'><div class="cup-meter" aria-hidden="true"><div class="cup-meter-fill" data-meter-fill style="width:'+(showMeter?(meterPercent===0?0.5:meterPercent):0)+'%"></div></div><div class="cup-meter-label" data-meter-label>'+(showMeter?(meterPercent===0?'Less than 1%':meterPercent+'%')+' of one US cup':'')+'</div></div>'+
+ '<div class="result-meta"><span><span data-meta-kind>'+(crossDimension?'Ingredient':'Conversion')+'</span>: <b data-meta-ingredient>'+e(crossDimension?ref.name:'Fixed units')+'</b></span><span>Reference: <b data-meta-reference>'+e(crossDimension?referenceText:'Defined unit relationship')+'</b></span></div>'+
  '</div>'+
  '<p data-error class="error" role="alert" hidden></p>'+
  '<div class="calc-actions"><button class="btn btn-primary" type="button" data-copy>↗ Copy result</button>'+
