@@ -50,6 +50,7 @@ async function inspect(pathname,{indexed=null}={}){
 }
 await inspect('/');
 await inspect('/cooking/');
+await inspect('/contact/');
 await inspect('/cooking/ingredients/all-purpose-flour/');
 await inspect('/cooking/grams-to-cups/100-grams-to-cups/');
 await inspect('/cooking/grams-to-cups/',{indexed:false});
@@ -62,6 +63,9 @@ for(const item of ['/assets/app.js','/assets/core.mjs','/assets/ingredients.json
  assert.ok(body.length>150,'Missing or unexpectedly empty asset '+item);
  checks.push(item);
 }
+const {response:contactResponse,body:contactHtml}=await fetchText('/contact/');
+demand(contactResponse,200,'/contact/');
+assert.match(contactHtml,/href="mailto:contact@gramstocupscalculator\.com"/,'Public email contact link is missing');
 const {response:robotsResponse,body:robots}=await fetchText('/robots.txt');
 demand(robotsResponse,200,'/robots.txt');
 if(approved){

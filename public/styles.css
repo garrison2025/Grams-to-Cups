@@ -493,3 +493,28 @@ tbody th[scope="row"]{font-size:.86rem;color:#214839;font-weight:680;line-height
  .calc-workbench{display:block}
  .measure-vessel{border-color:#333;print-color-adjust:exact}
 }
+
+/* Print-mode reference text must be readable even when browser print
+   background graphics are turned off. */
+@media print{
+ .conversion-card .calc-readout .result,
+ .conversion-card .calc-readout .measure-guide,
+ .conversion-card .calc-readout .measure-step,
+ .conversion-card .calc-readout .result-amount .result-unit{
+  background:#fff!important;
+  border-color:#888!important;
+ }
+ .conversion-card .calc-readout .result,
+ .conversion-card .calc-readout .result *,
+ .conversion-card .calc-extras .source-chip,
+ .conversion-card .calc-extras .source-chip *,
+ .conversion-card .calc-extras .standard-line,
+ .conversion-card .calc-extras .standard-line *,
+ .conversion-card .calc-top,
+ .conversion-card .calc-top *{
+  color:#111!important;
+  -webkit-text-fill-color:#111!important;
+ }
+ .conversion-card .result-meta{border-top-color:#888!important}
+ .conversion-card .result::after{display:none!important}
+}

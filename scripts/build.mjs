@@ -12,9 +12,15 @@ const pageIngredients=data.filter(i=>!['bread-flour','cocoa-unsweetened','unblea
 if(pageIngredients.length!==24||data.length!==27)throw Error('Ingredient inventory needs page-policy review.');
 const dist=path.join(root,'dist');
 fs.rmSync(dist,{recursive:true,force:true});fs.mkdirSync(dist,{recursive:true});
-const base=(process.env.SITE_URL||'').trim().replace(/\/+$/,'');
+// The independently owned production domain is authoritative. Cloudflare
+// injects CF_PAGES_BRANCH during Pages builds. Only main can become indexable;
+// all preview branches and local builds stay noindex. Explicit "false" remains
+// a safe emergency opt-out for publication.
+const productionOrigin='https://gramstocupscalculator.com';
+const pagesMain=process.env.CF_PAGES_BRANCH==='main';
+const base=(process.env.SITE_URL||(pagesMain?productionOrigin:'')).trim().replace(/\/+$/,'');
 const origin=/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(base)?base:'';
-const releaseRequested=process.env.CF_PAGES_BRANCH==='main'&&process.env.PUBLIC_INDEX_APPROVED==='true';
+const releaseRequested=pagesMain&&process.env.PUBLIC_INDEX_APPROVED!=='false';
 const hostname=origin?new URL(origin).hostname.toLowerCase():'';
 if(hostname==='convertunits.cc'||hostname.endsWith('.convertunits.cc'))
  throw new Error('Grams-to-Cups is an independent website: do not use the other project domain for SITE_URL.');
@@ -22,6 +28,8 @@ const reservedHost=hostname==='localhost'||hostname==='127.0.0.1'||hostname==='0
 if(releaseRequested&&!origin)throw new Error('Production publication requested but SITE_URL is missing or invalid. Set the exact stable HTTPS host.');
 const approvedCiFixture=process.env.CI==='true'&&process.env.SITE_URL_FIXTURE_APPROVED_FOR_CI==='true'&&hostname==='example.com';
 if(releaseRequested&&reservedHost&&!approvedCiFixture)throw new Error('Production SITE_URL cannot be a placeholder or local/test domain. Set your verified public hostname.');
+if(releaseRequested&&hostname!=='gramstocupscalculator.com'&&!approvedCiFixture)
+ throw new Error('Production must publish with canonical https://gramstocupscalculator.com (or the explicit approved CI fixture).');
 const publicIndex=releaseRequested&&!!origin;
 const pages=[],e=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
 const primaryUrl=url=>url==='/cooking/grams-to-cups/'?'/':url;
@@ -61,7 +69,7 @@ function nav(){return '<a class="skip" href="#main">Skip to main content</a><hea
 '<a class="logo" href="/" aria-label="Grams and Cups home"><span class="logo-symbol" aria-hidden="true">⅓</span><span>Grams <span class="logo-word-accent">&amp;</span> Cups</span></a>'+
 '<button type="button" class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="main-nav" data-nav-toggle>☰</button>'+
 '<nav id="main-nav" class="main-nav" data-nav aria-label="Primary navigation">'+link('/cooking/grams-to-cups/','Converter')+link('/cooking/#ingredients','Ingredients')+link('/cooking/charts/','Charts')+link('/cooking/recipe-scaler/','Recipe scaler')+link('/cooking/sources-and-methods/','Our sources','nav-cta')+'</nav></div></header>';}
-function footer(){return '<footer class="footer"><div class="container"><div class="footer-grid"><div>'+link('/','Grams & Cups','logo')+'<p>Friendly cooking measurements, grounded in referenced ingredient weights.<br>No account required; calculations stay in your browser.</p></div><nav class="footer-links" aria-label="Footer">'+link('/about/','About')+link('/privacy/','Privacy')+link('/contact/','Contact')+link('/cooking/sources-and-methods/','Sources')+link('/cooking/charts/','Print chart')+'</nav></div><div class="footer-note">© '+new Date().getUTCFullYear()+' Grams & Cups · Recipe reference estimates are not laboratory density measurements. Confirm important recipes by weighing ingredients.</div></div></footer>';}
+function footer(){return '<footer class="footer"><div class="container"><div class="footer-grid"><div>'+link('/','Grams & Cups','logo')+'<p>Friendly cooking measurements, grounded in referenced ingredient weights.<br>No account required; calculations stay in your browser.<br>Contact: <a href="mailto:contact@gramstocupscalculator.com">contact@gramstocupscalculator.com</a></p></div><nav class="footer-links" aria-label="Footer">'+link('/about/','About')+link('/privacy/','Privacy')+link('/contact/','Contact')+link('/cooking/sources-and-methods/','Sources')+link('/cooking/charts/','Print chart')+'</nav></div><div class="footer-note">© '+new Date().getUTCFullYear()+' Grams & Cups · Recipe reference estimates are not laboratory density measurements. Confirm important recipes by weighing ingredients.</div></div></footer>';}
 function jsonld(obj){return '<script type="application/ld+json">'+JSON.stringify(obj).replaceAll('<','\\u003c')+'</script>';}
 function doc(spec){
  const {url,title,description,body,bread=[],kind='WebPage',index=true}=spec;
@@ -528,7 +536,7 @@ function methodology(){
 function infoPage(slug,title,bodyText){
  const body=intro(title,bodyText)+
  '<section class="section"><div class="container"><div class="panel"><h2>Helpful information</h2><p>'+e(bodyText)+'</p><p>Our calculators use cited ingredient weights, local JavaScript calculations and no account system. The source measurements and conversion methodology are disclosed on '+link('/cooking/sources-and-methods/','the methodology page')+'.</p>'+
- (slug==='contact'?'<p>For corrections, use the repository issue tracker: '+link('https://github.com/garrison2025/Grams-to-Cups/issues','Grams-to-Cups GitHub issues')+'. Please do not post private information.</p>':'')+
+ (slug==='contact'?'<p>Email: <a href="mailto:contact@gramstocupscalculator.com">contact@gramstocupscalculator.com</a>. To report a measurement correction, include the ingredient, the original quantity, what you expected, and the source reference if available.</p><p>Or use the public issue tracker: '+link('https://github.com/garrison2025/Grams-to-Cups/issues','Grams-to-Cups GitHub issues')+'. Do not post personal or private information in public issues.</p>':'')+
  (slug==='privacy'?'<p>The conversion inputs and recipe scaler remain in the browser. We do not add analytics, advertising scripts, trackers, logins or cloud storage in this release. A future advertising integration would require updating this policy and any legally required consent controls before it is enabled.</p>':'')+'</div></div></section>';
  doc({url:'/'+slug+'/',title,description:bodyText.slice(0,155),body,bread:[[title,null]]});
 }
@@ -544,12 +552,16 @@ for(const guide of ['measuring-flour','cup-sizes','measuring-odd-cups'])guidePag
 methodology();
 infoPage('about','About Grams & Cups','Grams & Cups is a free, independent kitchen measurement reference that helps home bakers use grams, cups and spoon measurements more carefully.');
 infoPage('privacy','Privacy Policy','We aim to minimize data collection. The calculator and recipe scaler are local-first browser tools; there is no account, analytics platform or ad network in the current code.');
-infoPage('contact','Contact and Corrections','Found a questionable food weight or broken conversion? Report the exact ingredient, source, and expected result in the public repository issue tracker.');
+infoPage('contact','Contact and Corrections','Contact Grams & Cups at contact@gramstocupscalculator.com to report ingredient-weight corrections, calculation questions or broken conversions.');
 writeFile('404.html','<!doctype html><html lang="en"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page not found | Grams & Cups</title><link rel="stylesheet" href="/assets/styles.css"><main class="container section"><h1>Page not found</h1><p>That page does not exist. Try the conversion tools or the ingredient directory.</p>'+link('/cooking/','Browse cooking tools','btn btn-primary')+'</main></html>');
 writeFile('favicon.svg','<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#122e27"/><path d="M18 20h28l-4 26H22z" fill="none" stroke="#eaf2ad" stroke-width="4" stroke-linejoin="round"/><path d="M21 29h22M24 38h16" stroke="#f8f7f2" stroke-width="3" stroke-linecap="round"/></svg>');
 for(const [src,dst] of [['public/styles.css','assets/styles.css'],['public/app.js','assets/app.js'],['src/core.mjs','assets/core.mjs'],['src/ingredients.json','assets/ingredients.json']]){const out=path.join(dist,dst);fs.mkdirSync(path.dirname(out),{recursive:true});fs.copyFileSync(path.join(root,src),out);}
-if(!publicIndex)writeFile('_headers','/*\n  X-Robots-Tag: noindex\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n');
-else writeFile('_headers','/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n');
+// Cloudflare Pages supports absolute-URL scoped _headers rules. This keeps
+// pages.dev and branch-preview hosts unindexed even after the canonical custom
+// domain serves indexable HTML. Domain redirect is additionally recommended.
+const commonHeaders='/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n';
+const pagesDevNoindex='\nhttps://grams-to-cups.pages.dev/*\n  X-Robots-Tag: noindex\n\nhttps://:version.grams-to-cups.pages.dev/*\n  X-Robots-Tag: noindex\n';
+writeFile('_headers',commonHeaders+(publicIndex?'':'  X-Robots-Tag: noindex\n')+pagesDevNoindex);
 writeFile('robots.txt','User-agent: *\nAllow: /\n'+(publicIndex?'Sitemap: '+origin+'/sitemap.xml\n':''));
 if(publicIndex)writeFile('sitemap.xml','<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+pages.filter(p=>p.indexCandidate).map(p=>'<url><loc>'+e(origin+p.url)+'</loc></url>').join('')+'</urlset>');
 writeFile('site-manifest.json',JSON.stringify({origin:origin||null,publicIndex,generatedAt:new Date().toISOString(),pages},null,2));

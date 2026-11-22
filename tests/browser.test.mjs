@@ -42,6 +42,15 @@ try{
  ]);
  assert.ok(desktopResult.x>=desktopFields.x+desktopFields.width&&desktopResult.y+desktopResult.height<=900,
   'desktop shows inputs next to the complete result in the first viewport');
+ // Printed ingredient, reference and result must not be white-on-white.
+ await page.emulateMedia({media:'print'});
+ for(const selector of ['[data-result]','[data-result-note]','[data-meta-ingredient]','[data-meta-reference]','[data-measure-error]']){
+  const color=await page.locator(selector).evaluate(el=>getComputedStyle(el).color);
+  assert.equal(color,'rgb(17, 17, 17)','print ink must be readable for '+selector);
+ }
+ assert.equal(await page.locator('.calc-readout .result').evaluate(el=>getComputedStyle(el).backgroundColor),
+  'rgb(255, 255, 255)','printed result panel should be white');
+ await page.emulateMedia({media:'screen'});
  assert.ok((await page.locator('.tile[data-food-group="flour"]').count())>0,'flour cards have a visible family');
  assert.ok((await page.locator('.tile[data-food-group="sugar"]').count())>0,'sugar cards use a distinct family');
  assert.equal((await page.locator('.tile[data-food-group="flour"] .tile-kind').first().innerText()).trim(),
@@ -101,6 +110,12 @@ try{
  assert.ok(await page.locator('[data-ingredient-fallback]').isHidden(),'only one food picker is shown');
  await page.locator('[data-ingredient-preset="granulated-sugar"]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.01','ingredient chip uses distinct density');
+ await ingredient.fill('');
+ await ingredient.press('Tab');
+ assert.equal(await ingredient.inputValue(),'Granulated white sugar',
+  'cleared search restores the selected food name when focus leaves');
+ assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.01',
+  'restoring visible food label does not change its density');
  await page.locator('[data-amount-preset="100"]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.505','100 grams sugar');
  const feedbackCount=await page.evaluate(()=>window.__resultFeedbackAnimations);
@@ -117,6 +132,14 @@ try{
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'99','half cup sugar grams');
  await page.locator('[data-reset]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.833','reset returns default reference');
+ await page.locator('[data-amount]').fill('0.05');
+ assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.00042',
+  'screen displays five decimals for tiny quantity');
+ await page.evaluate(()=>{navigator.clipboard.writeText=async value=>{window.__preciseCopy=value}});
+ await page.locator('[data-copy]').click();
+ assert.match(await page.evaluate(()=>window.__preciseCopy),/≈ 0\.00042 US cups/,
+  'clipboard result must use exactly the screen decimal string');
+ await page.locator('[data-reset]').click();
  await page.locator('[data-amount]').fill('1,000');
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'8.333','US grouped input remains a valid quantity');
  await page.locator('[data-amount]').fill('1,5');
@@ -305,6 +328,38 @@ try{
  await page.locator('[data-batch-review="1"]').selectOption('bread-flour');
  assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 0 need review · 0 blank');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('Bread flour (King Arthur reference)'));
+ assert.equal(await page.locator('[data-batch-review="1"]').inputValue(),'bread-flour',
+  'manually corrected row keeps its editable ingredient select');
+ await page.locator('[data-batch-review="1"]').selectOption('all-purpose-flour');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('All-purpose flour'),
+  'corrected rows allow the user to choose a different food');
+ await page.locator('[data-batch-review="1"]').selectOption('');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'1 converted · 1 need review · 0 blank',
+  'clearing correction restores review');
+ await page.locator('[data-batch-lines]').fill('100 g flour\n120 g flour');
+ await page.locator('[data-batch-review="0"]').selectOption('all-purpose-flour');
+ await page.locator('[data-batch-review="1"]').selectOption('bread-flour');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 0 need review · 0 blank');
+ await page.locator('[data-batch-lines]').fill('100 g flour\n120 g flour\n50 g granulated sugar');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'3 converted · 0 need review · 0 blank',
+  'appending sugar retains both manual flour corrections');
+ assert.equal(await page.locator('[data-batch-review="0"]').inputValue(),'all-purpose-flour');
+ assert.equal(await page.locator('[data-batch-review="1"]').inputValue(),'bread-flour');
+ await page.locator('[data-batch-lines]').fill('50 g granulated sugar\n100 g flour\n120 g flour');
+ assert.equal(await page.locator('[data-batch-review="1"]').inputValue(),'all-purpose-flour',
+  'moving a unique unchanged row retains its correction');
+ assert.equal(await page.locator('[data-batch-review="2"]').inputValue(),'bread-flour');
+ await page.locator('[data-batch-lines]').fill('50 g granulated sugar\n101 g flour\n120 g flour');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 1 need review · 0 blank',
+  'editing one source row clears only its own manual correction');
+ assert.equal(await page.locator('[data-batch-review="2"]').inputValue(),'bread-flour',
+  'other unchanged flour row keeps its choice');
+ await page.locator('[data-batch-lines]').fill('100 g flour\n100 g flour');
+ await page.locator('[data-batch-review="0"]').selectOption('all-purpose-flour');
+ await page.locator('[data-batch-review="1"]').selectOption('bread-flour');
+ await page.locator('[data-batch-lines]').fill('101 g flour\n100 g flour');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'0 converted · 2 need review · 0 blank',
+  'ambiguous duplicate edits must not assign the wrong food');
  await page.locator('[data-batch-target]').selectOption('g');
  await page.locator('[data-batch-lines]').fill('1 US cup milk, 2 eggs\n120 g all-purpose flour');
  assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'1 converted · 1 need review · 0 blank');
