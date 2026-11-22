@@ -59,6 +59,9 @@ test('recipe scaler preserves unknown lines and warns without guessing',()=>{
  assert.equal(x.rows[2].ok,false);
  assert.equal(x.unparsed,1);
  assert.throws(()=>scaleRecipe('1 cup milk',0,2));
+ const fractionStyle=scaleRecipe('1½ cups milk\n½ tsp salt',4,6,{fractions:true});
+ assert.equal(fractionStyle.rows[0].scaled,'2 1/4 cups milk');
+ assert.equal(fractionStyle.rows[1].scaled,'3/4 tsp salt');
 });
 test('CSV escaping prevents spreadsheet formula injection',()=>{
  assert.equal(csvCell('=HYPERLINK("bad")'),'"\'=HYPERLINK(""bad"")"');
@@ -89,8 +92,8 @@ test('batch conversion uses ingredient-specific values in both directions',()=>{
  const cups=batchConvertIngredients(source,{ingredients:foods,target:'cup'});
  assert.equal(cups.converted,4);
  assert.equal(cups.review,0);
- assert.equal(cups.rows[0].output,'1 cups All-purpose flour');
- assert.equal(cups.rows[1].output,'1 cups Granulated white sugar');
+ assert.equal(cups.rows[0].output,'1 cup All-purpose flour');
+ assert.equal(cups.rows[1].output,'1 cup Granulated white sugar');
  assert.equal(cups.rows[2].output,'1/2 cups Butter');
  assert.equal(cups.rows[3].output,'1/8 cups Honey');
  const grams=batchConvertIngredients('½ cup granulated sugar\n1½ cups milk',{ingredients:foods,target:'g'});
