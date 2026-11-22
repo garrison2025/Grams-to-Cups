@@ -168,8 +168,12 @@ try{
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 US cup All-purpose flour'),'exact flour conversion');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'fraction-friendly results');
  await page.locator('[data-batch-standard]').selectOption('metric');
+ assert.equal((await page.locator('[data-batch-target] option[value="cup"]').innerText()).trim(),'Metric cups',
+  'target selector must not say US cups while calculating metric cups');
  assert.match(await page.locator('[data-batch-results]').innerText(),/metric cup Granulated white sugar/,'metric cup results are unambiguous');
  await page.locator('[data-batch-standard]').selectOption('us');
+ assert.equal((await page.locator('[data-batch-target] option[value="cup"]').innerText()).trim(),'US cups',
+  'target selector restores US cups when selecting the US standard');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'US cup label restored after switching standard');
  // The tool must accept its own formatted cup labels when copied back into the input.
  await page.locator('[data-batch-lines]').fill('1 US cup All-purpose flour\n1 metric cup All-purpose flour');
