@@ -58,7 +58,7 @@ for(const page of manifest.pages){
   type='numeric';
   const n=Number(numeric[1]),flour=foodById.get('all-purpose-flour');
   const answer=formatAmount(convertQuantity(n,'g','cup',{ingredient:flour}),3);
-  direct=html.includes(n+' grams of All-purpose flour ≈ '+answer+' US cups');
+  direct=html.includes(formatAmount(n,3)+' grams of All-purpose flour ≈ '+answer+' US cups');
   unit=html.includes(answer+' US cups');
   state=html.includes(flour.state)&&html.includes(flour.method);
   excerpt=strip(html.match(/<div class="seo-answer">([\s\S]*?)<\/div>/)?.[1]||'');
