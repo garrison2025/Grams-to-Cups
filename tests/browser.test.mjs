@@ -165,10 +165,10 @@ try{
  assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 1 need review · 0 blank');
  assert.equal((await page.locator('[data-batch-results] .batch-converted-row').count()),2);
  assert.equal((await page.locator('[data-batch-results] .batch-review-row').count()),1);
- assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 cup All-purpose flour'),'exact flour conversion');
- assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 cup Granulated white sugar'),'fraction-friendly results');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 US cup All-purpose flour'),'exact flour conversion');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'fraction-friendly results');
  await page.locator('[data-batch-lines]').fill('1,000 g all-purpose flour');
- assert.ok((await page.locator('[data-batch-results]').innerText()).includes('8 1/3 cups All-purpose flour'),'batch supports US thousands separators');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('8 1/3 US cups All-purpose flour'),'batch supports US thousands separators');
  await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
  const batchDownload=page.waitForEvent('download');
  await page.locator('[data-batch-csv]').click();
