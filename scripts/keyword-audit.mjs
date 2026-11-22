@@ -122,15 +122,72 @@ for(const page of manifest.pages.filter(p=>/^\/cooking\/grams-to-cups\/\d+-grams
 }
 assert.equal(numericReport.length,22,'Expected 21 tested numeric SEO candidates');
 
+
+// Secondary ingredient-intent evidence complements, but never rewrites, the original
+// Semrush-to-target suggestions. Exact food identifiers protect against matching
+// peanut butter as dairy butter, cooked rice as dry rice, or loose as packed sugar.
+const foodRules=[
+ ['butter',/\bbutter\b/i,/\b(?:peanut|almond|cashew|sunflower|cocoa|cookie|nut)\s+butter\b/i],
+ ['sour-cream',/\bsour cream\b/i,null],
+ ['cream-cheese',/\bcream cheese\b/i,null],
+ ['coconut-oil',/\bcoconut oil\b/i,null],
+ ['granulated-sugar',/\b(?:granulated (?:white )?sugar|white granulated sugar)\b/i,null],
+ ['whole-wheat-flour',/\bwhole[\s-]wheat flour\b/i,null],
+ ['almond-flour',/\btoasted almond flour\b/i,null],
+ ['brown-sugar-packed',/\b(?:packed brown sugar|brown sugar(?:\s*,)?\s*packed)\b/i,null],
+ ['powdered-sugar-unsifted',/\b(?:unsifted (?:powdered|icing|confectioners'?|confectioner's) sugar|confectioners'? sugar unsifted)\b/i,null],
+ ['rolled-oats',/\b(?:rolled oats|old[\s-]fashioned oats|quick[\s-]cooking oats)\b/i,null],
+ ['long-grain-rice-dry',/\b(?:dry long[\s-]grain rice|uncooked long[\s-]grain rice)\b/i,null],
+ ['milk-fresh',/\bfresh milk\b/i,null],
+ ['honey',/\bhoney\b/i,null],
+ ['olive-oil',/\bolive oil\b/i,null],
+ ['vegetable-oil',/\bvegetable oil\b/i,null],
+ ['cornstarch',/\bcornstarch\b/i,null],
+ ['coconut-flour',/\bcoconut flour\b/i,null],
+ ['gluten-free-flour',/\bgluten[\s-]free (?:all[\s-]purpose )?flour\b/i,null],
+ ['pumpkin-puree',/\bpumpkin pur[eé]e\b/i,null],
+ ['walnuts-chopped',/\bchopped walnuts\b/i,null],
+ ['maple-syrup',/\bmaple syrup\b/i,null]
+];
+const unitIntent=/\b(?:cup|cups|grams?|g|gm|oz|ounces?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?|millilitres?)\b/i;
+const excludeIntent=/\b(?:substitute|substitution|replacement|calorie|calories|nutrition|health|benefits|recipe ideas|storage)\b/i;
+const secondaryHeader=['food_url','ingredient_id','keyword','competitor','us_volume','semrush_kd','sample_keyword_traffic','original_site_target','status'];
+const secondaryRows=[secondaryHeader],foodEvidence=new Map();
+for(const [id,match,exclude] of foodRules){
+ const target='/cooking/ingredients/'+id+'/';
+ assert.ok(index.has(target),'Food evidence target is absent: '+target);
+ const matches=records.filter(row=>{
+  const keyword=val(row,'keyword');
+  return match.test(keyword)&&unitIntent.test(keyword)&&!excludeIntent.test(keyword)&&!(exclude&&exclude.test(keyword));
+ });
+ const unique=new Set(matches.map(row=>val(row,'keyword').toLowerCase().trim()));
+ const low=matches.filter(row=>{const kd=num(val(row,'semrush_kd'));return kd!==null&&kd<=29});
+ foodEvidence.set(target,{count:matches.length,distinct:unique.size,lowKd:low.length,
+  strongest:matches.slice().sort((a,b)=>(num(val(b,'estimated_us_keyword_traffic'))||0)-(num(val(a,'estimated_us_keyword_traffic'))||0))[0]});
+ for(const row of matches)secondaryRows.push([target,id,val(row,'keyword'),val(row,'competitor'),
+ val(row,'us_volume'),val(row,'semrush_kd'),val(row,'estimated_us_keyword_traffic'),
+ val(row,'site_target_suggestion'),'secondary_exact_food_intent_review_required']);
+}
+pageReport[0].push('secondary_food_keyword_rows','secondary_food_distinct_phrases','secondary_food_kd_le29_rows','secondary_food_top_keyword');
+for(const row of pageReport.slice(1)){
+ const food=foodEvidence.get(row[0]);
+ row.push(food?.count||0,food?.distinct||0,food?.lowKd||0,food?.strongest?val(food.strongest,'keyword'):'');
+ if(row[10]==='no_sample_mapping_do_not_infer_zero_demand'&&food?.count)
+  row[10]='secondary_food_intent_found_not_automatically_verified';
+}
+const secondaryFoodCount=[...foodEvidence.values()].filter(x=>x.count>0).length;
+
 const out=path.join(root,'reports');
 fs.mkdirSync(out,{recursive:true});
 fs.writeFileSync(path.join(out,'seo-keyword-decisions.csv'),'\ufeff'+quotedRows(detailed));
 fs.writeFileSync(path.join(out,'seo-page-evidence.csv'),'\ufeff'+quotedRows(pageReport));
 fs.writeFileSync(path.join(out,'seo-numeric-intent.csv'),'\ufeff'+quotedRows(numericReport));
-fs.writeFileSync(path.join(out,'seo-summary.json'),JSON.stringify({...stats,mappedPageCount:grouped.size,pagesMissingMapping:pageReport.slice(1).filter(x=>x[1]==='yes'&&Number(x[2])===0).length},null,2)+'\n');
+fs.writeFileSync(path.join(out,'seo-ingredient-intent.csv'),'\ufeff'+quotedRows(secondaryRows));
+fs.writeFileSync(path.join(out,'seo-summary.json'),JSON.stringify({...stats,mappedPageCount:grouped.size,pagesMissingMapping:pageReport.slice(1).filter(x=>x[1]==='yes'&&Number(x[2])===0).length,secondaryFoodPagesObserved:secondaryFoodCount,pagesMissingBothPrimaryAndSecondary:pageReport.slice(1).filter(x=>x[1]==='yes'&&Number(x[2])===0&&Number(x[11])===0).length},null,2)+'\n');
 console.log('SEO evidence audit passed:',stats.records,'source keyword observations,',stats.uniqueTerms,'distinct phrases,',stats.indexCandidates,'index candidates.');
 console.log('Keyword review decisions:',JSON.stringify(stats.decisions));
 console.log('Numerical keyword evidence:',numericReport.length-1,'validated pages; low-KD eligible:',numericReport.slice(1).filter(x=>x[6]==='yes').length);
 const uncovered=pageReport.slice(1).filter(x=>x[1]==='yes'&&Number(x[2])===0).map(x=>x[0]);
 console.log('Index candidates without mapping evidence in submitted export:',uncovered.length,JSON.stringify(uncovered.slice(0,30)));
+console.log('Secondary ingredient intent evidence: '+secondaryFoodCount+' food pages with observed matching unit queries; editorial verification still required.');
 console.log('Reports written to reports/ (not included in the public site build).');
