@@ -15,12 +15,18 @@ function renderCalculator(form){
  const from=$('[data-from]',form)?.value||'g',to=$('[data-to]',form)?.value||'cup';
  const standard=$('[data-standard]',form)?.value||'us';
  const ingredient=byId.get($('[data-ingredient]',form)?.value)||null;
+ const isWater=ingredient?.id==='water';
+ const chosenWaterMode=isWater?($('[data-water-mode]',form)?.value||'recipe'):'recipe';
  const isCrossDimension=(['g','kg','oz'].includes(from))!==(['g','kg','oz'].includes(to));
  for(const field of $$('[data-density-field]',form))field.hidden=!isCrossDimension;
+ const waterModeRow=$('[data-water-mode-row]',form);
+ if(waterModeRow)waterModeRow.hidden=!(isCrossDimension&&isWater);
  const cupStandard=$('[data-cup-standard-row]',form);
  if(cupStandard)cupStandard.hidden=!(from==='cup'||to==='cup');
  const ingredientSource=$('[data-source-ingredient]',form),fixedSource=$('[data-source-fixed]',form);
- if(ingredientSource)ingredientSource.hidden=!isCrossDimension;
+ if(ingredientSource)ingredientSource.hidden=!isCrossDimension||(isWater&&chosenWaterMode==='capacity');
+ const capacitySource=$('[data-source-capacity]',form);
+ if(capacitySource)capacitySource.hidden=!(isCrossDimension&&isWater&&chosenWaterMode==='capacity');
  if(fixedSource)fixedSource.hidden=isCrossDimension;
  const choices=$$('[data-amount-preset]',form);
  const presetValues=from==='cup'?[.25,.5,1,2]:['tbsp','tsp','fl-oz','oz'].includes(from)?[1,2,4,8]:from==='kg'?[.1,.25,.5,1]:[50,100,200,250];
@@ -36,15 +42,15 @@ function renderCalculator(form){
  $$('[data-ingredient-preset]',form).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ingredientPreset===ingredient?.id)));
  try{
   const amount=$('[data-amount]',form).value;
-  const n=convertQuantity(amount,from,to,{ingredient,standard});
+  const n=convertQuantity(amount,from,to,{ingredient,standard,waterMode:chosenWaterMode});
   const decimals=n>=10000?1:n<.01?5:3;
   setText(result,formatAmount(n,decimals));
   setText($('[data-result-unit]',form),shortLabel(to,standard));
   const fraction=(to==='cup'||to==='tbsp')?approximateFraction(n):'';
   const cupSize=standard==='metric'?'metric':'US';
-  const refText=ingredient?formatAmount(ingredient.referenceGrams)+' g per '+formatAmount(ingredient.referenceAmount)+' '+(ingredient.referenceUnit==='cup'?'US cup':'US tablespoon'):'';
+  const refText=ingredient?(isWater&&chosenWaterMode==='capacity'?'Approx. 1 g per mL (water capacity, temperature dependent)':formatAmount(ingredient.referenceGrams)+' g per '+formatAmount(ingredient.referenceAmount)+' '+(ingredient.referenceUnit==='cup'?'US cup':'US tablespoon')):'';
   const context=isCrossDimension
-    ?'Based on '+refText+' of '+ingredient?.name+'. This is an approximate recipe measurement.'
+    ?(isWater&&chosenWaterMode==='capacity'?'Physical-capacity water estimate of about 1 g per mL; actual water density varies with temperature. This is not the published 227 g/US cup recipe chart method.':'Based on '+refText+' of '+ingredient?.name+'. This is an approximate recipe measurement.')
     :'These units have a defined conversion; an ingredient reference is not needed.';
   setText(note,(fraction?'Approximately '+fraction+' '+shortLabel(to,standard)+'. ':'')+context);
   setText($('[data-meta-kind]',form),isCrossDimension?'Ingredient':'Conversion');
@@ -62,7 +68,7 @@ function renderCalculator(form){
    }
   }
   if(error)error.hidden=true;
-  return {n,amount,from,to,ingredient,standard,isCrossDimension,unit:unitDescription(to,standard),context};
+  return {n,amount,from,to,ingredient,standard,waterMode:chosenWaterMode,isCrossDimension,unit:unitDescription(to,standard),context};
  }catch(ex){
   setText(result,'—');
   setText($('[data-result-unit]',form),'');
@@ -112,7 +118,7 @@ for(const form of $$('[data-calc]')){
   return conversion;
  };
  const params=new URLSearchParams(location.search);
- for(const [key,selector] of [['amount','[data-amount]'],['ingredient','[data-ingredient]'],['standard','[data-standard]'],['from','[data-from]'],['to','[data-to]']]){
+ for(const [key,selector] of [['amount','[data-amount]'],['ingredient','[data-ingredient]'],['standard','[data-standard]'],['from','[data-from]'],['to','[data-to]'],['waterMode','[data-water-mode]']]){
   const el=$(selector,form),v=params.get(key);
   if(el&&v&&v.length<80&&(el.tagName==='INPUT'||[...el.options].some(o=>o.value===v)))el.value=v;
  }
@@ -145,7 +151,7 @@ for(const form of $$('[data-calc]')){
  $('[data-share]',form)?.addEventListener('click',async()=>{
   const d=update();if(!d)return;
   const u=new URL(location.href);u.search='';
-  for(const [k,v] of [['amount',d.amount],['ingredient',d.isCrossDimension?d.ingredient?.id:null],['standard',d.standard],['from',d.from],['to',d.to]])if(v)u.searchParams.set(k,v);
+  for(const [k,v] of [['amount',d.amount],['ingredient',d.isCrossDimension?d.ingredient?.id:null],['standard',d.standard],['from',d.from],['to',d.to],['waterMode',d.isCrossDimension&&d.ingredient?.id==='water'?d.waterMode:null]])if(v)u.searchParams.set(k,v);
   try{
    if(navigator.share)await navigator.share({title:document.title,url:u.href});
    else{await navigator.clipboard.writeText(u.href);setText($('[data-feedback]',form),'Shareable link copied.');}
