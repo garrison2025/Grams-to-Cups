@@ -87,15 +87,19 @@ const summary={
  publicHostConfirmed:real&&expectedPublic,
  note:'Lab Lighthouse estimates, not real-user Core Web Vitals or observed INP. Preview noindex intentionally excludes SEO score; a real-host score requires an actual HTTPS deployment.',
  results,
- publicationTargets:{accessibility:95,seo:95,labLcpMs:2500,labCls:0.1}
+ publicationTargets:{performance:90,accessibility:95,seo:95,labLcpMs:2500,labCls:0.1,labTbtMs:750}
 };
 fs.writeFileSync(path.join(outputDir,'summary.json'),JSON.stringify(summary,null,2)+'\n');
 const failures=[];
 for(const item of results){
+ if(item.performance===null||item.performance<90)failures.push(item.route+' mobile performance '+item.performance+' <90');
+ if(item.labTbtMs===null||item.labTbtMs>750)failures.push(item.route+' mobile total blocking time '+item.labTbtMs+'ms >750ms');
+ if(item.labLcpMs===null||item.labLcpMs>2500)failures.push(item.route+' mobile lab LCP '+item.labLcpMs+'ms >2500ms');
+ if(item.labCls===null||item.labCls>0.1)failures.push(item.route+' mobile lab CLS '+item.labCls+' >0.1');
  if(item.accessibility===null||item.accessibility<95)failures.push(item.route+' mobile accessibility '+item.accessibility+' <95');
  if(expectedPublic&&(item.seo===null||item.seo<95))failures.push(item.route+' mobile SEO '+item.seo+' <95');
- // LCP/CLS are recorded for all routes; ephemeral CI noise does not replace
- // production measured Core Web Vitals and cannot prove INP <=200ms.
+ // These bounded lab gates catch code-level regressions, not real-user field
+ // vitals or INP. Production still needs live HTTPS and field monitoring.
 }
 console.log('LIGHTHOUSE LAB SUMMARY',JSON.stringify({mode:summary.mode,results:results.length,failures}));
 if(failures.length)throw new Error('Lighthouse quality gate failed: '+failures.join('; '));
