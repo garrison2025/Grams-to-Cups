@@ -211,7 +211,7 @@ for(const form of $$('[data-batch]')){
 }
 
 // A complete kitchen fraction calculator, exact for common rational quantities.
-for(const form of $('[data-fraction-arithmetic]')){
+for(const form of $$('[data-fraction-arithmetic]')){
  const first=$('[data-fraction-first]',form),second=$('[data-fraction-second]',form),
        operation=$('[data-fraction-operation]',form),result=$('[data-fraction-result]',form),
        decimal=$('[data-fraction-decimal]',form),error=$('[data-fraction-error]',form);
@@ -234,7 +234,7 @@ for(const form of $('[data-fraction-arithmetic]')){
  run();
 }
 
-for(const form of $('[data-half-form]')){
+for(const form of $$('[data-half-form]')){
  const input=$('[data-half-input]',form),output=$('[data-half-result]',form),error=$('[data-half-error]',form);
  const run=()=>{try{const v=parseAmount(input.value)/2;setText(output,formatAmount(v,4)+(approximateFraction(v)?' (about '+approximateFraction(v)+')':''));if(error)error.hidden=true;}catch(e){setText(output,'—');announce(error,e.message)}};
  input.addEventListener('input',run);run();
