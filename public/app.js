@@ -1,4 +1,4 @@
-import {convertQuantity,formatAmount,parseAmount,approximateFraction,unitDescription,scaleRecipe,csvCell} from './core.mjs';
+import {convertQuantity,formatAmount,parseAmount,approximateFraction,unitDescription,scaleRecipe,csvCell,batchConvertIngredients} from './core.mjs';
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
 const ingredients=await fetch('/assets/ingredients.json').then(r=>r.ok?r.json():Promise.reject(new Error('Ingredient data unavailable'))).catch(()=>[]);
@@ -115,7 +115,7 @@ for(const form of $$('[data-recipe]')){
  const out=$('[data-recipe-output]',form),error=$('[data-recipe-error]',form);
  let latest=null;
  const compute=()=>{
-  try{latest=scaleRecipe($('[data-recipe-lines]',form).value,$('[data-old-servings]',form).value,$('[data-new-servings]',form).value);
+  try{latest=scaleRecipe($('[data-recipe-lines]',form).value,$('[data-old-servings]',form).value,$('[data-new-servings]',form).value,{fractions:!!$('[data-recipe-fraction]',form)?.checked});
   out.textContent=latest.rows.map(r=>r.scaled+(r.ok?'':'  [check manually]')).join('\n');
   if(error){error.hidden=latest.unparsed===0;error.textContent=latest.unparsed?latest.unparsed+' line(s) could not be safely parsed and were left unchanged.':''}
   }catch(e){latest=null;out.textContent='';announce(error,e.message)}
@@ -131,7 +131,85 @@ for(const form of $$('[data-recipe]')){
  $('[data-recipe-print]',form)?.addEventListener('click',()=>window.print());
  compute();
 }
-for(const form of $$('[data-half-form]')){
+
+/* Local recipe list conversion. Rows use textContent rather than injecting user text as HTML. */
+for(const form of $('[data-batch]')){
+ const input=$('[data-batch-lines]',form),target=$('[data-batch-target]',form),
+       standard=$('[data-batch-standard]',form),fraction=$('[data-batch-fraction]',form),
+       tbody=$('[data-batch-results]',form),summary=$('[data-batch-summary]',form),
+       error=$('[data-batch-error]',form);
+ let latest=null;
+ const compute=()=>{
+  try{
+   latest=batchConvertIngredients(input.value,{ingredients,target:target.value,standard:standard.value,fractions:fraction.checked});
+   tbody.replaceChildren();
+   for(const item of latest.rows){
+    if(item.status==='blank')continue;
+    const tr=document.createElement('tr');
+    tr.className=item.status==='review'?'batch-review-row':'batch-converted-row';
+    const original=document.createElement('td'),result=document.createElement('td');
+    const text=document.createElement('span');
+    text.textContent=item.original;
+    original.appendChild(text);
+    const badge=document.createElement('span');
+    badge.className='batch-status '+(item.status==='converted'?'is-converted':'is-review');
+    badge.textContent=item.status==='converted'?'Converted':'Needs review';
+    result.appendChild(badge);
+    const value=document.createElement('div');
+    value.className='batch-row-value';
+    value.textContent=item.output;
+    result.appendChild(value);
+    if(item.status==='review'){
+      const why=document.createElement('small');
+      why.className='batch-row-warning';
+      why.textContent=item.reason;
+      result.appendChild(why);
+    }
+    tr.append(original,result);
+    tbody.appendChild(tr);
+   }
+   summary.textContent=latest.converted+' converted · '+latest.review+' need review · '+latest.blank+' blank';
+   error.hidden=true;
+   return latest;
+  }catch(ex){
+   latest=null;
+   tbody.replaceChildren();
+   summary.textContent='No valid results yet.';
+   announce(error,ex.message);
+   return null;
+  }
+ };
+ for(const control of [input,target,standard,fraction]){
+  control.addEventListener('input',compute);
+  control.addEventListener('change',compute);
+ }
+ $('[data-batch-run]',form)?.addEventListener('click',compute);
+ $('[data-batch-clear]',form)?.addEventListener('click',()=>{
+  input.value='';
+  setText($('[data-batch-feedback]',form),'');
+  compute();
+  input.focus();
+ });
+ $('[data-batch-copy]',form)?.addEventListener('click',async()=>{
+  const results=compute();if(!results||results.converted+results.review===0)return;
+  const text=results.rows.filter(row=>row.status!=='blank')
+   .map(row=>row.output+(row.status==='review'?' [NEEDS REVIEW: '+row.reason+']':'')).join('\n');
+  try{await navigator.clipboard.writeText(text);setText($('[data-batch-feedback]',form),'Copied list, including review warnings.');}
+  catch{setText($('[data-batch-feedback]',form),'Clipboard unavailable. Select the table results to copy them.');}
+ });
+ $('[data-batch-csv]',form)?.addEventListener('click',()=>{
+  const results=compute();if(!results||results.converted+results.review===0)return;
+  const cells=[['Original','Converted / unchanged','Status','Reference or review reason'],
+   ...results.rows.filter(row=>row.status!=='blank').map(row=>[row.original,row.output,row.status,row.reason])];
+  const text=cells.map(row=>row.map(csvCell).join(',')).join('\r\n');
+  const url=URL.createObjectURL(new Blob(['\ufeff'+text],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download='batch-ingredient-conversions.csv';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ });
+ compute();
+}
+
+for(const form of $('[data-half-form]')){
  const input=$('[data-half-input]',form),output=$('[data-half-result]',form),error=$('[data-half-error]',form);
  const run=()=>{try{const v=parseAmount(input.value)/2;setText(output,formatAmount(v,4)+(approximateFraction(v)?' (about '+approximateFraction(v)+')':''));if(error)error.hidden=true;}catch(e){setText(output,'—');announce(error,e.message)}};
  input.addEventListener('input',run);run();
