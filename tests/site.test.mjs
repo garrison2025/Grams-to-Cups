@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {parseAmount,convertQuantity,approximateFraction,scaleRecipe,csvCell,US_CUP_ML,METRIC_CUP_ML,US_TBSP_ML} from '../src/core.mjs';
+import {parseAmount,convertQuantity,approximateFraction,scaleRecipe,csvCell,formatKitchenAmount,batchConvertIngredients,US_CUP_ML,METRIC_CUP_ML,US_TBSP_ML} from '../src/core.mjs';
 const foods=JSON.parse(fs.readFileSync(new URL('../src/ingredients.json',import.meta.url),'utf8'));
 const byId=id=>foods.find(x=>x.id===id);
 test('24 references have source, unambiguous method and original quantities',()=>{
@@ -63,4 +63,50 @@ test('recipe scaler preserves unknown lines and warns without guessing',()=>{
 test('CSV escaping prevents spreadsheet formula injection',()=>{
  assert.equal(csvCell('=HYPERLINK("bad")'),'"\'=HYPERLINK(""bad"")"');
  assert.equal(csvCell('a,b'),'"a,b"');
+});
+
+test('Unicode and narrow-space kitchen fractions are parsed without a guess',()=>{
+ assert.equal(parseAmount('½'),.5);
+ assert.equal(parseAmount('⅔'),2/3);
+ assert.equal(parseAmount('1½'),1.5);
+ assert.equal(parseAmount('2 ¾'),2.75);
+ assert.equal(parseAmount('1\u202f½'),1.5);
+ assert.equal(parseAmount('3⁄4'),.75);
+ assert.equal(formatKitchenAmount(1.5),'1 1/2');
+ assert.equal(formatKitchenAmount(1/3),'1/3');
+ assert.equal(formatKitchenAmount(0.505,{fractions:true}),'0.505');
+ assert.equal(formatKitchenAmount(340.5,{fractions:false}),'340.5');
+});
+test('Unicode fraction recipe scaler does not mistake unit labels',()=>{
+ const scaled=scaleRecipe('1½ cups milk\n½ tsp salt\n3⁄4 cup honey',2,3);
+ assert.equal(scaled.unparsed,0);
+ assert.equal(scaled.rows[0].scaled,'2.25 cups milk');
+ assert.equal(scaled.rows[1].scaled,'0.75 tsp salt');
+ assert.equal(scaled.rows[2].scaled,'1.125 cup honey');
+});
+test('batch conversion uses ingredient-specific values in both directions',()=>{
+ const source='120 g all-purpose flour\n198 g granulated sugar\n½ cup butter\n2 tbsp honey';
+ const cups=batchConvertIngredients(source,{ingredients:foods,target:'cup'});
+ assert.equal(cups.converted,4);
+ assert.equal(cups.review,0);
+ assert.equal(cups.rows[0].output,'1 cups All-purpose flour');
+ assert.equal(cups.rows[1].output,'1 cups Granulated white sugar');
+ assert.equal(cups.rows[2].output,'1/2 cups Butter');
+ assert.equal(cups.rows[3].output,'1/8 cups Honey');
+ const grams=batchConvertIngredients('½ cup granulated sugar\n1½ cups milk',{ingredients:foods,target:'g'});
+ assert.equal(grams.converted,2);
+ assert.equal(grams.rows[0].output,'99 g Granulated white sugar');
+ assert.equal(grams.rows[1].output,'340.5 g Milk, fresh');
+});
+test('batch conversion flags unclear ingredients and invalid lines without inventing density',()=>{
+ const result=batchConvertIngredients('200 g flour\n1 cup brown sugar, loose\n1 cup peanut butter\n3 handfuls flour\n0 g butter\n',{ingredients:foods,target:'cup'});
+ assert.equal(result.converted,0);
+ assert.equal(result.review,5);
+ assert.equal(result.blank,1);
+ assert.equal(result.rows[0].output,'200 g flour');
+ assert.match(result.rows[0].reason,/unambiguously/);
+ assert.throws(()=>batchConvertIngredients('1 cup milk',{ingredients:[],target:'g'}));
+ assert.throws(()=>batchConvertIngredients('1 cup milk',{ingredients:foods,target:'kg'}));
+ assert.throws(()=>batchConvertIngredients('1 cup milk',{ingredients:foods,standard:'unknown'}));
+ assert.throws(()=>batchConvertIngredients(Array(102).fill('1 cup milk').join('\n'),{ingredients:foods}),/100 lines/);
 });
