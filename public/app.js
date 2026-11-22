@@ -29,7 +29,7 @@ function renderCalculator(form){
  const from=$('[data-from]',form)?.value||'g',to=$('[data-to]',form)?.value||'cup';
  const standard=$('[data-standard]',form)?.value||'us';
  setText($('[data-amount-unit]',form),shortLabel(from,standard));
- setText($('[data-advanced-label]',form),shortLabel(from,standard)+' → '+shortLabel(to,standard));
+ setText($('[data-advanced-label]',form.closest('.conversion-card')),shortLabel(from,standard)+' → '+shortLabel(to,standard));
  const ingredient=byId.get($('[data-ingredient]',form)?.value)||null;
  const isWater=ingredient?.id==='water';
  const chosenWaterMode=isWater?($('[data-water-mode]',form)?.value||'recipe'):'recipe';
@@ -141,7 +141,7 @@ function animateSwap(button,form){
  if(reducedMotion.matches||!button?.animate)return;
  button.animate([{transform:'rotate(0deg)'},{transform:'rotate(180deg)'}],
   {duration:260,easing:'cubic-bezier(.2,.8,.2,1)'});
- for(const field of $$('[data-amount-unit],[data-result-unit],[data-advanced-label]',form)){
+ for(const field of $$('[data-amount-unit],[data-result-unit],[data-advanced-label]',form.closest('.conversion-card'))){
   field.animate([{backgroundColor:'#d9e8a4',color:'#15392b'},{backgroundColor:'',color:''}],{duration:240,easing:'ease-out'});
  }
 }
@@ -225,6 +225,7 @@ for(const form of $$('[data-calc]')){
  const live=$('[data-live-result]',form);
  const feedback=$('[data-feedback]',form);
  const copyButton=$('[data-copy]',form),copyLabel=$('[data-copy-label]',form);
+ const swapButton=$('[data-swap]',form.closest('.conversion-card'));
  let spokenTimer=null;
  let copyTimer=null,copyRequest=0;
  function clearCopyFeedback(){
@@ -274,9 +275,11 @@ for(const form of $$('[data-calc]')){
   picker?.sync();
   if(update(true))animateConversionResult(form);
  }));
- $('[data-swap]',form)?.addEventListener('click',()=>{
+ swapButton.addEventListener('click',()=>{
   const from=$('[data-from]',form),to=$('[data-to]',form);
-  [from.value,to.value]=[to.value,from.value];if(update(true))animateConversionResult(form);animateSwap($('[data-swap]',form),form);
+  [from.value,to.value]=[to.value,from.value];
+  if(update(true))animateConversionResult(form);
+  animateSwap(swapButton,form);
  });
  $('[data-reset]',form)?.addEventListener('click',()=>{
   form.reset();picker?.sync();
