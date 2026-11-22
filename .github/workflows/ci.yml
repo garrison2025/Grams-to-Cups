@@ -22,3 +22,11 @@ jobs:
           CF_PAGES_BRANCH: main
           SITE_URL: https://example.com
           PUBLIC_INDEX_APPROVED: 'true'
+
+      - name: Preserve keyword and page SEO review reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: grams-to-cups-seo-review
+          path: reports/
+          retention-days: 30
+          if-no-files-found: error
