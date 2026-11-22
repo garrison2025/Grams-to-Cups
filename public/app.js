@@ -93,7 +93,7 @@ function animateSwap(button){
   {duration:260,easing:'cubic-bezier(.2,.8,.2,1)'});
 }
 
-for(const form of $('[data-calc]')){
+for(const form of $$('[data-calc]')){
  const live=$('[data-live-result]',form);
  let spokenTimer=null;
  const update=(announceChange=false)=>{
