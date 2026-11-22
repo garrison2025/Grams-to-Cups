@@ -333,6 +333,7 @@ try{
  assert.match(alternateText,/Prefer a kitchen scale/,'poor volume approximations recommend weighing');
  assert.match(await page.locator('[data-measure-error]').innerText(),/Primary option/,'primary has a separately labeled error');
 
+ await page.emulateMedia({media:'screen'});
  await page.goto(origin+'/cooking/batch-converter/',{waitUntil:'networkidle'});
  assert.ok(await page.getByRole('heading',{name:/Batch Ingredient Converter/i}).isVisible(),'batch converter page renders');
  assert.ok((await page.locator('[data-batch-summary]').innerText()).includes('4 converted'),'default list identifies four supported ingredients');
@@ -350,9 +351,17 @@ try{
   el.focus();
   el.value='bread-flour';
   el.dispatchEvent(new Event('change',{bubbles:true}));
-  return document.activeElement?.dataset.batchReview||'';
+  const replacement=document.querySelector('[data-batch-review="1"]');
+  return {
+   focused:replacement===document.activeElement,
+   selected:replacement?.value,
+   display:replacement&&getComputedStyle(replacement).display,
+   active:document.activeElement?.tagName,
+   print:matchMedia('print').matches
+  };
  });
- assert.equal(restoredFocus,'1','the selected row keeps keyboard focus after conversion');
+ assert.ok(restoredFocus.focused,'the selected row keeps keyboard focus after conversion: '+JSON.stringify(restoredFocus));
+ assert.equal(restoredFocus.selected,'bread-flour');
  assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 0 need review · 0 blank');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('Bread flour (King Arthur reference)'));
  assert.equal(await page.locator('[data-batch-review="1"]').inputValue(),'bread-flour',

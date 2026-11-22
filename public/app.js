@@ -446,11 +446,10 @@ for(const form of $$('[data-batch]')){
       for(const food of ingredients)select.add(new Option(food.name,food.id));
       select.value=ingredientOverrides[item.index]||'';
       select.addEventListener('change',()=>{
-       const restoreFocus=document.activeElement===select;
        if(select.value)ingredientOverrides[item.index]=select.value;
        else delete ingredientOverrides[item.index];
        compute();
-       if(restoreFocus)$('[data-batch-review="'+item.index+'"]',tbody)?.focus({preventScroll:true});
+       $('[data-batch-review="'+item.index+'"]',tbody)?.focus({preventScroll:true});
       });
       result.append(label,select);
     }
