@@ -37,4 +37,6 @@ This document records **what is checked in code**, what source-limited editorial
 
 No database, Cloudflare Workers API, paid model, payment processor, or server cron is required by this static build. Optional GitHub Actions QA uses CI minutes and is subject to the hosting provider's applicable free quotas. Production domain registration/renewal, if any, remains separate. Maintain ingredient references only when the published source or a demonstrated conversion defect changes; use `npm run build` and browser QA before any edit.
 
+**New pre-release tool data (2026-11-22):** 27 externally sourced ingredient references, of which 24 keep the originally audited individual SEO pages and three (bread flour, unsweetened cocoa powder, specific unbleached cake flour) are calculator/chart data only. All 21 number pages now share practical measuring instructions and a three-food first-answer table. The batch UI permits an explicit per-row source selection without guessing. SEO candidate route totals remain unchanged.
+
 **Release state: NOT YET PRODUCTION-VERIFIED.** This is a tested implementation package with final *source-limited* SEO dispositions, not a claim of an already deployed or indexed website.

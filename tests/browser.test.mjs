@@ -246,7 +246,7 @@ try{
   'sugar specific conversion renders');
  await page.goto(origin+'/cooking/grams-to-cups/100-grams-to-cups/',{waitUntil:'networkidle'});
  assert.ok(await page.getByRole('heading',{name:'Closest common cup measures for 100 grams'}).isVisible(),'numeric landing offers useful measuring comparisons');
- assert.ok((await page.locator('table').nth(1).innerText()).includes('Weight difference'),'numeric page warns about grams difference');
+ assert.ok((await page.locator('table').filter({hasText:'Weight difference'}).last().innerText()).includes('Weight difference'),'numeric page warns about grams difference');
  assert.ok(await page.locator('a[href="/cooking/ingredients/all-purpose-flour/100-grams-to-cups/"]').isVisible(),
   'general 100g conversion has a crawlable contextual link to the 100g flour page');
  assert.ok(await page.locator('a[href="/cooking/ingredients/granulated-sugar/100-grams-to-cups/"]').isVisible(),
@@ -416,6 +416,7 @@ try{
    assert.ok(await mobile.locator('h1').first().isVisible(),route+' '+width+'px heading is visible');
    assert.equal(mobileErrors.length,0,route+' '+width+'px JS exceptions: '+mobileErrors.join(','));
    if(width===320&&route==='/'){
+    await mobile.locator('[data-advanced-units]').evaluate(el=>{el.open=true;});
     for(const selector of ['[data-nav-toggle]','[data-swap]','[data-amount-preset]','[data-ingredient-preset]']){
      const rect=await mobile.locator(selector).first().boundingBox();
      assert.ok(rect&&rect.width>=44&&rect.height>=44,selector+' must offer at least a 44×44px mobile touch target');
