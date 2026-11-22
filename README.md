@@ -104,7 +104,7 @@ This is a single production release project: passing a static build or having a 
 
 The core query `grams to cups` is assigned to the **homepage `/` only**. The original `/cooking/grams-to-cups/` still functions when opened directly but stays `noindex`; the site's internal links now direct visitors and crawlers to `/` for that intent. No new 301 redirects were invented for URLs that were never confirmed live.
 
-Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates thirteen **non-public** evidence and audit reports:
+Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates fourteen **non-public** evidence and audit reports:
 
 - `reports/seo-keyword-decisions.csv`: one record per imported keyword, original estimated data unchanged, target URL, status and classification reason.
 - `reports/seo-page-evidence.csv`: one record per site page, index eligibility and number of mapped keyword observations.
@@ -119,8 +119,9 @@ Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 
 - `reports/seo-76-final-publication-status.json`: complete 76-URL machine-readable final decision record, including 58 index-eligible and 18 functional `noindex` candidates.
 - `reports/ingredient-source-evidence.json`: one source-locked record per ingredient (24), with explicit food states, methods, dates, weights and the published reference, not claimed laboratory density measurements.
 - `reports/keyword-to-url.csv`: all 2,300 original partial-export keyword observations with competitor, original ranking URL, estimated KD/volume and a **provisional** target URL; unknown values are preserved, not set to zero.
+- `reports/seo-geo-visible-answers.csv`: 70 source-aware search-intent routes with a checkable direct answer, precise units, source/food-state context and a short readable excerpt, explicitly **not** a search ranking or AI citation report.
 
-The GitHub Actions **Site build and tests** workflow attaches the thirteen reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
+The GitHub Actions **Site build and tests** workflow attaches the fourteen reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
 
 **Coverage warning:** 24 of the 62 final index candidates lack an original suggested URL in the partial supplied keyword sample. Six have strict secondary ingredient-intent evidence; the remaining **18** were resolved through source-limited editorial review of independent site functions, trust pages and observed competitor page evidence. Such absence in a partial export is not proof of zero search demand, and an index decision is not an assertion of keyword rank or traffic. Some are navigational, methodology or trust pages; absence from the sample is not proof of zero demand. See the per-page report before deciding whether each deserves separate indexing.
 
