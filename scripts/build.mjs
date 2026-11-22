@@ -165,7 +165,8 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
 
 function answerFor(amount,ingredient='all-purpose-flour',standard='us'){
  const i=byId.get(ingredient),cups=convertQuantity(amount,'g','cup',{ingredient:i,standard});
- return {cups,html:'<div class="seo-answer"><strong>'+e(f(amount))+' grams of '+e(i.name)+' ≈ '+e(f(cups))+' '+(standard==='us'?'US':'metric')+' cups</strong><p>Using '+e(f(i.referenceGrams))+' g per '+e(i.referenceAmount)+' '+e(i.referenceUnit)+' from '+link(i.sourceUrl,i.sourceName)+'. This is a cooking-reference estimate, not a universal grams-to-cups equation.</p></div>'};
+ return {cups,html:'<div class="seo-answer"><strong>'+e(f(amount))+' grams of '+e(i.name)+' ≈ '+e(f(cups))+' '+(standard==='us'?'US':'metric')+' cups</strong>'+
+ '<p>For '+e(i.state)+' measured by '+e(i.method)+', '+e(f(amount))+' g works out to about '+e(f(cups))+' '+(standard==='us'?'US':'metric')+' cups. The calculation scales '+e(f(i.referenceGrams))+' g per '+e(i.referenceAmount)+' '+(i.referenceUnit==='cup'?'US cup':'US tablespoon')+' from '+link(i.sourceUrl,i.sourceName)+'. This is an ingredient-specific cooking estimate, not a universal mass-to-volume equation.</p></div>'};
 }
 function numberComparison(amount,exclude=''){const top=data.filter(i=>i.id!==exclude);return table(['Ingredient','US cups for '+amount+' g','Source grams / US cup'],top.map(i=>[i.name,f(convertQuantity(amount,'g','cup',{ingredient:i})),f(convertQuantity(1,'cup','g',{ingredient:i}))+' g']));}
 function intro(title,body){return '<div class="container"><div class="page-intro"><span class="eyebrow">Cooking measurement reference</span><h1>'+e(title)+'</h1><p class="lede">'+e(body)+'</p></div></div>';}
@@ -207,7 +208,10 @@ function home(){
  '<div class="hero-points"><span>24 documented ingredients</span><span>US & metric cups</span><span>Instant local calculations</span></div>'+
  '<div class="hero-story"><div class="hero-story-symbol" aria-hidden="true">½</div><div><b>Measure less. Make more.</b><p>Precise baking starts with the right ingredient and the right cup size.</p><small>Source-backed kitchen math, beautifully simple.</small></div></div>'+
  '</div>'+converterForm({})+'</div></div>';
- const body=hero+strip+
+ const homeAnswer='<section class="section section-answer"><div class="container"><div class="panel"><h2>How many cups is 100 grams?</h2>'+
+ '<p><strong>100 grams of spoon-and-leveled all-purpose flour is about '+e(flour100)+' US cups.</strong> The referenced flour measure is 120 g per US cup. By comparison, 100 g of granulated sugar is about '+e(sugar100)+' US cups using its 198 g per US cup reference. The same mass does not correspond to one universal cup amount.</p>'+
+ '<p>Choose the correct ingredient and food state above, and select US (236.588 mL) or metric (250 mL) cups. Values are scaled from the '+link(source,'published ingredient weight chart')+'; for precise baking, use the gram weight stated in the recipe. '+link('/cooking/sources-and-methods/','Read our calculation method')+'.</p></div></div></section>';
+ const body=hero+homeAnswer+strip+
  section('Explore by ingredient','Flour, sugar, butter and more — choose the exact food before converting by volume.',grid(ingredientList.slice(0,8),4),true)+
  comparison+
  section('A little easier in the kitchen','Save time with practical tools for recipe scaling, print-friendly reference charts and measuring fractions.',grid([
@@ -221,7 +225,7 @@ function home(){
  ['/cooking/','All cooking tools','Browse our full collection of practical converters']
  ]))+
  section('Start with a familiar number','Look up ingredient-by-ingredient conversions without treating every food as flour.',grid(numberList.filter((_,i)=>[2,6,8,10,12,13].includes(i))),true);
- doc({url:'/',title:'Grams to Cups Converter — Accurate Ingredient-Based Cooking Measurements',description:'Convert grams to cups and cups to grams with source-backed ingredient weights, instant live answers, recipe scaler and printable kitchen charts.',body,kind:'WebPage'});
+ doc({url:'/',title:'Grams to Cups Converter — Accurate Ingredient-Based Cooking Measurements',description:'Convert grams to cups and cups to grams with source-backed ingredient weights, instant live answers, recipe scaler and printable kitchen charts.',body,kind:'WebApplication'});
 }
 
 function hub(){
@@ -239,7 +243,7 @@ function toolPage(t){
  const description=needsIngredient?'Mass-to-volume results change with food and measuring method. Select flour, sugar, butter or another referenced ingredient.':'These are fixed US kitchen-volume relationships. The ingredient selector matters only when you mix mass and volume units.';
  const body=intro(title+' Converter',description)+
  '<section class="section"><div class="container content-grid"><div>'+converterForm({amount,from,to,heading:title})+
- '<div class="panel mt-3"><h2>How the conversion works</h2><p>'+e(description)+'</p><p>For this preset, '+e(f(amount))+' '+e(unitDescription(from))+' converts to about <strong>'+e(f(value))+' '+e(unitDescription(to))+'</strong> using the shown reference.</p>'+
+ '<div class="panel mt-3"><h2>Conversion answer and calculation</h2><p>'+e(description)+'</p><p><strong>'+e(f(amount))+' '+e(unitDescription(from))+' = approximately '+e(f(value))+' '+e(unitDescription(to))+'</strong>'+(needsIngredient?' for spooned-and-leveled all-purpose flour, based on 120 g per US cup. Different foods give different answers.':' using defined US customary volume units. An ingredient weight is not needed for this direction.')+'</p>'+
  (needsIngredient?'<p>For mass-to-volume quantities, this estimate is based on the selected ingredient weight per cup. Scooping method, moisture, processing and cup standard can alter the result.</p>':'<p>For fixed volume units, the defined US customary cup, tablespoon and fluid ounce are enough to calculate the answer without any ingredient density.</p>')+
  '<div class="inline-note">A mass ounce (oz) and a US fluid ounce (fl oz) are different quantities. This tool keeps their units distinct.</div></div></div>'+
  '<aside class="panel side-panel"><h3>Reference values</h3><p>1 US cup = '+e(f(US_CUP_ML))+' mL<br>1 metric cup = '+METRIC_CUP_ML+' mL<br>1 US tbsp = '+e(f(US_TBSP_ML))+' mL<br>1 US cup = 8 US fl oz</p><p>'+link('/cooking/sources-and-methods/','See methods and sources')+'</p></aside></div></section>'+
@@ -278,6 +282,8 @@ function ingredientPage(i){
  const body=intro(i.name+': Grams to Cups','Use the correct '+i.state+' reference. This weight belongs to the measuring method shown below; packed, sifted, dry and cooked ingredients are not interchangeable.')+
  '<section class="section"><div class="container content-grid"><div>'+
  '<div class="facts"><div class="fact"><strong>'+e(f(convertQuantity(1,'cup','g',{ingredient:i})))+' g</strong><span>per US cup</span></div><div class="fact"><strong>'+e(f(preview))+' cups</strong><span>per 100 grams</span></div><div class="fact"><strong>'+e(i.method)+'</strong><span>measurement method</span></div></div>'+
+ '<div class="panel mt-3"><h2>How many grams are in one US cup of '+e(i.name.toLowerCase())+'?</h2>'+
+ '<p>One US cup of '+e(i.name.toLowerCase())+' is approximately <strong>'+e(f(convertQuantity(1,'cup','g',{ingredient:i})))+' grams</strong> using the cited '+e(i.referenceGrams)+' g per '+e(i.referenceAmount)+' '+(i.referenceUnit==='cup'?'US cup':'US tablespoon')+' reference. Conversely, 100 grams is about <strong>'+e(f(preview))+' US cups</strong>. This estimate applies to '+e(i.state)+' measured by '+e(i.method)+', not to every preparation or brand. Source: '+link(i.sourceUrl,i.sourceName)+'.</p></div>'+
  '<div class="mt-3">'+converterForm({amount:100,ingredient:i.id,heading:i.name+' conversion'})+'</div>'+
  '<div class="panel mt-3"><h2>'+e(i.name)+' conversion chart</h2><p>These quantities are calculated from '+e(i.referenceGrams)+' g per '+e(i.referenceAmount)+' '+e(i.referenceUnit)+'. '+e(i.note)+'</p>'+
  table(['Grams','US cups','Metric cups'],values.map(n=>[n+' g',f(convertQuantity(n,'g','cup',{ingredient:i,standard:'us'})),f(convertQuantity(n,'g','cup',{ingredient:i,standard:'metric'}))]))+
