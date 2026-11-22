@@ -38,6 +38,15 @@ Cloudflare previews should remain noindex. This is intentional, not a reason to 
 - A successful GitHub **build** is not proof of Cloudflare deployment, Google indexing, Lighthouse performance or AdSense approval. A green live-smoke check only proves the tested URLs and headers at the time of execution; Google Search Console and performance still require separate verification.
 - `src/seo-evidence.mjs` prevents empty/missing Semrush KD from being interpreted as KD0 and safely quotes third-party CSV text to neutralize spreadsheet formula injection. Source `research/semrush-us-2300-sample.csv` remains unchanged.
 
+## Mobile Lighthouse release acceptance
+
+Use GitHub → **Actions → Lighthouse mobile lab and real-host acceptance**.
+
+- Pull requests automatically test three representative local preview routes (home, flour reference, fraction calculator) using ephemeral Lighthouse 13.6.0 and headless Chrome. Results are retained as `grams-cups-mobile-lighthouse` artifacts for 30 days. The local preview is deliberately `noindex`, so its SEO score is not a publication proof.
+- After the actual independent-site public HTTPS origin has been confirmed, choose **Run workflow**, enter the exact origin for `site_url`, and set `expected_indexing=true` only when the final production release has been approved. The workflow performs real HTTP/canonical/sitemap smoke checks first, then Lighthouse mobile audits of the homepage, ingredient, numeric and chart routes.
+- Target **mobile Accessibility and SEO scores ≥95**. Lab LCP≤2500ms and CLS≤0.1 are recorded with every run. **INP≤200ms** needs real-user instrumentation when the site has sufficient traffic; Lighthouse's synthetic run must not be falsely labeled a measured real-user INP.
+- Reports are uploaded even if a score gate fails. Fix issues on the same branch and rerun the acceptance check; do not claim launch is complete from a green source-code CI run alone.
+
 ## Quality gates in CI
 
 `npm run build` automatically:
