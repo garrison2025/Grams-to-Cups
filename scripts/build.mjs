@@ -133,10 +133,11 @@ function grid(items,cols=3){
  }).join('')+'</div>';
 }
 
-function table(headers,rows){
+function table(headers,rows,{rowIds=null}={}){
  return '<div class="table-shell"><div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable cooking conversion table"><table><thead><tr>'+
  headers.map(x=>'<th scope="col">'+e(x)+'</th>').join('')+'</tr></thead><tbody>'+
- rows.map(r=>'<tr>'+r.map((x,i)=>i===0?'<th scope="row">'+e(x)+'</th>':'<td>'+e(x)+'</td>').join('')+'</tr>').join('')+
+ rows.map((r,index)=>'<tr'+(rowIds?.[index]?' data-chart-food-id="'+e(rowIds[index])+'"':'')+'>'+
+ r.map((x,i)=>i===0?'<th scope="row">'+e(x)+'</th>':'<td>'+e(x)+'</td>').join('')+'</tr>').join('')+
  '</tbody></table></div><p class="table-scroll-hint">↔ Swipe sideways to view the other columns</p></div>';
 }
 function unitSelect(label,which,selected){
