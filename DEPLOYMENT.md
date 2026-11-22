@@ -11,7 +11,7 @@ This repository was created as a standalone website at the owner's direction. It
 5. Verify all canonical destination URLs resolve at that hostname. Verify 404, robots.txt, no console errors, static assets, reference claims, accessible mobile calculation, ingredient search and the output from \`npm run build\`.
 6. Only after all checks, set \`PUBLIC_INDEX_APPROVED=true\` for the production environment and redeploy \`main\`. Cloudflare injects \`CF_PAGES_BRANCH\`; don't set it manually in dashboard.
 7. Confirm production \`/sitemap.xml\` exists, URLs use \`SITE_URL\`, all index-eligible pages carry canonical/index, and excluded candidates remain noindex. Submit sitemap to Google Search Console only when the site is verified.
-8. There are 81 generated HTML pages total: 77 Cooking routes and 4 site/core/legal routes. The 14 research-limited candidates still function but are excluded from sitemap.
+8. There are 81 generated HTML pages total: 77 Cooking routes and 4 site/core/legal routes. The 15 research-limited candidates still function but are excluded from sitemap.
 
 Cloudflare previews should remain noindex. This is intentional, not a reason to enable indexing before QA.
 
@@ -57,3 +57,12 @@ There is no database, queue, account backend, paid API or recurring content job.
 The local-only `/cooking/batch-converter/` supports grams ↔ cups for source-identifiable ingredients, 100-line safety limit, Unicode fractions, separate review rows, copy and CSV export. It never assumes generic `flour` is all-purpose flour or unqualified `brown sugar` is packed. It remains `noindex` until independently justified by keyword evidence.
 
 The recipe scaler offers **exact common kitchen fractions** by default, or decimals by unchecking its fraction control. Unknown recipe quantities are preserved with review warnings. These features require no external API or extra hosting process.
+
+
+## Main keyword ownership and SEO audit artifact
+
+The homepage \`/\` is the only eligible landing page for the core \`grams to cups\` query. \`/cooking/grams-to-cups/\` remains usable, but \`noindex\` and internal card/paragraph links resolve to \`/\` to avoid competing primary SEO targets. Production index candidates: **66** out of 81 functional routes.
+
+The build also runs \`scripts/keyword-audit.mjs\`, validating all 2,300 supplied competitor ranking records and producing per-keyword/per-page classification files. Download them from the successful GitHub **Site build and tests** run → **Artifacts** → \`grams-to-cups-seo-review\`. The report output is excluded from \`dist/\` and from Git.
+
+The source remains a **partial** competitor export. Mapping is algorithmic and requires editorial review before a URL is treated as a verified ranking opportunity.
