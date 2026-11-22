@@ -158,7 +158,7 @@ function chartPage(type){
  '<section class="section"><div class="container"><div class="panel"><h2>Measured US cup portions</h2><p>Choose your exact ingredient; values below are calculated from the listed reference and rounded to three decimal places. Print from your browser or save as PDF.</p>'+
  table(['Ingredient','1/4 cup','1/2 cup','1 cup','Method'],rows)+
  '<p class="source-chip">Source: '+link(source,'King Arthur Baking Ingredient Weight Chart')+'. These are approximate recipe-volume references.</p>'+
- '<div class="calc-actions"><button class="btn btn-primary" type="button" onclick="window.print()">Print this chart</button>'+link('/cooking/guides/cup-sizes/','Cup-size guide','btn')+'</div></div></div></section>'+
+ '<div class="calc-actions"><button class="btn btn-primary" type="button" data-chart-print>Print this chart</button>'+link('/cooking/guides/cup-sizes/','Cup-size guide','btn')+'</div></div></div></section>'+
  section('Other chart formats','Choose a focused chart to reduce confusion.',grid([['/cooking/charts/','All foods','24 source-backed ingredient entries'],['/cooking/charts/flour/','Flour','Compare different flours'],['/cooking/charts/sugar/','Sugar','Compare packing and processing']],3),true);
  doc({url:'/cooking/charts/'+(type?type+'/':''),title,description:'Print a cups to grams chart for '+(type||'24 kitchen ingredients')+' with sourced measurements and ingredient-specific method notes.',body,bread:[['Cooking','/cooking/'],['Charts',type?'/cooking/charts/':null],...(type?[[title,null]]:[])],kind:'WebPage'});
 }
@@ -233,7 +233,7 @@ infoPage('privacy','Privacy Policy','We aim to minimize data collection. The cal
 infoPage('contact','Contact and Corrections','Found a questionable food weight or broken conversion? Report the exact ingredient, source, and expected result in the public repository issue tracker.');
 writeFile('404.html','<!doctype html><html lang="en"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page not found | Grams & Cups</title><link rel="stylesheet" href="/assets/styles.css"><main class="container section"><h1>Page not found</h1><p>That page does not exist. Try the conversion tools or the ingredient directory.</p>'+link('/cooking/','Browse cooking tools','btn btn-primary')+'</main></html>');
 writeFile('favicon.svg','<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#20674f"/><path d="M19 17h26l-3 27H22z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><path d="M23 27h18M24 35h16" stroke="#d6f0dc" stroke-width="4"/></svg>');
-for(const [src,dst] of [['public/styles.css','assets/styles.css'],['public/app.js','assets/app.js'],['src/core.mjs','assets/core.mjs'],['src/ingredients.json','assets/ingredients.json']])fs.copyFileSync(path.join(root,src),path.join(dist,dst));
+for(const [src,dst] of [['public/styles.css','assets/styles.css'],['public/app.js','assets/app.js'],['src/core.mjs','assets/core.mjs'],['src/ingredients.json','assets/ingredients.json']]){const out=path.join(dist,dst);fs.mkdirSync(path.dirname(out),{recursive:true});fs.copyFileSync(path.join(root,src),out);}
 if(!publicIndex)writeFile('_headers','/*\n  X-Robots-Tag: noindex\n  X-Content-Type-Options: nosniff\n');
 else writeFile('_headers','/*\n  X-Content-Type-Options: nosniff\n');
 writeFile('robots.txt','User-agent: *\nAllow: /\n'+(publicIndex?'Sitemap: '+origin+'/sitemap.xml\n':''));
