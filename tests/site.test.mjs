@@ -107,14 +107,14 @@ test('recipe scaler preserves unknown lines and warns without guessing',()=>{
  assert.equal(x.unparsed,1);
  assert.throws(()=>scaleRecipe('1 cup milk',0,2));
  const ranges=scaleRecipe('2-3 eggs\n1 to 2 cups stock\n1–2 tbsp cinnamon\n2 or 3 teaspoons salt',2,4);
- assert.equal(ranges.unparsed,4,'Ingredient ranges must request manual review');
+ assert.equal(ranges.unparsed,1,'Only explicit disjunctions remain for manual review; simple intervals scale both ends');
  const grouping=scaleRecipe('1,000 g flour\n1,234.5 ml milk\n1,5 cups water\n1.2.3 tsp salt',2,4);
  assert.equal(grouping.rows[0].scaled,'2,000 g flour');
  assert.equal(grouping.rows[1].scaled,'2,469 ml milk');
  assert.equal(grouping.unparsed,2,'Malformed separators must not partially scale a number');
  assert.equal(grouping.rows[2].scaled,'1,5 cups water');
  assert.equal(grouping.rows[3].scaled,'1.2.3 tsp salt');
- assert.deepEqual(ranges.rows.map(r=>r.scaled),['2-3 eggs','1 to 2 cups stock','1–2 tbsp cinnamon','2 or 3 teaspoons salt']);
+ assert.deepEqual(ranges.rows.map(r=>r.scaled),['4–6 eggs','2–4 cups stock','2–4 tbsp cinnamon','2 or 3 teaspoons salt']);
  const compounds=scaleRecipe('1 cup + 2 tbsp milk\n1 cup and 2 tbsp milk\n1 cup & 2 tbsp milk\n1 cup / 2 tbsp milk\n1 cup milk plus 2 tbsp cream\n2 eggs and 1 onion',2,4);
  assert.equal(compounds.unparsed,6,'Multi-quantity recipes must not only scale the first quantity');
  assert.deepEqual(compounds.rows.map(r=>r.scaled),compounds.rows.map(r=>r.original));
@@ -122,6 +122,44 @@ test('recipe scaler preserves unknown lines and warns without guessing',()=>{
  assert.equal(fractionStyle.rows[0].scaled,'2 1/4 cups milk');
  assert.equal(fractionStyle.rows[1].scaled,'3/4 tsp salt');
 });
+test('superscript and subscript kitchen fractions never silently truncate the first quantity',()=>{
+ assert.equal(parseAmount('1 ¹⁄₂'),1.5);
+ assert.equal(parseAmount('¹⁄₂'),.5);
+ assert.equal(parseAmount('1 ³⁄₄'),1.75);
+ const recipes=scaleRecipe('1 ¹⁄₂ cups flour\n1 ¹/₂ cups milk\n2 ³⁄₄ tbsp sugar\n1½ cups water',4,6,{fractions:true});
+ assert.equal(recipes.unparsed,0);
+ assert.deepEqual(recipes.rows.map(x=>x.scaled),[
+  '2 1/4 cups flour','2 1/4 cups milk','4 1/8 tbsp sugar','2 1/4 cups water'
+ ]);
+ const malformed=scaleRecipe('1 ¹⁄2 cups flour\n1 1/0 cup sugar\n1 ²⁄? cups milk',4,6,{fractions:true});
+ assert.equal(malformed.unparsed,3);
+ assert.deepEqual(malformed.rows.map(x=>x.scaled),malformed.rows.map(x=>x.original),
+  'Unsupported glyphs and malformed fractional inputs must not be partly processed');
+});
+
+test('scaler adjusts both sides of a clear kitchen interval, preserving ambiguous lines unchanged',()=>{
+ const x=scaleRecipe('1–2 cups milk\n1½–3 cups flour\n1/2-1 cup sugar\n2 to 3 eggs\n1–2 metric cups water',4,6,{fractions:true});
+ assert.equal(x.unparsed,0);
+ assert.deepEqual(x.rows.map(r=>r.scaled),[
+  '1 1/2–3 cups milk','2 1/4–4 1/2 cups flour','3/4–1 1/2 cups sugar',
+  '3–4 1/2 eggs','1 1/2–3 metric cups water'
+ ]);
+ const unsafe=scaleRecipe('2–1 cups milk\n1 cup + 2 tbsp cream\n1 cup milk 2 tbsp cream\n1–2 cups milk and 3 eggs',4,6,{fractions:true});
+ assert.equal(unsafe.unparsed,4);
+ assert.deepEqual(unsafe.rows.map(x=>x.scaled),unsafe.rows.map(x=>x.original));
+});
+
+test('physical-capacity water and published recipe weight remain separate calculation modes',()=>{
+ const water=byId('water');
+ assert.equal(convertQuantity(1,'cup','g',{ingredient:water,standard:'us'}),227);
+ assert.ok(Math.abs(convertQuantity(1,'cup','g',{ingredient:water,standard:'us',waterMode:'capacity'})-US_CUP_ML)<1e-8);
+ assert.equal(convertQuantity(250,'ml','g',{ingredient:water,waterMode:'capacity'}),250);
+ assert.ok(convertQuantity(250,'ml','g',{ingredient:water})<250);
+ assert.ok(Math.abs(convertQuantity(100,'g','cup',{ingredient:water,waterMode:'capacity'})-100/US_CUP_ML)<1e-9);
+ assert.throws(()=>convertQuantity(1,'cup','g',{ingredient:byId('all-purpose-flour'),waterMode:'capacity'}),/only supported for water/);
+ assert.throws(()=>convertQuantity(1,'cup','g',{ingredient:water,waterMode:'unknown'}),/valid water measurement/);
+});
+
 test('very small positive measures stay positive in readable output',()=>{
  assert.equal(formatAmount(1e-9,5),'1e-9');
  assert.equal(formatAmount(0.000000123,4),'1.23e-7');
