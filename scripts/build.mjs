@@ -12,7 +12,8 @@ const base=(process.env.SITE_URL||'').trim().replace(/\/+$/,'');
 const origin=/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(base)?base:'';
 const publicIndex=!!origin&&process.env.CF_PAGES_BRANCH==='main'&&process.env.PUBLIC_INDEX_APPROVED==='true';
 const pages=[],e=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
-const f=n=>formatAmount(n,3),link=(url,label,cls='')=>'<a href="'+e(url==='/cooking/grams-to-cups/'?'/':url)+'"'+(cls?' class="'+e(cls)+'"':'')+'>'+e(label)+'</a>';
+const primaryUrl=url=>url==='/cooking/grams-to-cups/'?'/':url;
+const f=n=>formatAmount(n,3),link=(url,label,cls='')=>'<a href="'+e(primaryUrl(url))+'"'+(cls?' class="'+e(cls)+'"':'')+'>'+e(label)+'</a>';
 const source='https://www.kingarthurbaking.com/learn/ingredient-weight-chart';
 const numberValues=[25,30,50,60,75,80,100,125,150,180,200,225,250,300,350,400,450,500,600,750,1000];
 // Same search intent as the homepage: keep the tool usable but direct internal SEO links to /.
@@ -62,7 +63,7 @@ function doc(spec){
 function section(title,intro,contents,alt=false){return '<section class="section'+(alt?' section-alt':'')+'"><div class="container"><div class="section-head"><h2>'+e(title)+'</h2><p>'+e(intro)+'</p></div>'+contents+'</div></section>';}
 function grid(items,cols=3){
  return '<div class="cards'+(cols===4?' four':'')+'">'+items.map(([url,title,desc],i)=>
- '<a class="tile" href="'+e(url)+'"><span class="tile-index" aria-hidden="true">'+String(i+1).padStart(2,'0')+'</span><b>'+e(title)+'</b><p>'+e(desc)+'</p><span class="arrow" aria-hidden="true">↗</span></a>').join('')+'</div>';
+ '<a class="tile" href="'+e(primaryUrl(url))+'"><span class="tile-index" aria-hidden="true">'+String(i+1).padStart(2,'0')+'</span><b>'+e(title)+'</b><p>'+e(desc)+'</p><span class="arrow" aria-hidden="true">↗</span></a>').join('')+'</div>';
 }
 
 function table(headers,rows){return '<div class="table-scroll"><table><thead><tr>'+headers.map(x=>'<th scope="col">'+e(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+e(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
