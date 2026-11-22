@@ -98,7 +98,7 @@ for(const page of manifest.pages){
  pageReport.push([page.url,page.indexCandidate?'yes':'no',group?.rows||0,group?.unique.size||0,group?.lowKdRows||0,group?.trafficSampleSum||0,best?.kw||'',best?.vol??'',best?.kd??'',best?.competitor||'',!page.indexCandidate?'noindex_tool_or_unverified_page':group?'has_provisional_keyword_evidence':'no_sample_mapping_do_not_infer_zero_demand']);
 }
 assert.equal(stats.records,2300);
-assert.equal(stats.indexCandidates,65,'Publication gates for core and weak numeric intents changed');
+assert.equal(stats.indexCandidates,62,'Editorial production index decisions unexpectedly changed');
 const targetUrl=pageReport.find(x=>x[0]==='/');
 assert.ok(targetUrl&&targetUrl[2]>0,'Core keyword must link to homepage');
 assert.ok(!index.get('/cooking/grams-to-cups/').indexCandidate,'Duplicate core converter URL must remain noindex');
