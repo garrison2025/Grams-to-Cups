@@ -167,6 +167,10 @@ try{
  assert.equal((await page.locator('[data-batch-results] .batch-review-row').count()),1);
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 US cup All-purpose flour'),'exact flour conversion');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'fraction-friendly results');
+ await page.locator('[data-batch-standard]').selectOption('metric');
+ assert.match(await page.locator('[data-batch-results]').innerText(),/metric cups Granulated white sugar/,'metric cup results are unambiguous');
+ await page.locator('[data-batch-standard]').selectOption('us');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'US cup label restored after switching standard');
  await page.locator('[data-batch-lines]').fill('1,000 g all-purpose flour');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('8 1/3 US cups All-purpose flour'),'batch supports US thousands separators');
  await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
