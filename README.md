@@ -14,6 +14,14 @@ A complete, browser-local, source-backed cooking conversion website. **One imple
 - Pre-rendered answers, tables, metadata, breadcrumbs and internal links; true 404 page, sitemap only for approved production, per-page canonical and index review.
 - Responsive original styling, visible keyboard focus, accessible field labels, reduced-motion support and separate **320 ms debounced polite screen-reader result announcements** while the visible calculator updates immediately. All calculations remain browser-local. No fake testimonials, review stars or preapproved AdSense claims.
 
+## Mobile reading and ingredient card design
+
+The same static pages work without JavaScript. On narrow screens, wide cooking tables have **visible sideways-swipe guidance** and a keyboard-focusable scroll region with a descriptive accessible label. Their first column uses `scope="row"`, preserving semantic row headings for screen readers, copy and CSV export. The hint is hidden on desktop and in print.
+
+Ingredient-directory tiles carry a **visible food-family label** as well as a restrained tinted marker (flour, sugar, dairy, grains, oils, sweeteners or other). The family is derived only from the existing ingredient identifiers, not an unverified external category or SEO keyword. Generic conversion and guide tiles keep their numbered identity.
+
+Conversion results put the unit beside the number in a subtle capsule and present ingredient/reference metadata in a compact, responsive layout. Prior native click-feedback animation and `prefers-reduced-motion` support are preserved. The Chromium audit now checks visual class labels, mobile table overflow, keyboard scrolling and behavior with JavaScript turned off.
+
 Browser tests check fraction addition, subtraction, multiplication and division, unitless count-ingredient scaling (e.g. `1 large egg` → `2 large eggs`), graceful invalid-input handling and a useful pre-rendered fraction example without JavaScript. The static build audit rejects noniterable `querySelector` loops so a new widget cannot accidentally interrupt later page initialization.
 
 ## Get started
