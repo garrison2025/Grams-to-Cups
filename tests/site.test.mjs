@@ -163,7 +163,7 @@ test('batch conversion uses ingredient-specific values in both directions',()=>{
  assert.equal(cups.rows[0].output,'1 cup All-purpose flour');
  const large=batchConvertIngredients('1,000 g all-purpose flour',{ingredients:foods,target:'cup'});
  assert.equal(large.converted,1,'Batch converter accepts correctly grouped input');
- assert.equal(large.rows[0].output,'8.3333 cups All-purpose flour');
+ assert.equal(large.rows[0].output,'8 1/3 cups All-purpose flour');
  assert.equal(cups.rows[1].output,'1 cup Granulated white sugar');
  assert.equal(cups.rows[2].output,'1/2 cup Butter');
  assert.equal(cups.rows[3].output,'1/8 cup Honey');
