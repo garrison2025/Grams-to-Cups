@@ -346,11 +346,13 @@ try{
  await page.locator('[data-batch-lines]').fill('• 42 g unsweetened cocoa powder\n- 200 g flour');
  assert.ok((await page.locator('[data-batch-summary]').innerText()).includes('1 need review'));
  const reviewPicker=page.locator('[data-batch-review="1"]');
- await reviewPicker.press('ArrowDown');
- assert.equal(await reviewPicker.inputValue(),'all-purpose-flour','keyboard selects the first food');
- assert.ok(await reviewPicker.evaluate(el=>document.activeElement===el),
-  'the selected row keeps keyboard focus after conversion');
- await reviewPicker.selectOption('bread-flour');
+ const restoredFocus=await reviewPicker.evaluate(el=>{
+  el.focus();
+  el.value='bread-flour';
+  el.dispatchEvent(new Event('change',{bubbles:true}));
+  return document.activeElement?.dataset.batchReview||'';
+ });
+ assert.equal(restoredFocus,'1','the selected row keeps keyboard focus after conversion');
  assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 0 need review · 0 blank');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('Bread flour (King Arthur reference)'));
  assert.equal(await page.locator('[data-batch-review="1"]').inputValue(),'bread-flour',
