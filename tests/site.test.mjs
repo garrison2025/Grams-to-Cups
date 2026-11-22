@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {parseSemrushNumber,csvSafeCell} from '../src/seo-evidence.mjs';
-import {parseAmount,convertQuantity,approximateFraction,scaleRecipe,csvCell,formatKitchenAmount,batchConvertIngredients,US_CUP_ML,METRIC_CUP_ML,US_TBSP_ML} from '../src/core.mjs';
+import {parseAmount,convertQuantity,approximateFraction,scaleRecipe,csvCell,formatAmount,formatKitchenAmount,batchConvertIngredients,US_CUP_ML,METRIC_CUP_ML,US_TBSP_ML} from '../src/core.mjs';
 const foods=JSON.parse(fs.readFileSync(new URL('../src/ingredients.json',import.meta.url),'utf8'));
 const byId=id=>foods.find(x=>x.id===id);
 
@@ -91,6 +91,29 @@ test('recipe scaler preserves unknown lines and warns without guessing',()=>{
  assert.equal(fractionStyle.rows[0].scaled,'2 1/4 cups milk');
  assert.equal(fractionStyle.rows[1].scaled,'3/4 tsp salt');
 });
+test('very small positive measures stay positive in readable output',()=>{
+ assert.equal(formatAmount(1e-9,5),'1e-9');
+ assert.equal(formatAmount(0.000000123,4),'1.23e-7');
+ assert.equal(formatKitchenAmount(1e-9,{fractions:true}),'1e-9');
+ assert.equal(formatKitchenAmount(0.00002,{fractions:true}),'0.00002');
+ assert.equal(formatKitchenAmount(0,{fractions:true}),'0');
+});
+
+test('recipe scaler adjusts full-unit singular and plural grammar',()=>{
+ const changed=scaleRecipe('1 cup milk\n2 cups water\n1 gram yeast\n2 grams salt\n1 tablespoon oil\n2 teaspoons cinnamon\n1 tbsp honey\n2 eggs',2,4);
+ assert.equal(changed.unparsed,0);
+ assert.deepEqual(changed.rows.map(r=>r.scaled),[
+ '2 cups milk','4 cups water','2 grams yeast','4 grams salt',
+ '2 tablespoons oil','4 teaspoons cinnamon','2 tbsp honey','4 eggs'
+ ]);
+ const halved=scaleRecipe('2 cups milk\n2 teaspoons cinnamon\n2 grams salt\n2 tablespoons honey',4,2);
+ assert.deepEqual(halved.rows.map(r=>r.scaled),[
+ '1 cup milk','1 teaspoon cinnamon','1 gram salt','1 tablespoon honey'
+ ]);
+ const fraction=scaleRecipe('1 cup milk',4,2,{fractions:true});
+ assert.equal(fraction.rows[0].scaled,'1/2 cup milk');
+});
+
 test('CSV escaping prevents spreadsheet formula injection',()=>{
  assert.equal(csvCell('=HYPERLINK("bad")'),'"\'=HYPERLINK(""bad"")"');
  assert.equal(csvCell('a,b'),'"a,b"');
@@ -116,7 +139,7 @@ test('Unicode fraction recipe scaler does not mistake unit labels',()=>{
  assert.equal(scaled.unparsed,0);
  assert.equal(scaled.rows[0].scaled,'2.25 cups milk');
  assert.equal(scaled.rows[1].scaled,'0.75 tsp salt');
- assert.equal(scaled.rows[2].scaled,'1.125 cup honey');
+ assert.equal(scaled.rows[2].scaled,'1.125 cups honey');
 });
 test('batch conversion uses ingredient-specific values in both directions',()=>{
  const source='120 g all-purpose flour\n198 g granulated sugar\n½ cup butter\n2 tbsp honey';
