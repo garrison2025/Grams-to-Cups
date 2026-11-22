@@ -38,6 +38,9 @@ try{
  await page.keyboard.press('ControlOrMeta+A');
  await page.keyboard.type('125');
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.042','keyboard input updates conversion');
+ await page.waitForFunction(()=>document.querySelector('[data-live-result]')?.textContent.includes('1.042 US cups'));
+ assert.match(await page.locator('[data-live-result]').textContent(),/Conversion result: 1\.042 US cups for All-purpose flour/,
+  'screen-reader status announces the settled result separately from immediate visible changes');
  await page.locator('[data-reset]').click();
  // Test the native copy action and the non-Web-Share fallback without browser permission prompts.
  await page.evaluate(()=>{
