@@ -21,7 +21,8 @@ export function parseAmount(input){
   const frac=s.match(/^(\d+)\/(\d+)$/);
   if(mixed){const d=Number(mixed[3]);if(!d)throw new Error('A fraction cannot have a zero denominator.');n=Number(mixed[1])+Number(mixed[2])/d;}
   else if(frac){const d=Number(frac[2]);if(!d)throw new Error('A fraction cannot have a zero denominator.');n=Number(frac[1])/d;}
-  else if(/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))n=Number(s);
+  else if(/^(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?$/.test(s)||/^\.\d+$/.test(s))
+   n=Number(s.replaceAll(',',''));
   else throw new Error('Use a number, 1/4, or 1 1/2.');
   if(!Number.isFinite(n)||n<=0||n>1e9)throw new Error('Amount must be greater than zero and at most one billion.');
   return n;
@@ -78,12 +79,13 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
  if(rows.length>100)throw new Error('Limit the recipe to 100 lines.');
  const output=rows.map(raw=>{
   if(!raw.trim())return {original:raw,scaled:'',ok:true};
-  const m=normalizeFractionInput(raw).match(/^\s*((?:\d+\s+)?\d+\/\d+|\d+\s?[¼½¾⅓⅔⅛⅜⅝⅞]|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:\d+(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
+  const m=normalizeFractionInput(raw).match(/^\s*((?:\d+\s+)?\d+\/\d+|\d+\s?[¼½¾⅓⅔⅛⅜⅝⅞]|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
   if(!m)return {original:raw,scaled:raw,ok:false};
   // A range or multi-quantity ingredient line cannot safely scale just the first number.
   // Example: "1 cup milk + 2 tbsp cream" must not become "2 cups milk + 2 tbsp cream".
   const trailing=m[3]||'';
-  if(/^\s*(?:[-–—/]|to\b|or\b)\s*(?:\d|\.)/i.test(trailing)||
+  if(/^\s*[,\.]\s*\d/i.test(trailing)||
+     /^\s*(?:[-–—/]|to\b|or\b)\s*(?:\d|\.)/i.test(trailing)||
      /(?:\+|&|\band\b|\bplus\b)\s*(?:\d|\.)/i.test(trailing))
    return {original:raw,scaled:raw,ok:false};
   try{const scaled=parseAmount(m[1])*factor;if(!Number.isFinite(scaled)||scaled>1e9)throw Error();
@@ -130,7 +132,7 @@ const UNIT_ALIASES=Object.freeze({
  ml:'ml',milliliter:'ml',milliliters:'ml',millilitre:'ml',millilitres:'ml',
  'fl oz':'fl-oz','fluid ounce':'fl-oz','fluid ounces':'fl-oz'
 });
-const BATCH_LINE=/^\s*(\d+\s+\d+\/\d+|\d+\s*[¼½¾⅓⅔⅛⅜⅝⅞]|\d+\/\d+|[¼½¾⅓⅔⅛⅜⅝⅞]|\d+(?:\.\d*)?|\.\d+)\s*(fluid ounces?|fl\.?\s*oz|millilit(?:er|re)s?|kilograms?|tablespoons?|teaspoons?|ounces?|grams?|cups?|tbsp|tsp|ml|kg|oz|g)\b\s+(.+?)\s*$/i;
+const BATCH_LINE=/^\s*(\d+\s+\d+\/\d+|\d+\s*[¼½¾⅓⅔⅛⅜⅝⅞]|\d+\/\d+|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+)\s*(fluid ounces?|fl\.?\s*oz|millilit(?:er|re)s?|kilograms?|tablespoons?|teaspoons?|ounces?|grams?|cups?|tbsp|tsp|ml|kg|oz|g)\b\s+(.+?)\s*$/i;
 const normalizedName=s=>String(s).toLowerCase().replace(/[-_]+/g,' ').replace(/[’']/g,'').replace(/\s+/g,' ').trim();
 function resolveIngredient(name,ingredients){
  const normalized=normalizedName(name);
