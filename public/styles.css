@@ -350,3 +350,31 @@ td:first-child{font-weight:680;color:#214839}
 @media(max-width:520px){.compare-controls{padding:17px 16px}.compare-item{padding:15px;min-height:198px}.compare-item strong{font-size:clamp(2.1rem,9vw,2.9rem)}.compare-item .compare-unit{font-size:.72rem}.compare-item .compare-food-icon{width:35px;height:35px;font-size:1.3rem}.compare-slider-row{gap:10px}.compare-slider-row output{font-size:1.1rem;min-width:62px}.chart-toolbar .chart-tools{width:100%;justify-content:space-between}}
 @media(prefers-reduced-motion:reduce){.compare-item .compare-bar-fill{transition:none}}
 @media print{.chart-toolbar{display:none!important}.compare-controls{display:none!important}}
+
+
+/* Multi-ingredient list workbench: clear actions, recoverable review states. */
+.batch-options{margin:20px 0 3px}
+.toggle-option{display:inline-flex;align-items:flex-start;gap:10px;font-size:.87rem;font-weight:660;color:#455f50;line-height:1.5;cursor:pointer}
+.toggle-option input{width:18px;height:18px;margin:3px 0 0;accent-color:var(--forest);flex:none}
+.batch-summary{padding:14px 17px;margin:19px 0 12px;background:#e8f1e9;border-radius:12px;border:1px solid #d2e3d6;color:#295c44;font-size:.86rem;font-weight:780}
+.batch-feedback{margin:13px 0 0;color:#275d41;font-size:.85rem;font-weight:700}
+.batch-feedback:empty{display:none}
+.batch-result-table{max-height:640px;overflow:auto;position:relative}
+.batch-result-table table{min-width:450px}
+.batch-result-table th:first-child{width:39%}
+.batch-result-table td{vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.55}
+.batch-result-table td:first-child{font-weight:530}
+.batch-result-table thead{position:sticky;top:0;z-index:1}
+.batch-review-row{background:#fff9ee!important}
+.batch-review-row td:first-child{color:#785d3e}
+.batch-status{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:.68rem;font-weight:830;line-height:1.5;margin-bottom:7px}
+.batch-status.is-converted{color:#22674b;background:#e1f1e5}
+.batch-status.is-review{color:#87502a;background:#ffead6}
+.batch-row-value{font-size:.93rem;font-weight:690;color:var(--ink)}
+.batch-row-warning{display:block;color:#8d5b39;font-size:.75rem;line-height:1.5;margin-top:7px}
+@media(max-width:520px){
+ .batch-result-table table{min-width:420px}
+ .batch-result-table td,.batch-result-table th{padding:10px 12px}
+ .toggle-option{font-size:.79rem}
+}
+@media print{.batch-result-table{max-height:none;overflow:visible}.batch-result-table thead{position:static}.batch-options,.batch-feedback{display:none}}
