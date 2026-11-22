@@ -4,6 +4,23 @@ import fs from 'node:fs';
 import {parseAmount,convertQuantity,approximateFraction,scaleRecipe,csvCell,formatKitchenAmount,batchConvertIngredients,US_CUP_ML,METRIC_CUP_ML,US_TBSP_ML} from '../src/core.mjs';
 const foods=JSON.parse(fs.readFileSync(new URL('../src/ingredients.json',import.meta.url),'utf8'));
 const byId=id=>foods.find(x=>x.id===id);
+
+const referenceLock=JSON.parse(fs.readFileSync(new URL('../research/ingredient-reference-lock.json',import.meta.url),'utf8'));
+test('original King Arthur source entries match independently verified measurement pairs',()=>{
+ assert.equal(referenceLock.source,'https://www.kingarthurbaking.com/learn/ingredient-weight-chart');
+ assert.equal(referenceLock.records.length,24);
+ assert.equal(new Set(referenceLock.records.map(x=>x.id)).size,24);
+ for(const row of referenceLock.records){
+  const item=byId(row.id);
+  assert.ok(item,'missing source-locked ingredient '+row.id);
+  assert.equal(item.sourceEntry,row.label,row.id+' original source row');
+  assert.equal(item.referenceGrams,row.grams,row.id+' grams');
+  assert.equal(item.referenceAmount,row.amount,row.id+' volume amount');
+  assert.equal(item.referenceUnit,row.unit,row.id+' unit');
+  assert.equal(item.sourceUrl,referenceLock.source,row.id+' citation URL');
+ }
+});
+
 test('24 references have source, unambiguous method and original quantities',()=>{
  assert.equal(foods.length,24);
  assert.equal(new Set(foods.map(x=>x.id)).size,foods.length);
