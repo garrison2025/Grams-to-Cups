@@ -105,7 +105,7 @@ try{
  assert.equal((await page.locator('[data-batch-results] .batch-converted-row').count()),2);
  assert.equal((await page.locator('[data-batch-results] .batch-review-row').count()),1);
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 cup All-purpose flour'),'exact flour conversion');
- assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 cups Granulated white sugar'),'fraction-friendly results');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 cup Granulated white sugar'),'fraction-friendly results');
  const batchDownload=page.waitForEvent('download');
  await page.locator('[data-batch-csv]').click();
  assert.equal((await batchDownload).suggestedFilename(),'batch-ingredient-conversions.csv');
