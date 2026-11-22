@@ -144,8 +144,8 @@ test('scaler adjusts both sides of a clear kitchen interval, preserving ambiguou
   '1 1/2–3 cups milk','2 1/4–4 1/2 cups flour','3/4–1 1/2 cups sugar',
   '3–4 1/2 eggs','1 1/2–3 metric cups water'
  ]);
- const unsafe=scaleRecipe('2–1 cups milk\n1 cup + 2 tbsp cream\n1 cup milk 2 tbsp cream\n1–2 cups milk and 3 eggs',4,6,{fractions:true});
- assert.equal(unsafe.unparsed,4);
+ const unsafe=scaleRecipe('2–1 cups milk\n1 cup + 2 tbsp cream\n1 cup milk 2 tbsp cream\n1–2 cups milk and 3 eggs\n10–20 minutes baking\n1–2 unknown things',4,6,{fractions:true});
+ assert.equal(unsafe.unparsed,6);
  assert.deepEqual(unsafe.rows.map(x=>x.scaled),unsafe.rows.map(x=>x.original));
 });
 
