@@ -43,7 +43,7 @@ function renderCalculator(form){
  try{
   const amount=$('[data-amount]',form).value;
   const typedFood=$('[data-ingredient-search]',form)?.value.trim().toLowerCase()||'';
-  if(isCrossDimension&&typedFood&&!ingredient?[true]:false)throw new Error('Choose an ingredient reference.');
+  if(isCrossDimension&&typedFood&&!ingredient)throw new Error('Choose an ingredient reference.');
   if(isCrossDimension&&typedFood&&!([ingredient?.name,...(ingredient?.aliases||[])].some(name=>name?.toLowerCase()===typedFood)))
    throw new Error('Choose a specific ingredient from the suggestions or reference list; an unknown name cannot be converted safely.');
   const n=convertQuantity(amount,from,to,{ingredient,standard,waterMode:chosenWaterMode});
