@@ -124,6 +124,55 @@ export function formatKitchenAmount(value,{fractions=true,precision=4}={}){
  }
  return formatAmount(value,precision);
 }
+// Exact rational arithmetic for a kitchen measuring task, rather than using
+// floating-point addition and approximating common fractions (e.g. 1/3 + 1/4).
+// The UI intentionally defaults to 1/2 + 1/4 = 3/4.
+function exactKitchenRational(input){
+ // Reuse the same strict positive-quantity validation as every other tool.
+ parseAmount(input);
+ const normalized=normalizeFractionInput(input);
+ const mixed=normalized.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+ const simple=normalized.match(/^(\d+)\/(\d+)$/);
+ let numerator,denominator;
+ if(mixed){
+  denominator=BigInt(mixed[3]);
+  numerator=BigInt(mixed[1])*denominator+BigInt(mixed[2]);
+ }else if(simple){
+  numerator=BigInt(simple[1]);
+  denominator=BigInt(simple[2]);
+ }else{
+  const raw=normalized.replaceAll(',','');
+  const pieces=raw.split('.');
+  denominator=10n**BigInt(pieces[1]?.length||0);
+  numerator=BigInt((pieces[0]||'0')+(pieces[1]||''));
+ }
+ if(denominator<=0n)throw new Error('A fraction cannot have a zero denominator.');
+ return {numerator,denominator};
+}
+function bigintGcd(a,b){while(b!==0n){[a,b]=[b,a%b]}return a}
+export function calculateKitchenFractions(first,operation,second){
+ if(!['+','-','*','/'].includes(operation))throw new Error('Choose add, subtract, multiply or divide.');
+ const a=exactKitchenRational(first),b=exactKitchenRational(second);
+ let numerator,denominator;
+ switch(operation){
+  case '+':numerator=a.numerator*b.denominator+b.numerator*a.denominator;denominator=a.denominator*b.denominator;break;
+  case '-':numerator=a.numerator*b.denominator-b.numerator*a.denominator;denominator=a.denominator*b.denominator;break;
+  case '*':numerator=a.numerator*b.numerator;denominator=a.denominator*b.denominator;break;
+  default:numerator=a.numerator*b.denominator;denominator=a.denominator*b.numerator;
+ }
+ if(denominator<=0n||numerator<0n)throw new Error('The resulting kitchen quantity cannot be negative.');
+ const divisor=bigintGcd(numerator,denominator);
+ numerator/=divisor;denominator/=divisor;
+ const value=Number(numerator)/Number(denominator);
+ if(!Number.isFinite(value)||value>1e9)throw new Error('Result is too large for a kitchen measurement.');
+ const decimal=formatAmount(value,6);
+ const exact=denominator<=64n;
+ const whole=numerator/denominator,remainder=numerator%denominator;
+ const fraction=exact?(remainder===0n?formatAmount(Number(whole),0):
+  (whole?formatAmount(Number(whole),0)+' ':'')+remainder+'/'+denominator):decimal;
+ return {value,decimal,fraction,exact};
+}
+
 const UNIT_ALIASES=Object.freeze({
  g:'g',gram:'g',grams:'g',kg:'kg',kilogram:'kg',kilograms:'kg',
  oz:'oz',ounce:'oz',ounces:'oz',
