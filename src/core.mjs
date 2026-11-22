@@ -72,6 +72,26 @@ export function convertQuantity(amount,from,to,{ingredient=null,standard='us'}={
 export function unitDescription(code,standard='us'){
  return ({g:'grams',kg:'kilograms',oz:'mass ounces',cup:standard==='metric'?'metric cups (250 mL)':'US cups (236.588 mL)',tbsp:'US tablespoons',tsp:'US teaspoons',ml:'milliliters','fl-oz':'US fluid ounces'})[code]||code;
 }
+// Common countable ingredient nouns can change between singular and plural
+// when serving counts change. Never infer a density or change unknown food names.
+const COUNTABLE_INGREDIENT_NOUNS=Object.freeze({
+ egg:'eggs',onion:'onions',clove:'cloves',apple:'apples',banana:'bananas',
+ lemon:'lemons',lime:'limes',carrot:'carrots',tomato:'tomatoes',potato:'potatoes',
+ slice:'slices',can:'cans',pinch:'pinches',stick:'sticks',piece:'pieces',
+ leaf:'leaves',loaf:'loaves',sprig:'sprigs',packet:'packets',bag:'bags',
+ head:'heads',bunch:'bunches',cube:'cubes'
+});
+const COUNTABLE_PLURALS=Object.fromEntries(Object.entries(COUNTABLE_INGREDIENT_NOUNS).map(([one,many])=>[many,one]));
+function scaledCountableNoun(suffix,amount){
+ const m=String(suffix).match(/^(\s*(?:(?:large|medium|small|whole|fresh|ripe|chopped|crushed|diced)\s+)*)([a-z]+)(\b.*)$/i);
+ if(!m)return suffix;
+ const current=m[2].toLowerCase();
+ const singular=Object.hasOwn(COUNTABLE_INGREDIENT_NOUNS,current)?current:COUNTABLE_PLURALS[current];
+ if(!singular)return suffix;
+ const replacement=amount<=1?singular:COUNTABLE_INGREDIENT_NOUNS[singular];
+ const text=m[2][0]===m[2][0].toUpperCase()?replacement[0].toUpperCase()+replacement.slice(1):replacement;
+ return m[1]+text+m[3];
+}
 export function scaleRecipe(text,originalServings,newServings,{fractions=false}={}){
  const source=parseAmount(originalServings),dest=parseAmount(newServings);
  const factor=dest/source;if(factor>1000||factor<0.001)throw new Error('Scaling factor must be between 0.001 and 1,000.');
@@ -94,7 +114,9 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
   const unitStem=/^(cups?|tablespoons?|teaspoons?|grams?|ounces?|milliliters?)$/i.test(originalUnit)
    ?originalUnit.toLowerCase().replace(/s$/,''):null;
   const displayUnit=unitStem?(scaled<=1?unitStem:unitStem+'s'):originalUnit;
-  return {original:raw,scaled:(fractions?formatKitchenAmount(scaled):formatAmount(scaled,4))+' '+displayUnit+(m[3]||''),ok:true};
+  const rest=originalUnit?(m[3]||''):scaledCountableNoun(m[3]||'',scaled);
+  const suffix=originalUnit?' '+displayUnit+rest:rest.trim()?' '+rest.trimStart():'';
+  return {original:raw,scaled:(fractions?formatKitchenAmount(scaled):formatAmount(scaled,4))+suffix,ok:true};
   }catch{return {original:raw,scaled:raw,ok:false};}
  });
  return {rows:output,factor,unparsed:output.filter(r=>!r.ok).length};
