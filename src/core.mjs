@@ -34,7 +34,7 @@ export function approximateFraction(value){
  if(!Number.isFinite(value)||value<0||value>1e7)return '';
  const whole=Math.floor(value), part=value-whole, denom=16, numerator=Math.round(part*denom),error=Math.abs(part-numerator/denom);
  if(error>0.015)return '';
- if(numerator===0)return whole?String(whole):'0';
+ if(numerator===0)return whole?String(whole):''; // Never suggest "about zero" for a positive amount.
  if(numerator===denom)return String(whole+1);
  const gcd=(a,b)=>b?gcd(b,a%b):a;const g=gcd(numerator,denom);
  return [whole||'',String(numerator/g)+'/'+String(denom/g)].filter(Boolean).join(' ');
@@ -57,8 +57,8 @@ export function convertQuantity(amount,from,to,{ingredient=null,standard='us'}={
  if(!Number.isFinite(n)||n<0||n>1e9)throw new Error('Invalid amount.');
  const mlUnits={cup:cupMl(standard),tbsp:US_TBSP_ML,tsp:US_TSP_ML,ml:1,'fl-oz':US_FL_OZ_ML};
  const gUnits={g:1,oz:G_PER_OZ,kg:1000};
- const a=from in gUnits?'mass':from in mlUnits?'volume':null;
- const b=to in gUnits?'mass':to in mlUnits?'volume':null;
+ const a=Object.hasOwn(gUnits,from)?'mass':Object.hasOwn(mlUnits,from)?'volume':null;
+ const b=Object.hasOwn(gUnits,to)?'mass':Object.hasOwn(mlUnits,to)?'volume':null;
  if(!a||!b)throw new Error('Unsupported unit.');
  const base=a==='mass'?n*gUnits[from]:n*mlUnits[from];
  if(a===b)return base/(b==='mass'?gUnits[to]:mlUnits[to]);
@@ -83,7 +83,13 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
  });
  return {rows:output,factor,unparsed:output.filter(r=>!r.ok).length};
 }
-export function csvCell(s){const value=String(s??'');const safe=/^[=+\-@]/.test(value)?"'"+value:value;return '"'+safe.replaceAll('"','""')+'"';}
+export function csvCell(s){
+ const value=String(s??'');
+ // Quoted CSV cells can still be evaluated as formulas by spreadsheet applications.
+ // Include leading spaces, controls and zero-width characters in the check.
+ const safe=/^[\s\u0000-\u001f\u200b-\u200d\ufeff]*[=+@-]/u.test(value)?"'"+value:value;
+ return '"'+safe.replaceAll('"','""')+'"';
+}
 
 
 // Strict kitchen-friendly display: show a fraction only when it is effectively exact.
@@ -139,7 +145,7 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
   try{
    const amount=parseAmount(rawAmount);
    const result=convertQuantity(amount,unit,target,{ingredient:food,standard});
-   return {index,original,status:'converted',output:formatKitchenAmount(result,{fractions:fractions&&target==='cup'})+' '+(target==='cup'?(Math.abs(result-1)<1e-10?'cup':'cups'):'g')+' '+food.name,
+   return {index,original,status:'converted',output:formatKitchenAmount(result,{fractions:fractions&&target==='cup'})+' '+(target==='cup'?(result<=1+1e-10?'cup':'cups'):'g')+' '+food.name,
      amount,result,from:unit,to:target,ingredient:food.name,ingredientId:food.id,reason:'Reference: '+food.referenceGrams+' g / '+food.referenceAmount+' '+food.referenceUnit};
   }catch(error){
    return {index,original,status:'review',output:original,reason:error.message,ingredient:food.name};

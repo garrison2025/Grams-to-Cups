@@ -54,6 +54,12 @@ test('different ingredients and states never share a universal density',()=>{
  assert.throws(()=>convertQuantity(100,'g','cup'),/Choose a supported ingredient/);
  assert.notEqual(convertQuantity(1,'oz','g'),convertQuantity(1,'fl-oz','ml'));
 });
+test('prototype keys and unsupported units are rejected, never silently returned as NaN',()=>{
+ for(const bad of ['constructor','toString','__proto__','valueOf','millions']){
+  assert.throws(()=>convertQuantity(1,bad,'g'),/Unsupported unit/);
+  assert.throws(()=>convertQuantity(1,'g',bad),/Unsupported unit/);
+ }
+});
 test('round-trip conversion remains precise',()=>{
  for(const i of foods)for(const x of [1,25,100,345.67,1000]){
   const cups=convertQuantity(x,'g','cup',{ingredient:i});
@@ -66,6 +72,7 @@ test('fraction and input validation',()=>{
  assert.equal(parseAmount('3/4'),.75);
  assert.equal(parseAmount('0.25'),.25);
  assert.equal(approximateFraction(.375),'3/8');
+ assert.equal(approximateFraction(.001),'','Do not call a nonzero measure approximately zero cups');
  for(const bad of ['','-1','0','3/0','NaN','Infinity','1e309','1/2/3','1,000','a',String(10**20)]){
   assert.throws(()=>parseAmount(bad),undefined,bad);
  }
@@ -84,6 +91,9 @@ test('recipe scaler preserves unknown lines and warns without guessing',()=>{
 test('CSV escaping prevents spreadsheet formula injection',()=>{
  assert.equal(csvCell('=HYPERLINK("bad")'),'"\'=HYPERLINK(""bad"")"');
  assert.equal(csvCell('a,b'),'"a,b"');
+ assert.equal(csvCell('  =1+1'),"\"'  =1+1\"");
+ assert.equal(csvCell('\t+SUM(1,2)'),"\"'\t+SUM(1,2)\"");
+ assert.equal(csvCell('\u200b@SUM(1,2)'),"\"'\u200b@SUM(1,2)\"");
 });
 
 test('Unicode and narrow-space kitchen fractions are parsed without a guess',()=>{
@@ -112,8 +122,8 @@ test('batch conversion uses ingredient-specific values in both directions',()=>{
  assert.equal(cups.review,0);
  assert.equal(cups.rows[0].output,'1 cup All-purpose flour');
  assert.equal(cups.rows[1].output,'1 cup Granulated white sugar');
- assert.equal(cups.rows[2].output,'1/2 cups Butter');
- assert.equal(cups.rows[3].output,'1/8 cups Honey');
+ assert.equal(cups.rows[2].output,'1/2 cup Butter');
+ assert.equal(cups.rows[3].output,'1/8 cup Honey');
  const grams=batchConvertIngredients('½ cup granulated sugar\n1½ cups milk',{ingredients:foods,target:'g'});
  assert.equal(grams.converted,2);
  assert.equal(grams.rows[0].output,'99 g Granulated white sugar');
