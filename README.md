@@ -33,7 +33,7 @@ GitHub Actions runs both a safe preview build and a simulated approved productio
 ## One-time public release verification
 
 - `npm run build` now includes a strict **publication audit** checking 81 individual pages, metadata, canonical, JSON-LD, robots, privacy headers, the exact 65-entry production sitemap, and unexpected third-party JS/CSS.
-- A missing `SITE_URL`, or a placeholder hostname such as `example.com`, blocks an explicitly approved production build. `example.com` is permitted **only inside GitHub CI simulation**.
+- A missing `SITE_URL`, or a placeholder hostname such as `example.com`, blocks an explicitly approved production build. `example.com` is permitted **only inside GitHub CI simulation** with the explicitly scoped `SITE_URL_FIXTURE_APPROVED_FOR_CI=true` test flag; `CI=true` by itself does not bypass the production-domain safeguard. **Never set this fixture flag on Cloudflare Pages.**
 - After the real site is deployed, open **GitHub → Actions → Live Cloudflare Pages release verification → Run workflow**. Supply the exact public HTTPS origin and choose whether it is supposed to be indexed. The native Node smoke test checks the live site, not merely the static generator. It has **not** been run for a real host because no deployed URL has been confirmed in this repository.
 - Alternatively run `npm run smoke:live` with `LIVE_SITE_URL` and `LIVE_EXPECT_INDEX` environment variables. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
