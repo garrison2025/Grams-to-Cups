@@ -6,8 +6,15 @@ export const US_FL_OZ_ML=US_CUP_ML/8;
 export const G_PER_OZ=28.349523125;
 
 const VULGAR_FRACTIONS=Object.freeze({'¼':'1/4','½':'1/2','¾':'3/4','⅓':'1/3','⅔':'2/3','⅛':'1/8','⅜':'3/8','⅝':'5/8','⅞':'7/8'});
+const SUPERSCRIPT_DIGITS=Object.freeze({'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9'});
+const SUBSCRIPT_DIGITS=Object.freeze({'₀':'0','₁':'1','₂':'2','₃':'3','₄':'4','₅':'5','₆':'6','₇':'7','₈':'8','₉':'9'});
+const translateNumeral=(symbols,map)=>[...symbols].map(x=>map[x]).join('');
+
 function normalizeFractionInput(value){
- return String(value??'').trim().replace(/[\u00a0\u202f]/g,' ').replace(/\u2044/g,'/')
+ return String(value??'').trim().replace(/[\u00a0\u202f]/g,' ')
+ .replace(/([⁰¹²³⁴⁵⁶⁷⁸⁹]+)\s*[\u2044/]\s*([₀₁₂₃₄₅₆₇₈₉]+)/g,
+  (_,numerator,denominator)=>translateNumeral(numerator,SUPERSCRIPT_DIGITS)+'/'+translateNumeral(denominator,SUBSCRIPT_DIGITS))
+ .replace(/\u2044/g,'/')
  .replace(/(\d)([¼½¾⅓⅔⅛⅜⅝⅞])/g,(_,whole,symbol)=>whole+' '+VULGAR_FRACTIONS[symbol])
  .replace(/[¼½¾⅓⅔⅛⅜⅝⅞]/g,symbol=>VULGAR_FRACTIONS[symbol])
  .replace(/\s+/g,' ').trim();
@@ -56,7 +63,7 @@ export function gramsPerMl(ingredient){
  if(!Number.isFinite(baseMl)||baseMl<=0||!(ingredient.referenceGrams>0))throw new Error('Invalid reference data.');
  return ingredient.referenceGrams/baseMl;
 }
-export function convertQuantity(amount,from,to,{ingredient=null,standard='us'}={}){
+export function convertQuantity(amount,from,to,{ingredient=null,standard='us',waterMode='recipe'}={}){
  const n=typeof amount==='number'?amount:parseAmount(amount);
  if(!Number.isFinite(n)||n<0||n>1e9)throw new Error('Invalid amount.');
  const mlUnits={cup:cupMl(standard),tbsp:US_TBSP_ML,tsp:US_TSP_ML,ml:1,'fl-oz':US_FL_OZ_ML};
@@ -66,7 +73,12 @@ export function convertQuantity(amount,from,to,{ingredient=null,standard='us'}={
  if(!a||!b)throw new Error('Unsupported unit.');
  const base=a==='mass'?n*gUnits[from]:n*mlUnits[from];
  if(a===b)return base/(b==='mass'?gUnits[to]:mlUnits[to]);
- const density=gramsPerMl(ingredient);
+ if(!['recipe','capacity'].includes(waterMode))throw new Error('Choose a valid water measurement method.');
+ if(waterMode==='capacity'&&ingredient?.id!=='water')
+  throw new Error('Capacity-based mass estimates are only supported for water.');
+ // Approximate physical-volume mode at ~1 g/mL (temperature changes water density).
+ // The recipe-reference mode instead preserves the documented 227 g per US cup.
+ const density=waterMode==='capacity'?1:gramsPerMl(ingredient);
  return (a==='mass'?base/density:base*density)/(b==='mass'?gUnits[to]:mlUnits[to]);
 }
 export function unitDescription(code,standard='us'){
@@ -92,6 +104,26 @@ function scaledCountableNoun(suffix,amount){
  const text=m[2][0]===m[2][0].toUpperCase()?replacement[0].toUpperCase()+replacement.slice(1):replacement;
  return m[1]+text+m[3];
 }
+// Accept only full, unambiguous quantities. Unsupported glyphs are preserved
+// for manual review rather than scaling only the leading number.
+const RECIPE_AMOUNT=/(?:(?:\d+\s+)?\d+\/\d+|(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+)/.source;
+const RECIPE_UNIT=/(?:g|grams?|kg|oz|ounces?|(?:(?:US|metric)\s+)?cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)/.source;
+const RECIPE_RANGE=new RegExp('^\\s*('+RECIPE_AMOUNT+')\\s*(?:[-–—]|to\\b)\\s*('+RECIPE_AMOUNT+')\\s*(?:('+RECIPE_UNIT+')\\b)?(.*)$','i');
+const RECIPE_SINGLE=new RegExp('^\\s*('+RECIPE_AMOUNT+')\\s*(?:('+RECIPE_UNIT+')\\b)?(.*)$','i');
+function scaledUnit(unit,amount){
+ if(!unit)return '';
+ const stem=/^((?:(?:US|metric)\s+)?cups?|tablespoons?|teaspoons?|grams?|ounces?|milliliters?)$/i.test(unit)
+  ?unit.replace(/s$/i,''):null;
+ return stem?(amount<=1?stem:stem+'s'):unit;
+}
+function unsafeIngredientRemainder(text){
+ const rest=String(text);
+ return /^\s*[,\.]\s*\d/u.test(rest)||
+  /^\s*(?:[-–—/]|to\b|or\b)\s*(?:\d|\.)/iu.test(rest)||
+  /(?:\+|&|\band\b|\bplus\b)\s*(?:\d|\.)/iu.test(rest)||
+  /\b\d+(?:\.\d+)?\s*(?:g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b/iu.test(rest)||
+  /[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉\u2044]/u.test(rest);
+}
 export function scaleRecipe(text,originalServings,newServings,{fractions=false}={}){
  const source=parseAmount(originalServings),dest=parseAmount(newServings);
  const factor=dest/source;if(factor>1000||factor<0.001)throw new Error('Scaling factor must be between 0.001 and 1,000.');
@@ -99,24 +131,29 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
  if(rows.length>100)throw new Error('Limit the recipe to 100 lines.');
  const output=rows.map(raw=>{
   if(!raw.trim())return {original:raw,scaled:'',ok:true};
-  const m=normalizeFractionInput(raw).match(/^\s*((?:\d+\s+)?\d+\/\d+|\d+\s?[¼½¾⅓⅔⅛⅜⅝⅞]|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|(?:(?:US|metric)\s+)?cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
-  if(!m)return {original:raw,scaled:raw,ok:false};
-  // A range or multi-quantity ingredient line cannot safely scale just the first number.
-  // Example: "1 cup milk + 2 tbsp cream" must not become "2 cups milk + 2 tbsp cream".
-  const trailing=m[3]||'';
-  if(/^\s*[,\.]\s*\d/i.test(trailing)||
-     /^\s*(?:[-–—/]|to\b|or\b)\s*(?:\d|\.)/i.test(trailing)||
-     /(?:\+|&|\band\b|\bplus\b)\s*(?:\d|\.)/i.test(trailing))
+  const normalized=normalizeFractionInput(raw);
+  if(/[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉\u2044]/u.test(normalized))
    return {original:raw,scaled:raw,ok:false};
-  try{const scaled=parseAmount(m[1])*factor;if(!Number.isFinite(scaled)||scaled>1e9)throw Error();
-  // Scale unit wording as well: 1 cup becomes 2 cups, 2 cups becomes 1 cup.
-  const originalUnit=m[2]||'';
-  const unitStem=/^((?:(?:US|metric)\s+)?cups?|tablespoons?|teaspoons?|grams?|ounces?|milliliters?)$/i.test(originalUnit)
-   ?originalUnit.replace(/s$/i,''):null;
-  const displayUnit=unitStem?(scaled<=1?unitStem:unitStem+'s'):originalUnit;
-  const rest=originalUnit?(m[3]||''):scaledCountableNoun(m[3]||'',scaled);
-  const suffix=originalUnit?' '+displayUnit+rest:rest.trim()?' '+rest.trimStart():'';
-  return {original:raw,scaled:(fractions?formatKitchenAmount(scaled):formatAmount(scaled,4))+suffix,ok:true};
+  const range=normalized.match(RECIPE_RANGE);
+  const single=range?null:normalized.match(RECIPE_SINGLE);
+  const match=range||single;
+  if(!match)return {original:raw,scaled:raw,ok:false};
+  const isRange=!!range;
+  const first=match[1],second=isRange?match[2]:null;
+  const unit=isRange?(match[3]||''):(match[2]||'');
+  const rest=isRange?(match[4]||''):(match[3]||'');
+  if(unsafeIngredientRemainder(rest))return {original:raw,scaled:raw,ok:false};
+  try{
+   const lowRaw=parseAmount(first),highRaw=isRange?parseAmount(second):lowRaw;
+   if(highRaw<lowRaw)throw Error('Descending recipe range.');
+   const low=lowRaw*factor,high=highRaw*factor;
+   if(!Number.isFinite(low)||!Number.isFinite(high)||high>1e9)throw Error('Scaled quantity out of range.');
+   const show=n=>fractions?formatKitchenAmount(n):formatAmount(n,4);
+   const finalUnit=scaledUnit(unit,high);
+   const finalRest=unit?rest:scaledCountableNoun(rest,high);
+   const suffix=unit?' '+finalUnit+finalRest:finalRest.trim()?' '+finalRest.trimStart():'';
+   const amountDisplay=isRange?show(low)+'–'+show(high):show(low);
+   return {original:raw,scaled:amountDisplay+suffix,ok:true};
   }catch{return {original:raw,scaled:raw,ok:false};}
  });
  return {rows:output,factor,unparsed:output.filter(r=>!r.ok).length};
