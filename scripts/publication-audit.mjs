@@ -50,6 +50,19 @@ for(const page of pages){
  const ogUrl=tag(html,/<meta property="og:url" content="([^"]+)"[^>]*>/gi);
  const robotMeta=tag(html,/<meta name="robots" content="([^"]+)"[^>]*>/gi);
  const structured=tag(html,/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi);
+ const schemaNodes=structured.map(x=>JSON.parse(x[1]));
+ const structuredTypes=new Set(schemaNodes.map(x=>x['@type']));
+ const sourceRoute=page.url==='/'||
+  /^\/cooking\/grams-to-cups\/\d+-grams-to-cups\/$/.test(page.url)||
+  /^\/cooking\/ingredients\/[^/]+\/$/.test(page.url)||
+  /^\/cooking\/ingredients\/[^/]+\/\d+-grams-to-cups\/$/.test(page.url)||
+  /^\/cooking\/charts\//.test(page.url);
+ const siteName=tag(html,/<meta property="og:site_name" content="([^"]+)"/gi);
+ const locale=tag(html,/<meta property="og:locale" content="([^"]+)"/gi);
+ const twitter=tag(html,/<meta name="twitter:card" content="([^"]+)"/gi);
+ assert.deepEqual(siteName.map(x=>decode(x[1])),['Grams & Cups'],'Brand name in social preview must match site '+page.url);
+ assert.deepEqual(locale.map(x=>x[1]),['en_US'],'Locale of US cooking references '+page.url);
+ assert.deepEqual(twitter.map(x=>x[1]),['summary'],'Stable summary card expected '+page.url);
  assert.equal(titles.length,1,'Exactly one title required '+page.url);
  assert.equal(descriptions.length,1,'Exactly one meta description '+page.url);
  assert.equal(h1.length,1,'Exactly one H1 '+page.url);
@@ -74,6 +87,34 @@ for(const page of pages){
   assert.equal(ogUrl.length,1,'Missing OG url '+page.url);
   assert.equal(ogUrl[0][1],canonicalFor(page),'Mismatched OG url '+page.url);
   assert.ok(structured.length>=1,'Missing JSON-LD '+page.url);
+  assert.ok(structuredTypes.has('WebPage'),'Page entity missing '+page.url);
+  const webPage=schemaNodes.find(x=>x['@type']==='WebPage');
+  assert.equal(webPage['@id'],canonicalFor(page)+'#webpage','Page entity must have stable canonical @id '+page.url);
+  assert.equal(webPage.isPartOf?.['@id'],manifest.origin+'/#website','Page must identify its own independent WebSite '+page.url);
+  assert.equal(webPage.inLanguage,'en','Unexpected GEO language '+page.url);
+  const shouldApp=page.kind==='WebApplication';
+  assert.equal(structuredTypes.has('WebApplication'),shouldApp,'WebApplication must match actual interactive tool '+page.url);
+  if(shouldApp){
+   const app=schemaNodes.find(x=>x['@type']==='WebApplication');
+   assert.equal(webPage.mainEntity?.['@id'],canonicalFor(page)+'#calculator','WebPage must link its actual tool '+page.url);
+   assert.equal(app['@id'],canonicalFor(page)+'#calculator','App must have stable @id '+page.url);
+   assert.equal(app.offers?.price,'0','Web calculator is free '+page.url);
+   assert.equal(app.isAccessibleForFree,true,'App is accessible for free '+page.url);
+  }else assert.ok(!webPage.mainEntity,'Non-tool page should not invent app entity '+page.url);
+  if(page.url==='/'){
+   assert.ok(structuredTypes.has('WebSite'),'Homepage should define site-wide entity');
+   const website=schemaNodes.find(x=>x['@type']==='WebSite');
+   assert.equal(website['@id'],manifest.origin+'/#website');
+   assert.equal(website.url,manifest.origin+'/');
+  }
+  assert.equal(!!webPage.citation,sourceRoute,'Source citation markup must agree with visible source-linked answer '+page.url);
+  if(sourceRoute){
+   assert.equal(webPage.citation,'https://www.kingarthurbaking.com/learn/ingredient-weight-chart');
+   assert.ok(html.includes('href="'+webPage.citation+'"'),'GEO citation must be readable by real visitors '+page.url);
+  }
+  for(const item of schemaNodes)
+   assert.ok(!['Recipe','Review','AggregateRating','FAQPage','HowTo'].includes(item['@type']),
+    'Misleading or unsupported rich-result markup on '+page.url);
   for(const item of structured){
    const data=JSON.parse(item[1]);
    assert.equal(data['@context'],'https://schema.org','Wrong schema context '+page.url);
