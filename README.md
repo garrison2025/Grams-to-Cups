@@ -55,17 +55,19 @@ The full supplied (not full-domain) Semrush material is preserved at [research/s
 
 ## SEO keyword integrity and duplicate-page protection
 
-The core query \`grams to cups\` is assigned to the **homepage \`/\` only**. The original \`/cooking/grams-to-cups/\` still functions when opened directly but stays \`noindex\`; the site's internal links now direct visitors and crawlers to \`/\` for that intent. No new 301 redirects were invented for URLs that were never confirmed live.
+The core query `grams to cups` is assigned to the **homepage `/` only**. The original `/cooking/grams-to-cups/` still functions when opened directly but stays `noindex`; the site's internal links now direct visitors and crawlers to `/` for that intent. No new 301 redirects were invented for URLs that were never confirmed live.
 
-Every \`npm run build\` also executes \`scripts/keyword-audit.mjs\`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates three **non-public** audit reports:
+Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates three **non-public** audit reports:
 
-- \`reports/seo-keyword-decisions.csv\`: one record per imported keyword, original estimated data unchanged, target URL, status and classification reason.
-- \`reports/seo-page-evidence.csv\`: one record per site page, index eligibility and number of mapped keyword observations.
-- \`reports/seo-summary.json\`: counts and gaps, so missing keyword evidence is never incorrectly equated to zero demand.
+- `reports/seo-keyword-decisions.csv`: one record per imported keyword, original estimated data unchanged, target URL, status and classification reason.
+- `reports/seo-page-evidence.csv`: one record per site page, index eligibility and number of mapped keyword observations.
+- `reports/seo-summary.json`: counts and gaps, so missing keyword evidence is never incorrectly equated to zero demand.
 
-The GitHub Actions **Site build and tests** workflow attaches the three reports as \`grams-to-cups-seo-review\` for download (30-day artifact retention). Reports are **not included in \`dist/\`** and are not exposed to site visitors.
+The GitHub Actions **Site build and tests** workflow attaches the three reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
 
-**Important limitation:** The 1,823 mapped rows remain \`heuristic\` until intent and competitor relevance are manually reviewed; 477 previously unmapped rows are categorized rather than automatically assigned to new SEO URLs. Out-of-scope conversions and ambiguous “oz” queries are not grounds for generating thin pages. All requested competitor ranking exports remain partial, not full-domain SEO coverage.
+**Coverage warning:** 27 of 66 index candidates have no matching suggestion in the partial supplied keyword sample. Some are navigational, methodology or trust pages; absence from the sample is not proof of zero demand. See the per-page report before deciding whether each deserves separate indexing.
+
+**Important limitation:** The 1,823 mapped rows remain `heuristic` until intent and competitor relevance are manually reviewed; 477 previously unmapped rows are categorized rather than automatically assigned to new SEO URLs. Out-of-scope conversions and ambiguous “oz” queries are not grounds for generating thin pages. All requested competitor ranking exports remain partial, not full-domain SEO coverage.
 
 Avoid cloning third-party prose. Original calculation tools and source-backed explanatory content are the product.
 
