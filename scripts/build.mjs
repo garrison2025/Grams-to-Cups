@@ -174,6 +174,7 @@ function home(){
  ['/cooking/grams-to-cups/','Grams to cups','Choose an ingredient and instantly find its approximate cup equivalent'],
  ['/cooking/cups-to-grams/','Cups to grams','Bake by weight with more reliable kitchen results'],
  ['/cooking/recipe-scaler/','Recipe scaler','Scale quantities to match the number of people you are feeding'],
+ ['/cooking/half-a-measurement/','Kitchen fraction calculator','Halve measures or combine 1/2 + 1/4 with exact fraction answers'],
  ['/cooking/batch-converter/','Batch converter','Paste multiple ingredients and check the conversions side by side'],
  ['/cooking/charts/','Printable charts','Keep a source-backed reference beside your mixing bowl'],
  ['/cooking/guides/cup-sizes/','US vs metric cups','Understand the difference between cup systems'],
