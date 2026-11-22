@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
-import {parseSemrushNumber,csvSafeCell} from '../src/seo-evidence.mjs';
+import {parseSemrushNumber,parseSemrushKD,csvSafeCell} from '../src/seo-evidence.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const input=fs.readFileSync(path.join(root,'research/semrush-us-2300-sample.csv'),'utf8');
@@ -78,7 +78,7 @@ for(const row of records){
   const unclassified=classifyUnmapped(keyword);decision=unclassified.status;reason=unclassified.reason;
  }
  stats.decisions[decision]=(stats.decisions[decision]||0)+1;
- const kd=num(val(row,'semrush_kd')),traffic=num(val(row,'estimated_us_keyword_traffic')),vol=num(val(row,'us_volume'));
+ const kd=parseSemrushKD(val(row,'semrush_kd')),traffic=num(val(row,'estimated_us_keyword_traffic')),vol=num(val(row,'us_volume'));
  if(target){
   const group=grouped.get(target)||{rows:0,unique:new Set(),lowKdRows:0,trafficSampleSum:0,candidates:[]};
   group.rows++;group.unique.add(keyword.toLowerCase().trim());
@@ -110,7 +110,7 @@ for(const page of manifest.pages.filter(p=>/^\/cooking\/grams-to-cups\/\d+-grams
  const amount=Number(page.url.match(/\/(\d+)-grams-to-cups\/$/)[1]);
  const numericPattern=new RegExp('\\b'+amount+'\\s*(?:grams?|g)\\s*(?:(?:to|in|into)\\s*)?(?:a\\s*)?cups?\\b','i');
  const matched=records.filter(row=>numericPattern.test(val(row,'keyword')));
- const kd=matched.map(row=>num(val(row,'semrush_kd'))).filter(x=>x!==null);
+ const kd=matched.map(row=>parseSemrushKD(val(row,'semrush_kd'))).filter(x=>x!==null);
  const minKd=kd.length?Math.min(...kd):null;
  const traffic=matched.reduce((sum,row)=>sum+(num(val(row,'estimated_us_keyword_traffic'))||0),0);
  const unique=new Set(matched.map(row=>val(row,'keyword').toLowerCase().trim())).size;
@@ -162,7 +162,7 @@ for(const [id,match,exclude] of foodRules){
   return match.test(keyword)&&unitIntent.test(keyword)&&!excludeIntent.test(keyword)&&!(exclude&&exclude.test(keyword));
  });
  const unique=new Set(matches.map(row=>val(row,'keyword').toLowerCase().trim()));
- const low=matches.filter(row=>{const kd=num(val(row,'semrush_kd'));return kd!==null&&kd<=29});
+ const low=matches.filter(row=>{const kd=parseSemrushKD(val(row,'semrush_kd'));return kd!==null&&kd<=29});
  foodEvidence.set(target,{count:matches.length,distinct:unique.size,lowKd:low.length,
   strongest:matches.slice().sort((a,b)=>(num(val(b,'estimated_us_keyword_traffic'))||0)-(num(val(a,'estimated_us_keyword_traffic'))||0))[0]});
  for(const row of matches)secondaryRows.push([target,id,val(row,'keyword'),val(row,'competitor'),
