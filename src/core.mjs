@@ -1,0 +1,78 @@
+export const US_CUP_ML=236.5882365;
+export const METRIC_CUP_ML=250;
+export const US_TBSP_ML=14.78676478125;
+export const US_TSP_ML=US_TBSP_ML/3;
+export const US_FL_OZ_ML=US_CUP_ML/8;
+export const G_PER_OZ=28.349523125;
+
+export function parseAmount(input){
+  const s=String(input??'').trim().replace(/\u2044/g,'/');
+  if(!s||s.length>48) throw new Error('Enter a reasonable, positive amount.');
+  let n;
+  const mixed=s.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  const frac=s.match(/^(\d+)\/(\d+)$/);
+  if(mixed){const d=Number(mixed[3]);if(!d)throw new Error('A fraction cannot have a zero denominator.');n=Number(mixed[1])+Number(mixed[2])/d;}
+  else if(frac){const d=Number(frac[2]);if(!d)throw new Error('A fraction cannot have a zero denominator.');n=Number(frac[1])/d;}
+  else if(/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))n=Number(s);
+  else throw new Error('Use a number, 1/4, or 1 1/2.');
+  if(!Number.isFinite(n)||n<=0||n>1e9)throw new Error('Amount must be greater than zero and at most one billion.');
+  return n;
+}
+export const formatAmount=(n,digits=3)=>{
+ if(!Number.isFinite(n))throw new Error('The result is not finite.');
+ return new Intl.NumberFormat('en-US',{maximumFractionDigits:digits}).format(n);
+};
+export function approximateFraction(value){
+ if(!Number.isFinite(value)||value<0||value>1e7)return '';
+ const whole=Math.floor(value), part=value-whole, denom=16, numerator=Math.round(part*denom),error=Math.abs(part-numerator/denom);
+ if(error>0.015)return '';
+ if(numerator===0)return whole?String(whole):'0';
+ if(numerator===denom)return String(whole+1);
+ const gcd=(a,b)=>b?gcd(b,a%b):a;const g=gcd(numerator,denom);
+ return [whole||'',String(numerator/g)+'/'+String(denom/g)].filter(Boolean).join(' ');
+}
+export function cupMl(standard='us'){
+ if(standard==='us')return US_CUP_ML;
+ if(standard==='metric')return METRIC_CUP_ML;
+ throw new Error('Unknown cup standard.');
+}
+export function gramsPerMl(ingredient){
+ if(!ingredient||!['recipe_reference'].includes(ingredient.referenceType))throw new Error('Choose a supported ingredient for mass-to-volume conversions.');
+ const baseMl=ingredient.referenceUnit==='cup'?ingredient.referenceAmount*ingredient.referenceCupMl:
+ ingredient.referenceUnit==='tablespoon'?ingredient.referenceAmount*US_TBSP_ML:
+ ingredient.referenceUnit==='teaspoon'?ingredient.referenceAmount*US_TSP_ML:NaN;
+ if(!Number.isFinite(baseMl)||baseMl<=0||!(ingredient.referenceGrams>0))throw new Error('Invalid reference data.');
+ return ingredient.referenceGrams/baseMl;
+}
+export function convertQuantity(amount,from,to,{ingredient=null,standard='us'}={}){
+ const n=typeof amount==='number'?amount:parseAmount(amount);
+ if(!Number.isFinite(n)||n<0||n>1e9)throw new Error('Invalid amount.');
+ const mlUnits={cup:cupMl(standard),tbsp:US_TBSP_ML,tsp:US_TSP_ML,ml:1,'fl-oz':US_FL_OZ_ML};
+ const gUnits={g:1,oz:G_PER_OZ,kg:1000};
+ const a=from in gUnits?'mass':from in mlUnits?'volume':null;
+ const b=to in gUnits?'mass':to in mlUnits?'volume':null;
+ if(!a||!b)throw new Error('Unsupported unit.');
+ const base=a==='mass'?n*gUnits[from]:n*mlUnits[from];
+ if(a===b)return base/(b==='mass'?gUnits[to]:mlUnits[to]);
+ const density=gramsPerMl(ingredient);
+ return (a==='mass'?base/density:base*density)/(b==='mass'?gUnits[to]:mlUnits[to]);
+}
+export function unitDescription(code,standard='us'){
+ return ({g:'grams',kg:'kilograms',oz:'mass ounces',cup:standard==='metric'?'metric cups (250 mL)':'US cups (236.588 mL)',tbsp:'US tablespoons',tsp:'US teaspoons',ml:'milliliters','fl-oz':'US fluid ounces'})[code]||code;
+}
+export function scaleRecipe(text,originalServings,newServings){
+ const source=parseAmount(originalServings),dest=parseAmount(newServings);
+ const factor=dest/source;if(factor>1000||factor<0.001)throw new Error('Scaling factor must be between 0.001 and 1,000.');
+ const rows=String(text??'').split(/\r?\n/);
+ if(rows.length>100)throw new Error('Limit the recipe to 100 lines.');
+ const output=rows.map(raw=>{
+  if(!raw.trim())return {original:raw,scaled:'',ok:true};
+  const m=raw.match(/^\s*((?:\d+\s+)?\d+\/\d+|(?:\d+(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
+  if(!m)return {original:raw,scaled:raw,ok:false};
+  try{const scaled=parseAmount(m[1])*factor;if(!Number.isFinite(scaled)||scaled>1e9)throw Error();
+  return {original:raw,scaled:formatAmount(scaled,4)+' '+(m[2]||'')+(m[3]||''),ok:true};
+  }catch{return {original:raw,scaled:raw,ok:false};}
+ });
+ return {rows:output,factor,unparsed:output.filter(r=>!r.ok).length};
+}
+export function csvCell(s){const value=String(s??'');const safe=/^[=+\-@]/.test(value)?"'"+value:value;return '"'+safe.replaceAll('"','""')+'"';}
