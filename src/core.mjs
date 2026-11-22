@@ -116,10 +116,10 @@ export function formatKitchenAmount(value,{fractions=true,precision=4}={}){
   for(const denominator of [2,3,4,6,8,16]){
    const numerator=Math.round(remainder*denominator);
    if(Math.abs(remainder-numerator/denominator)>1e-7)continue;
-   if(numerator===0)return remainder===0?String(whole):formatAmount(value,precision);
-   if(numerator===denominator)return String(whole+1);
+   if(numerator===0)return remainder===0?formatAmount(whole,0):formatAmount(value,precision);
+   if(numerator===denominator)return formatAmount(whole+1,0);
    const gcd=(a,b)=>b?gcd(b,a%b):a,g=gcd(numerator,denominator);
-   return (whole?whole+' ':'')+numerator/g+'/'+denominator/g;
+   return (whole?formatAmount(whole,0)+' ':'')+numerator/g+'/'+denominator/g;
   }
  }
  return formatAmount(value,precision);
