@@ -84,6 +84,9 @@ test('recipe scaler preserves unknown lines and warns without guessing',()=>{
  assert.equal(x.rows[2].ok,false);
  assert.equal(x.unparsed,1);
  assert.throws(()=>scaleRecipe('1 cup milk',0,2));
+ const ranges=scaleRecipe('2-3 eggs\n1 to 2 cups stock\n1–2 tbsp cinnamon\n2 or 3 teaspoons salt',2,4);
+ assert.equal(ranges.unparsed,4,'Ingredient ranges must request manual review');
+ assert.deepEqual(ranges.rows.map(r=>r.scaled),['2-3 eggs','1 to 2 cups stock','1–2 tbsp cinnamon','2 or 3 teaspoons salt']);
  const fractionStyle=scaleRecipe('1½ cups milk\n½ tsp salt',4,6,{fractions:true});
  assert.equal(fractionStyle.rows[0].scaled,'2 1/4 cups milk');
  assert.equal(fractionStyle.rows[1].scaled,'3/4 tsp salt');
