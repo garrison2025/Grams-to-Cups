@@ -70,6 +70,8 @@ The current **partial** imported keyword sample maps 39 of the 76 planned routes
 
 The **entire original competitor evidence** for all 76 rows is now present: exact phrase ranking observations, source-plan screenshot page estimates, and the original editorial release conditions. Before this update the candidate JSON carried only the primary keyword and numeric estimates; its data fields have been reconciled against the uploaded Appendix A with zero mismatches.
 
+**Crawl-path audit:** 80 of 81 static pages are reachable through actual HTML links from `/`, with a maximum of two link clicks. All ten `ingredient + grams` pages have contextual inbound links from both their specific ingredient page and the corresponding generic gram amount page. The sole deliberately unlinked URL is the usable but `noindex` duplicate `/cooking/grams-to-cups/`, whose principal search intent belongs to the homepage. Every build tests this graph and writes a private per-page report.
+
 The 21 still-unmapped index candidates are now separated into **five trust/directory pages** that do not need acquisition-keyword proof, **13 pages with observed competitor page screenshots but no sample keyword-to-page mapping**, **two pages whose primary plan keyword exceeds KD29 without observed low-KD sample support**, and **one page missing both mapping and screenshot proof**. These classifications are source-traceable triage flags, not an automated decision that Google will index or rank the URLs. The review report identifies the exact URLs and what to check before final publication.
 
 This is a single production release project: passing a static build or having a route is **not** permission to enable real-world indexing before the deployed host and SEO review are verified.
@@ -78,7 +80,7 @@ This is a single production release project: passing a static build or having a 
 
 The core query `grams to cups` is assigned to the **homepage `/` only**. The original `/cooking/grams-to-cups/` still functions when opened directly but stays `noindex`; the site's internal links now direct visitors and crawlers to `/` for that intent. No new 301 redirects were invented for URLs that were never confirmed live.
 
-Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates nine **non-public** audit reports:
+Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates ten **non-public** audit reports:
 
 - `reports/seo-keyword-decisions.csv`: one record per imported keyword, original estimated data unchanged, target URL, status and classification reason.
 - `reports/seo-page-evidence.csv`: one record per site page, index eligibility and number of mapped keyword observations.
@@ -89,8 +91,9 @@ Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 
 - `reports/seo-76-candidate-summary.json`: machine-readable totals and the five extra useful site routes outside that 76-item candidate list.
 - `reports/seo-21-index-review.csv`: explicit per-page editorial checklist for the 21 currently index-eligible pages without primary or strict secondary keyword mappings in the supplied **partial** sample, preserving the distinct screenshot/page evidence from the original plan.
 - `reports/seo-21-index-review-summary.json`: evidence-gap buckets, with trust/navigation pages separated from acquisition-keyword pages.
+- `reports/seo-link-graph.csv`: every generated page's inbound link count, shortest home-page click depth, index policy and deliberate noindex exception.
 
-The GitHub Actions **Site build and tests** workflow attaches the nine reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
+The GitHub Actions **Site build and tests** workflow attaches the ten reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
 
 **Coverage warning:** 27 of 65 index candidates have no original suggested URL in the partial supplied keyword sample. Strict secondary food-phrase matching recovered observed conversion queries for 6 of those pages, leaving 21 without direct or secondary keyword evidence. Such absence in a partial export is not proof of zero search demand. Some are navigational, methodology or trust pages; absence from the sample is not proof of zero demand. See the per-page report before deciding whether each deserves separate indexing.
 
