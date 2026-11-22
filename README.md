@@ -60,17 +60,29 @@ The full supplied (not full-domain) Semrush material is preserved at [research/s
 
 **Publication policy:** All 77 Cooking routes are functional; 16 have `noindex` by default because the supplied partial keyword and page evidence does not directly establish an independent SEO target. That is **not a feature omission**: users can still navigate, calculate, print and share those tools/pages. Main production sitemap holds **65 eligible page candidates including home/legal pages**, rather than dumping every possible numeric URL into Google.
 
+## Original 76-candidate plan: complete route reconciliation
+
+The user-supplied **2026-11-22 Appendix A** is now preserved in [research/seo-76-candidate-baseline.json](research/seo-76-candidate-baseline.json), with every original route, proposed primary query and observed Semrush search volume/KD (missing observations remain `null`, not zero). Every build runs `scripts/candidate-audit.mjs` and **fails** if a required URL is missing, the candidate count changes, or unexpected pages appear.
+
+All **76 planned URLs exist and work**: 61 are presently eligible for production indexing, and 15 are intentional usable `noindex` support pages. The other five site pages are the primary homepage, About, Privacy, Contact and the extra noindex batch conversion tool. Thus the full site remains **81 pages with 65 index candidates**. The broad `grams to cups` query is consolidated onto the homepage; its former cooking tool URL is not an additional indexable landing page.
+
+The current **partial** imported keyword sample maps 39 of the 76 planned routes directly by **unreviewed heuristic suggestion**, with six more having strict secondary ingredient-intent observations. Three other candidates have primary-query estimates in the approved plan but no corresponding sample page mapping, and 28 lack both mappings and source-plan primary-query estimates. These are **candidate evidence classes, not proved rankings or editorial validation**. The preexisting 21 index candidates with neither direct nor strict secondary mapping still require per-page editorial assessment.
+
+This is a single production release project: passing a static build or having a route is **not** permission to enable real-world indexing before the deployed host and SEO review are verified.
+
 ## SEO keyword integrity and duplicate-page protection
 
 The core query `grams to cups` is assigned to the **homepage `/` only**. The original `/cooking/grams-to-cups/` still functions when opened directly but stays `noindex`; the site's internal links now direct visitors and crawlers to `/` for that intent. No new 301 redirects were invented for URLs that were never confirmed live.
 
-Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates five **non-public** audit reports:
+Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates seven **non-public** audit reports:
 
 - `reports/seo-keyword-decisions.csv`: one record per imported keyword, original estimated data unchanged, target URL, status and classification reason.
 - `reports/seo-page-evidence.csv`: one record per site page, index eligibility and number of mapped keyword observations.
 - `reports/seo-summary.json`: counts and gaps, so missing keyword evidence is never incorrectly equated to zero demand.
 - `reports/seo-numeric-intent.csv`: independently matched numeric search phrases, competitor sample KD, and eligibility for each of the 21 grams-to-cups number pages.
 - `reports/seo-ingredient-intent.csv`: secondary, exact-ingredient search-intent matches, with explicit food-state checks and no automatic keyword ownership.
+- `reports/seo-76-candidate-decisions.csv`: line-by-line reconciliation of the **76 URLs in the original approved plan**, including primary keyword, the plan's observed US volume/KD if available, real generated route, index eligibility, canonical intent, direct/secondary keyword evidence and editorial status.
+- `reports/seo-76-candidate-summary.json`: machine-readable totals and the five extra useful site routes outside that 76-item candidate list.
 
 The GitHub Actions **Site build and tests** workflow attaches the five reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
 
