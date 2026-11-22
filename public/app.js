@@ -64,7 +64,8 @@ function renderCalculator(form){
    throw new Error('Choose a specific ingredient from the suggestions or reference list; an unknown name cannot be converted safely.');
   const n=convertQuantity(amount,from,to,{ingredient,standard,waterMode:chosenWaterMode});
   const decimals=n>=10000?1:n<.01?5:3;
-  setText(result,formatAmount(n,decimals));
+  const displayAmount=formatAmount(n,decimals);
+  setText(result,displayAmount);
   setText($('[data-result-unit]',form),shortLabel(to,standard));
   const fraction=(to==='cup'||to==='tbsp')?approximateFraction(n):'';
   const cupSize=standard==='metric'?'metric':'US';
@@ -111,7 +112,7 @@ function renderCalculator(form){
    }
   }
   if(error)error.hidden=true;
-  return {n,amount,from,to,ingredient,standard,waterMode:chosenWaterMode,isCrossDimension,unit:unitDescription(to,standard),context};
+  return {n,displayAmount,amount,from,to,ingredient,standard,waterMode:chosenWaterMode,isCrossDimension,unit:unitDescription(to,standard),context};
  }catch(ex){
   setText(result,'—');
   setText($('[data-result-unit]',form),'');
@@ -209,7 +210,12 @@ function setupIngredientPicker(form,onChange){
    else close();
   }
  });
- input.addEventListener('blur',close);
+ input.addEventListener('blur',()=>{
+  if(!input.value.trim()){
+   // Preserve visible/hidden ingredient consistency on an empty search.
+   sync();onChange();
+  }else close();
+ });
  list.addEventListener('mousedown',event=>event.preventDefault());
  list.addEventListener('click',event=>{
   const option=event.target.closest('[data-ingredient-option]');
@@ -289,7 +295,7 @@ for(const form of $$('[data-calc]')){
   clearCopyFeedback();
   const d=update();if(!d)return;
   const request=copyRequest;
-  const text=d.amount+' '+unitDescription(d.from,d.standard)+(d.isCrossDimension?' of '+d.ingredient?.name:'')+' ≈ '+formatAmount(d.n,4)+' '+d.unit+'. '+d.context;
+  const text=d.amount+' '+unitDescription(d.from,d.standard)+(d.isCrossDimension?' of '+d.ingredient?.name:'')+' ≈ '+d.displayAmount+' '+d.unit+'. '+d.context;
   try{
    await navigator.clipboard.writeText(text);
    if(request!==copyRequest)return;
@@ -349,8 +355,40 @@ for(const form of $$('[data-batch]')){
        error=$('[data-batch-error]',form);
  let latest=null;
  const ingredientOverrides=Object.create(null);
+ let lastText=input.value;
+ function reconcileOverrides(){
+  if(input.value===lastText)return;
+  const before=lastText.split(/\r?\n/),after=input.value.split(/\r?\n/);
+  const positions=lines=>{
+   const groups=new Map();
+   lines.forEach((line,index)=>{
+    const entries=groups.get(line)||[];
+    entries.push(index);
+    groups.set(line,entries);
+   });
+   return groups;
+  };
+  const oldPositions=positions(before),newPositions=positions(after);
+  const retained=Object.create(null);
+  for(const [line,oldIndices] of oldPositions){
+   const newIndices=newPositions.get(line)||[];
+   if(oldIndices.length===1&&newIndices.length===1){
+    const chosen=ingredientOverrides[oldIndices[0]];
+    if(chosen)retained[newIndices[0]]=chosen;
+   }else if(oldIndices.length===newIndices.length&&
+    oldIndices.every((idx,i)=>idx===newIndices[i])){
+    // Distinct duplicates are not identifiable after edits/reordering;
+    // retain them only when each occurrence stayed at its exact index.
+    for(const idx of oldIndices)if(ingredientOverrides[idx])retained[idx]=ingredientOverrides[idx];
+   }
+  }
+  for(const key of Object.keys(ingredientOverrides))delete ingredientOverrides[key];
+  Object.assign(ingredientOverrides,retained);
+  lastText=input.value;
+ }
  const compute=()=>{
   try{
+   reconcileOverrides();
    const cupsChoice=target.querySelector('option[value="cup"]');
    if(cupsChoice)cupsChoice.textContent=standard.value==='metric'?'Metric cups':'US cups';
    latest=batchConvertIngredients(input.value,{ingredients,target:target.value,standard:standard.value,fractions:fraction.checked,ingredientOverrides});
@@ -376,6 +414,11 @@ for(const form of $$('[data-batch]')){
       why.className='batch-row-warning';
       why.textContent=item.reason;
       result.appendChild(why);
+    }
+    // Let users change or remove a correction after the row has converted.
+    // Multi-ingredient rows are unsafe and cannot have a correction picker.
+    if((item.status==='review'&&item.manualCorrectionAllowed)||
+       (item.status==='converted'&&Object.hasOwn(ingredientOverrides,item.index))){
       const label=document.createElement('label');
       label.className='batch-review-label';
       label.textContent='Choose the exact ingredient (only when certain)';
@@ -391,7 +434,7 @@ for(const form of $$('[data-batch]')){
        else delete ingredientOverrides[item.index];
        compute();
       });
-      if(item.manualCorrectionAllowed)result.append(label,select);
+      result.append(label,select);
     }
     tr.append(original,result);
     tbody.appendChild(tr);
@@ -407,7 +450,7 @@ for(const form of $$('[data-batch]')){
    return null;
   }
  };
- input.addEventListener('input',()=>{for(const key of Object.keys(ingredientOverrides))delete ingredientOverrides[key];});
+ input.addEventListener('input',reconcileOverrides);
  for(const control of [input,target,standard,fraction]){
   control.addEventListener('input',compute);
   control.addEventListener('change',compute);
