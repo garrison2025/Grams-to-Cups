@@ -11,7 +11,7 @@ This repository was created as a standalone website at the owner's direction. It
 5. Verify all canonical destination URLs resolve at that hostname. Verify 404, robots.txt, no console errors, static assets, reference claims, accessible mobile calculation, ingredient search and the output from `npm run build`.
 6. Only after all checks, set `PUBLIC_INDEX_APPROVED=true` for the production environment and redeploy `main`. Cloudflare injects `CF_PAGES_BRANCH`; don't set it manually in dashboard.
 7. Confirm production `/sitemap.xml` exists, URLs use `SITE_URL`, all index-eligible pages carry canonical/index, and excluded candidates remain noindex. Submit sitemap to Google Search Console only when the site is verified.
-8. There are 81 generated HTML pages total: 77 Cooking routes and 4 site/core/legal routes. The 15 research-limited candidates still function but are excluded from sitemap.
+8. There are 81 generated HTML pages total: 77 Cooking routes and 4 site/core/legal routes. The 16 conservative noindex candidates still function but are excluded from sitemap.
 
 Cloudflare previews should remain noindex. This is intentional, not a reason to enable indexing before QA.
 
@@ -19,12 +19,14 @@ Cloudflare previews should remain noindex. This is intentional, not a reason to 
 
 `npm run build` automatically:
 
-- Runs 12 Node tests: original reference weights, 24 ingredient data contracts, mass/volume distinction, cup definitions, numeric round trips, fractions, recipe scaling and CSV injection safety.
+- Runs 13 Node tests: original reference weights, 24 ingredient data contracts, mass/volume distinction, cup definitions, numeric round trips, fractions, recipe scaling and CSV injection safety.
 - Generates 81 static HTML pages, local conversion assets, a real 404 and index-aware robots/sitemap.
 - Checks route count, unique title and H1, body text, canonical/noindex, key asset existence, internal links, batch workbench presence and 21/24/10 page-family counts.
 - The GitHub workflow tests both preview and production publication configurations. Its `https://example.com` value is synthetic **only for CI**, never the site's production domain.
 
 Any failing gate means the release is not complete. Do not disable audits to produce a green build.
+
+The 24 original chart labels and weight/volume pairs are independently locked in `research/ingredient-reference-lock.json`. Ingredient pages and the methods page print their original source labels; `npm run build` will fail if a measurement or label changes without updating that verified source lock.
 
 ## Source/reference changes
 
@@ -61,8 +63,12 @@ The recipe scaler offers **exact common kitchen fractions** by default, or decim
 
 ## Main keyword ownership and SEO audit artifact
 
-The homepage `/` is the only eligible landing page for the core `grams to cups` query. `/cooking/grams-to-cups/` remains usable, but `noindex` and internal card/paragraph links resolve to `/` to avoid competing primary SEO targets. Production index candidates: **66** out of 81 functional routes.
+The homepage `/` is the only eligible landing page for the core `grams to cups` query. `/cooking/grams-to-cups/` remains usable, but `noindex` and internal card/paragraph links resolve to `/` to avoid competing primary SEO targets. Production index candidates: **65** out of 81 functional routes.
 
 The build also runs `scripts/keyword-audit.mjs`, validating all 2,300 supplied competitor ranking records and producing per-keyword/per-page classification files. Download them from the successful GitHub **Site build and tests** run → **Artifacts** → `grams-to-cups-seo-review`. The report output is excluded from `dist/` and from Git.
 
 The source remains a **partial** competitor export. Mapping is algorithmic and requires editorial review before a URL is treated as a verified ranking opportunity.
+
+## Numeric SEO quality gate
+
+The keyword audit also writes `reports/seo-numeric-intent.csv` covering all 21 gram-to-cup amount URLs. Only 20 currently qualify with an observed Semrush KD≤29 term. The working `1000-grams-to-cups/` page stays noindex (observed minimum KD37); do not override this merely to raise sitemap size. Other food, guide and trust pages require separate editorial judgement; missing rows from an incomplete Semrush export are not proof of no traffic.
