@@ -16,7 +16,7 @@ function renderCalculator(form){
  const standard=$('[data-standard]',form)?.value||'us';
  const ingredient=byId.get($('[data-ingredient]',form)?.value)||null;
  const isCrossDimension=(['g','kg','oz'].includes(from))!==(['g','kg','oz'].includes(to));
- for(const field of $('[data-density-field]',form))field.hidden=!isCrossDimension;
+ for(const field of $$('[data-density-field]',form))field.hidden=!isCrossDimension;
  const cupStandard=$('[data-cup-standard-row]',form);
  if(cupStandard)cupStandard.hidden=!(from==='cup'||to==='cup');
  const ingredientSource=$('[data-source-ingredient]',form),fixedSource=$('[data-source-fixed]',form);
