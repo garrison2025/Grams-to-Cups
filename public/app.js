@@ -86,3 +86,5 @@ for(const filter of $$('[data-directory-filter]'))filter.addEventListener('input
  const q=filter.value.trim().toLowerCase();
  for(const item of $$('[data-filter-item]'))item.hidden=!item.textContent.toLowerCase().includes(q);
 });
+
+for(const button of $$('[data-chart-print]'))button.addEventListener('click',()=>window.print());
