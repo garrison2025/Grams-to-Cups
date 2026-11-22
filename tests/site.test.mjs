@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {parseSemrushNumber,parseSemrushKD,csvSafeCell} from '../src/seo-evidence.mjs';
-import {parseAmount,convertQuantity,approximateFraction,scaleRecipe,csvCell,formatAmount,formatKitchenAmount,calculateKitchenFractions,batchConvertIngredients,US_CUP_ML,METRIC_CUP_ML,US_TBSP_ML} from '../src/core.mjs';
+import {parseAmount,convertQuantity,approximateFraction,scaleRecipe,csvCell,formatAmount,formatKitchenAmount,calculateKitchenFractions,batchConvertIngredients,suggestKitchenMeasures,US_CUP_ML,METRIC_CUP_ML,US_TBSP_ML} from '../src/core.mjs';
 const foods=JSON.parse(fs.readFileSync(new URL('../src/ingredients.json',import.meta.url),'utf8'));
 const byId=id=>foods.find(x=>x.id===id);
 
 const referenceLock=JSON.parse(fs.readFileSync(new URL('../research/ingredient-reference-lock.json',import.meta.url),'utf8'));
 test('original King Arthur source entries match independently verified measurement pairs',()=>{
  assert.equal(referenceLock.source,'https://www.kingarthurbaking.com/learn/ingredient-weight-chart');
- assert.equal(referenceLock.records.length,24);
- assert.equal(new Set(referenceLock.records.map(x=>x.id)).size,24);
+ assert.equal(referenceLock.records.length,27);
+ assert.equal(new Set(referenceLock.records.map(x=>x.id)).size,27);
  for(const row of referenceLock.records){
   const item=byId(row.id);
   assert.ok(item,'missing source-locked ingredient '+row.id);
@@ -22,8 +22,8 @@ test('original King Arthur source entries match independently verified measureme
  }
 });
 
-test('24 references have source, unambiguous method and original quantities',()=>{
- assert.equal(foods.length,24);
+test('27 references have source, unambiguous method and original quantities',()=>{
+ assert.equal(foods.length,27);
  assert.equal(new Set(foods.map(x=>x.id)).size,foods.length);
  for(const i of foods){
   assert.match(i.sourceUrl,/^https:\/\//);assert.ok(i.sourceName&&i.state&&i.method&&i.note);
@@ -371,4 +371,33 @@ test('exported competitor CSV cannot execute spreadsheet formulas',()=>{
  }
  assert.equal(csvSafeCell('normal keyword'),'"normal keyword"');
  assert.equal(csvSafeCell('cup, grams'),'"cup, grams"');
+});
+
+
+test('practical cup fills beat a misleading single nearby cup and respect cup standards',()=>{
+ const flour=byId('all-purpose-flour');
+ const us=suggestKitchenMeasures(200/120,{ingredient:flour});
+ assert.equal(us.instruction,'1 cup + 2 × 1/3 cup');
+ assert.ok(Math.abs(us.differenceGrams)<1e-8,'200 g flour has a zero-reference-error multi-cup combination');
+ assert.ok(us.steps.reduce((n,step)=>n+step.count,0)===3);
+ const metric=suggestKitchenMeasures(convertQuantity(200,'g','cup',{ingredient:flour,standard:'metric'}),{standard:'metric',ingredient:flour});
+ assert.ok(metric&&Math.abs(metric.differenceGrams)<1,'metric 250 mL combinations are recalculated, not US cup labels');
+ assert.ok(suggestKitchenMeasures(0,{ingredient:flour})===null);
+ assert.ok(suggestKitchenMeasures(13,{ingredient:flour})===null);
+ const butter=byId('butter');
+ assert.ok(suggestKitchenMeasures(.5,{ingredient:butter,allowSpoons:false}).instruction.includes('1/2 cup'));
+});
+
+test('batch list accepts bullets and optional notes, permits explicit ingredient correction without silent guesses',()=>{
+ const source='- 120 g all-purpose flour\n• 42 g unsweetened cocoa powder\n1. 200 g flour\n* 1 cup bread flour, optional\n200 g all-purpose flour, sifted';
+ const initial=batchConvertIngredients(source,{ingredients:foods});
+ assert.equal(initial.converted,3);
+ assert.equal(initial.review,2);
+ assert.equal(initial.rows[2].status,'review','generic flour still needs explicit selection');
+ assert.equal(initial.rows[4].status,'review','sifting changes density and must not be automatically ignored');
+ const fixed=batchConvertIngredients(source,{ingredients:foods,ingredientOverrides:{2:'all-purpose-flour'}});
+ assert.equal(fixed.converted,4);
+ assert.ok(Math.abs(fixed.rows[2].result-200/120)<1e-9);
+ assert.match(fixed.rows[2].reason,/User-selected/);
+ assert.equal(initial.rows[4].output,'200 g all-purpose flour, sifted');
 });

@@ -81,6 +81,71 @@ export function convertQuantity(amount,from,to,{ingredient=null,standard='us',wa
  const density=waterMode==='capacity'?1:gramsPerMl(ingredient);
  return (a==='mass'?base/density:base*density)/(b==='mass'?gUnits[to]:mlUnits[to]);
 }
+
+// Suggest actual, repeatable fills of US/metric cups and (optionally) US spoons.
+// This is a volume tool, not a claim about independently measured food density.
+// Never replace the underlying exact conversion with a rounded cup suggestion.
+export function suggestKitchenMeasures(targetCups,{standard='us',allowSpoons=true,ingredient=null,waterMode='recipe'}={}){
+ const target=Number(targetCups),mlPerCup=cupMl(standard);
+ if(!Number.isFinite(target)||target<=0||target>12)return null;
+ const targetMl=target*mlPerCup;
+ const parts=[
+  {label:'1 cup',ml:mlPerCup},
+  {label:'1/2 cup',ml:mlPerCup/2},
+  {label:'1/3 cup',ml:mlPerCup/3},
+  {label:'1/4 cup',ml:mlPerCup/4},
+  {label:'1/8 cup',ml:mlPerCup/8}
+ ];
+ if(allowSpoons)parts.push(
+  {label:'1 US tbsp',ml:US_TBSP_ML},
+  {label:'1 US tsp',ml:US_TSP_ML},
+  {label:'1/2 US tsp',ml:US_TSP_ML/2}
+ );
+ // Keep the search constant time even for 10+ cups: optimize the residual.
+ const whole=Math.max(0,Math.floor(target)-1);
+ const remainingMl=targetMl-whole*mlPerCup;
+ let best=null;
+ const counts=new Array(parts.length).fill(0);
+ const gramsPerCup=ingredient?convertQuantity(1,'cup','g',{ingredient,standard,waterMode}):null;
+ const errorTolerance=gramsPerCup===null?.25:Math.min(.25,gramsPerCup*.002);
+ function score(){
+  const ml=counts.reduce((sum,c,i)=>sum+c*parts[i].ml,0);
+  const errorMl=Math.abs(ml-remainingMl);
+  const errorGrams=gramsPerCup===null?null:errorMl/mlPerCup*gramsPerCup;
+  const error=errorGrams===null?errorMl:errorGrams;
+  const pours=whole+counts.reduce((a,b)=>a+b,0);
+  if(!pours)return;
+  const steps=counts.map((c,i)=>c?{label:parts[i].label,count:c}:null).filter(Boolean);
+  if(whole){if(steps[0]?.label==='1 cup')steps[0].count+=whole;else steps.unshift({label:'1 cup',count:whole});}
+  const spoons=steps.filter(x=>x.label.includes('tbsp')||x.label.includes('tsp')).reduce((n,x)=>n+x.count,0);
+  // Less than 0.25 gram is operationally indistinguishable from exact
+  // for these cited recipe-chart estimates. Then prefer fewer pours.
+  const grade=[error<=errorTolerance?0:error, pours,spoons,error];
+  if(!best||grade.some((v,i)=>v<best.grade[i]&&grade.slice(0,i).every((p,j)=>p===best.grade[j]))){
+   best={grade,steps,ml:ml+whole*mlPerCup,errorMl};
+  }
+ }
+ function walk(i,used){
+  if(i===parts.length){score();return;}
+  const max=Math.min(i===0?2:3,6-used,Math.floor(remainingMl/parts[i].ml)+1);
+  for(let count=0;count<=Math.max(0,max);count++){counts[i]=count;walk(i+1,used+count);}
+  counts[i]=0;
+ }
+ walk(0,0);
+ if(!best||best.errorMl>Math.max(targetMl*.12,1))return null;
+ const diffMl=best.ml-targetMl;
+ const diffGrams=gramsPerCup===null?null:diffMl/mlPerCup*gramsPerCup;
+ return {
+  steps:best.steps,
+  instruction:best.steps.map(p=>(p.count===1?'':p.count+' × ')+p.label).join(' + '),
+  equivalentCups:best.ml/mlPerCup,
+  differenceMl:diffMl,differenceGrams:diffGrams,
+  percentError:100*diffMl/targetMl,
+  approximate:Math.abs(diffGrams===null?diffMl:diffGrams)>errorTolerance,
+  standard
+ };
+}
+
 export function unitDescription(code,standard='us'){
  return ({g:'grams',kg:'kilograms',oz:'mass ounces',cup:standard==='metric'?'metric cups (250 mL)':'US cups (236.588 mL)',tbsp:'US tablespoons',tsp:'US teaspoons',ml:'milliliters','fl-oz':'US fluid ounces'})[code]||code;
 }
@@ -274,7 +339,7 @@ function resolveIngredient(name,ingredients){
   [food.name,...(food.aliases||[])].some(alias=>normalizedName(alias)===normalized));
  return candidates.length===1?candidates[0]:null;
 }
-export function batchConvertIngredients(text,{ingredients,target='cup',standard='us',fractions=true}={}){
+export function batchConvertIngredients(text,{ingredients,target='cup',standard='us',fractions=true,ingredientOverrides={}}={}){
  if(!Array.isArray(ingredients)||ingredients.length===0)throw new Error('The source-backed ingredient list is unavailable.');
  if(!['cup','g'].includes(target))throw new Error('Choose cups or grams as the result unit.');
  cupMl(standard);
@@ -284,7 +349,12 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
  if(lines.length>100)throw new Error('Limit the ingredient list to 100 lines.');
  const rows=lines.map((original,index)=>{
   if(!original.trim())return {index,original,status:'blank',output:'',reason:'',ingredient:''};
-  const match=normalizeFractionInput(original).match(BATCH_LINE);
+  // Accept bullets, numbered list prefixes and non-density-changing optional notes.
+  // Do not strip "sifted", "packed", "melted", etc: those change measuring context.
+  const cleaned=normalizeFractionInput(original)
+   .replace(/^\s*(?:[•*–—-]\s+|\d{1,2}[.)]\s+)/u,'')
+   .replace(/\s*(?:\((?:optional|for garnish|for serving)\)|,\s*(?:optional|for garnish|for serving))\s*$/iu,'');
+  const match=cleaned.match(BATCH_LINE);
   if(!match)return {index,original,status:'review',output:original,reason:'Use amount + unit + a specific ingredient (e.g., 200 g all-purpose flour).',ingredient:''};
   const [,rawAmount,rawUnit,foodName]=match;
   const cleanedUnit=rawUnit.toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
@@ -292,7 +362,9 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
   // An explicit input cup standard takes precedence over the global result standard.
   const sourceStandard=cleanedUnit.startsWith('us cup')?'us':cleanedUnit.startsWith('metric cup')?'metric':standard;
   if(!unit)return {index,original,status:'review',output:original,reason:'Unsupported measurement unit.',ingredient:''};
-  const food=resolveIngredient(foodName,ingredients);
+  const requested=Object.hasOwn(ingredientOverrides,index)?ingredientOverrides[index]:null;
+  const chosen=requested?ingredients.find(item=>item.id===requested):null;
+  const food=requested?chosen:resolveIngredient(foodName,ingredients);
   if(!food)return {index,original,status:'review',output:original,reason:'Ingredient not matched unambiguously. Use the exact ingredient name listed on the site.',ingredient:foodName.trim()};
   try{
    const amount=parseAmount(rawAmount);
@@ -302,7 +374,7 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
    const quantityUnit=target==='cup'?(standard==='metric'?'metric':'US')+' cup'+(result<=1+1e-10?'':'s'):'g';
    const originalUnit=food.referenceUnit==='cup'?'US cup':food.referenceUnit==='tablespoon'?'US tablespoon':'US teaspoon';
    return {index,original,status:'converted',output:formatKitchenAmount(result,{fractions:fractions&&target==='cup'})+' '+quantityUnit+' '+food.name,
-     amount,result,from:unit,to:target,sourceStandard:unit==='cup'?sourceStandard:null,ingredient:food.name,ingredientId:food.id,reason:'Reference: '+food.referenceGrams+' g / '+food.referenceAmount+' '+originalUnit};
+     amount,result,from:unit,to:target,sourceStandard:unit==='cup'?sourceStandard:null,ingredient:food.name,ingredientId:food.id,reason:(requested?'User-selected '+food.name+'. ':'')+'Reference: '+food.referenceGrams+' g / '+food.referenceAmount+' '+originalUnit};
   }catch(error){
    return {index,original,status:'review',output:original,reason:error.message,ingredient:food.name};
   }

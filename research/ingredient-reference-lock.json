@@ -170,6 +170,27 @@
       "amount": 1,
       "unit": "cup",
       "label": "Walnuts (chopped)"
+    },
+    {
+      "id": "bread-flour",
+      "grams": 120,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Bread Flour"
+    },
+    {
+      "id": "cocoa-unsweetened",
+      "grams": 42,
+      "amount": 0.5,
+      "unit": "cup",
+      "label": "Cocoa (unsweetened)"
+    },
+    {
+      "id": "unbleached-cake-flour",
+      "grams": 120,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Unbleached Cake Flour"
     }
   ]
 }
