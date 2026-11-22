@@ -108,11 +108,13 @@ assert.equal(pages.filter(x=>/\/ingredients\/[^/]+\/$/.test(x.url)).length,24);
 const refs=JSON.parse(fs.readFileSync(path.join(root,'research/ingredient-reference-lock.json'),'utf8'));
 for(const item of refs.records){
  const route='/cooking/ingredients/'+item.id+'/';
+ // Tool-only foods are verified in the source ledger, without generating thin pages.
+ if(!pages.some(page=>page.url===route))continue;
  const html=pageHtml(route);
  assert.ok(html.includes('Original published entry:'),'missing provenance on '+route);
  assert.ok(html.includes(item.label.replaceAll('&','&amp;').replaceAll("'",'&#39;')),'wrong source label on '+route);
 }
-// A source-to-result ledger for all 24 food references, never a claim of lab
+// A source-to-result ledger for all 27 verified food references, never a claim of lab
 // density measurements or of an up-to-date external source change.
 const ingredientData=JSON.parse(fs.readFileSync(path.join(root,'src/ingredients.json'),'utf8'));
 const sourceLedger=refs.records.map(reference=>{
@@ -130,7 +132,7 @@ const sourceLedger=refs.records.map(reference=>{
   limitations:food.note,
   sourceLockMatch:true,derivedDensityMeasurement:false};
 });
-assert.equal(sourceLedger.length,24,'All 24 ingredient evidence entries are required');
+assert.equal(sourceLedger.length,27,'All 27 source-backed ingredient evidence entries are required');
 fs.writeFileSync(path.join(reportDir,'ingredient-source-evidence.json'),
  JSON.stringify({source:refs.source,sourceReviewedAt:refs.checked,entries:sourceLedger,
   limitation:'Source-locked recipe chart values, not independent lab densities, physical constants, or evidence of current external chart updates.'},null,2)+'\n');

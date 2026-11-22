@@ -76,6 +76,11 @@ try{
  assert.equal(await page.evaluate(()=>window.__resultFeedbackAnimations),1,
   'preset clicks should give quick compositor-only result feedback');
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.667','amount chip updates live result');
+ assert.match(await page.locator('[data-measure-summary]').innerText(),/1 cup \+ 2 × 1\/3 cup/,
+  '200 g of flour uses three zero-reference-error cup fills');
+ await page.locator('[data-ingredient-search]').fill('bread flour');
+ assert.equal(await page.locator('[data-ingredient]').inputValue(),'bread-flour',
+  'the main calculator searches the exact source-backed bread flour');
  await page.locator('[data-ingredient-preset="granulated-sugar"]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.01','ingredient chip uses distinct density');
  await page.locator('[data-amount-preset="100"]').click();
@@ -151,7 +156,7 @@ try{
  assert.ok(await page.locator('[data-chart-table] .table-scroll-hint').isHidden(),
   'wide-screen table does not show an unnecessary mobile swipe instruction');
  await page.locator('[data-chart-filter]').fill('brown sugar');
- assert.equal((await page.locator('[data-chart-count]').innerText()).trim(),'1 of 24 ingredients shown','chart filters ingredient rows');
+ assert.equal((await page.locator('[data-chart-count]').innerText()).trim(),'1 of 27 ingredients shown','chart filters ingredient rows');
  await page.locator('[data-chart-standard]').selectOption('metric');
  await page.locator('[data-chart-custom]').fill('1/3');
  assert.match(await page.locator('[data-chart-table] thead').innerText(),/1\/3 metric cup/,
@@ -258,6 +263,12 @@ try{
  assert.equal((await page.locator('[data-batch-results] .batch-review-row').count()),1);
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 US cup All-purpose flour'),'exact flour conversion');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'fraction-friendly results');
+ await page.locator('[data-batch-lines]').fill('• 42 g unsweetened cocoa powder\n- 200 g flour');
+ assert.ok((await page.locator('[data-batch-summary]').innerText()).includes('1 need review'));
+ await page.locator('[data-batch-review="1"]').selectOption('bread-flour');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 0 need review · 0 blank');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('Bread flour (King Arthur reference)'));
+ await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
  await page.locator('[data-batch-standard]').selectOption('metric');
  assert.equal((await page.locator('[data-batch-target] option[value="cup"]').innerText()).trim(),'Metric cups',
   'target selector must not say US cups while calculating metric cups');
