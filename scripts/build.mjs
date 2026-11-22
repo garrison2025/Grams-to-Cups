@@ -210,7 +210,7 @@ function home(){
  '</div>'+converterForm({})+'</div></div>';
  const homeAnswer='<section class="section section-answer"><div class="container"><div class="panel"><h2>How many cups is 100 grams?</h2>'+
  '<p><strong>100 grams of spoon-and-leveled all-purpose flour is about '+e(flour100)+' US cups.</strong> The referenced flour measure is 120 g per US cup. By comparison, 100 g of granulated sugar is about '+e(sugar100)+' US cups using its 198 g per US cup reference. The same mass does not correspond to one universal cup amount.</p>'+
- '<p>Choose the correct ingredient and food state above, and select US (236.588 mL) or metric (250 mL) cups. Values are scaled from the '+link(source,'published ingredient weight chart')+'; for precise baking, use the gram weight stated in the recipe. '+link('/cooking/sources-and-methods/','Read our calculation method')+'.</p></div></div></section>';
+ '<p>Choose the correct ingredient and food state above, and select US (236.588 mL) or metric (250 mL) cups. Values are scaled from the '+link(source,'published ingredient weight chart')+'; for precise baking, use the gram weight stated in the recipe. '+link('/cooking/sources-and-methods/','Read our calculation method')+'. For step-by-step examples, open '+link('/cooking/ingredients/all-purpose-flour/100-grams-to-cups/','100 g all-purpose flour to cups')+' or '+link('/cooking/ingredients/granulated-sugar/100-grams-to-cups/','100 g granulated sugar to cups')+'.</p></div></div></section>';
  const body=hero+homeAnswer+strip+
  section('Explore by ingredient','Flour, sugar, butter and more — choose the exact food before converting by volume.',grid(ingredientList.slice(0,8),4),true)+
  comparison+
