@@ -114,13 +114,14 @@ try{
  await page.locator('[data-batch-clear]').click();
  assert.equal(await page.locator('[data-batch-lines]').inputValue(),'','clear action empties input');
  await page.goto(origin+'/cooking/recipe-scaler/',{waitUntil:'networkidle'});
- await page.locator('[data-recipe-lines]').fill('1½ cups milk\n½ tsp salt\npinch of salt');
+ await page.locator('[data-recipe-lines]').fill('1½ cups milk\n½ tsp salt\npinch of salt\n2-3 eggs');
  await page.locator('[data-old-servings]').fill('2');
  await page.locator('[data-new-servings]').fill('3');
  const scaled=await page.locator('[data-recipe-output]').innerText();
  assert.ok(scaled.includes('2 1/4 cups milk'),'recipe displays exact mixed kitchen fraction');
  assert.ok(scaled.includes('3/4 tsp salt'),'recipe displays Unicode fraction');
  assert.ok(scaled.includes('pinch of salt  [check manually]'),'unknown serving units stay visible for review');
+ assert.ok(scaled.includes('2-3 eggs  [check manually]'),'ranges are not partially scaled into unsafe recipe quantities');
  assert.equal(errors.length,0,'no desktop runtime errors after batch conversion and recipe scaling');
 
  const mobile=await browser.newPage({viewport:{width:375,height:812},deviceScaleFactor:1,isMobile:true,hasTouch:true});
