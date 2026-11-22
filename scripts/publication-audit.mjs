@@ -22,7 +22,7 @@ const eligibility=pages.filter(p=>p.indexCandidate);
 const titleMap=new Map(),descriptionMap=new Map();
 const warnings=[];
 assert.equal(pages.length,81,'Expected 81 generated pages');
-assert.equal(eligibility.length,65,'Expected 65 index candidates');
+assert.equal(eligibility.length,62,'Expected 62 index-approved candidates');
 if(production){
  assert.match(manifest.origin,/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i);
  const hostname=new URL(manifest.origin).hostname;
