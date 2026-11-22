@@ -389,7 +389,7 @@ function batchPage(){
  '<div class="calc-actions"><button class="btn btn-primary" type="button" data-batch-run>Convert list</button><button class="btn" type="button" data-batch-copy>Copy results</button>'+
  '<button class="btn" type="button" data-batch-csv>Download CSV</button><button class="btn btn-ghost" type="button" data-batch-clear>Clear</button></div>'+
  '<p class="error" role="alert" data-batch-error hidden></p><p class="batch-feedback" data-batch-feedback role="status"></p><div class="batch-summary" role="status" data-batch-summary>Results appear below as you type.</div>'+
- '<div class="table-scroll batch-result-table"><table><thead><tr><th scope="col">Original line</th><th scope="col">Conversion / review</th></tr></thead><tbody data-batch-results></tbody></table></div>'+
+ '<div class="table-shell"><div class="table-scroll batch-result-table" tabindex="0" role="region" aria-label="Batch conversion results; scroll horizontally for both columns"><table><thead><tr><th scope="col">Original line</th><th scope="col">Conversion / review</th></tr></thead><tbody data-batch-results></tbody></table></div><p class="table-scroll-hint">↔ Swipe sideways to compare original and converted lines</p></div>'+
  '<p class="source-chip">Ingredient weights from '+link(source,'King Arthur Baking’s ingredient weight chart')+'. Original lines are preserved if an ingredient or unit cannot be safely identified. Your text stays in your browser.</p>'+
  '</form></div>'+
  '<div class="panel mt-3"><h2>How the batch converter protects accuracy</h2>'+
