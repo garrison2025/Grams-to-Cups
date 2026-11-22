@@ -5,15 +5,31 @@ const ingredients=await fetch('/assets/ingredients.json').then(r=>r.ok?r.json():
 const byId=new Map(ingredients.map(i=>[i.id,i]));
 const setText=(element,value)=>{if(element)element.textContent=String(value)};
 function announce(element,message){if(element){element.hidden=false;setText(element,message)}}
-function normalizeUnit(value){return value==='cup'?'cup':value}
 const shortLabel=(unit,standard)=>{
  const labels={g:'g',kg:'kg',oz:'oz',cup:standard==='metric'?'metric cups':'US cups',tbsp:'tbsp',tsp:'tsp',ml:'mL','fl-oz':'US fl oz'};
  return labels[unit]||unit;
 };
+function renderMeasureSteps(guide,steps){
+ const list=$('[data-measure-steps]',guide);
+ const template=$('[data-measure-step-template]',guide);
+ steps.forEach((step,i)=>{
+  let item=list.children[i];
+  if(!item){
+   item=template.content.firstElementChild.cloneNode(true);
+   list.append(item);
+  }
+  item.dataset.stepKind=step.kind;
+  item.style.setProperty('--measure-fill',step.fill);
+  setText($('[data-step-label]',item),(step.count>1?step.count+' × ':'')+step.label);
+ });
+ while(list.children.length>steps.length)list.lastElementChild.remove();
+}
 function renderCalculator(form){
  const result=$('[data-result]',form),note=$('[data-result-note]',form),error=$('[data-error]',form);
  const from=$('[data-from]',form)?.value||'g',to=$('[data-to]',form)?.value||'cup';
  const standard=$('[data-standard]',form)?.value||'us';
+ setText($('[data-amount-unit]',form),shortLabel(from,standard));
+ setText($('[data-advanced-label]',form),shortLabel(from,standard)+' → '+shortLabel(to,standard));
  const ingredient=byId.get($('[data-ingredient]',form)?.value)||null;
  const isWater=ingredient?.id==='water';
  const chosenWaterMode=isWater?($('[data-water-mode]',form)?.value||'recipe'):'recipe';
@@ -63,12 +79,13 @@ function renderCalculator(form){
    guide.hidden=!primary;
    if(primary){
     setText($('[data-measure-summary]',guide),primary.instruction);
+    renderMeasureSteps(guide,primary.steps);
     const alternative=$('[data-measure-alternative]',guide);
     const planDifference=plan=>{
      const diff=plan.differenceGrams??plan.differenceMl,unit=plan.differenceGrams===null?'mL':'g';
      const difference=Math.abs(diff)<.01?'Under 0.01 '+unit:
       formatAmount(Math.abs(diff),3)+' '+unit+(diff>0?' above':' below')+' target';
-     return difference+' ('+formatAmount(Math.abs(plan.percentError),3)+'% difference)'+
+     return difference+' ('+(Math.abs(plan.percentError)<.0005?'0':formatAmount(Math.abs(plan.percentError),3))+'% difference)'+
       (Math.abs(plan.percentError)>=5?' · Prefer a kitchen scale':'');
     };
     if(alternative){
@@ -78,7 +95,6 @@ function renderCalculator(form){
     setText($('[data-measure-error]',guide),'Primary option · '+planDifference(primary));
    }
   }
-  setText($('[data-advanced-label]',form),unitDescription(from,standard)+' → '+unitDescription(to,standard));
   setText(note,(fraction?'Approximately '+fraction+' '+shortLabel(to,standard)+'. ':'')+context);
   setText($('[data-meta-kind]',form),isCrossDimension?'Ingredient':'Conversion');
   setText($('[data-meta-ingredient]',form),isCrossDimension?ingredient?.name:'Fixed units');
@@ -121,16 +137,106 @@ function animateConversionResult(form){
  );
  resultMotions.set(output,motion);
 }
-function animateSwap(button){
+function animateSwap(button,form){
  if(reducedMotion.matches||!button?.animate)return;
  button.animate([{transform:'rotate(0deg)'},{transform:'rotate(180deg)'}],
   {duration:260,easing:'cubic-bezier(.2,.8,.2,1)'});
+ for(const field of $$('[data-amount-unit],[data-result-unit],[data-advanced-label]',form)){
+  field.animate([{backgroundColor:'#d9e8a4',color:'#15392b'},{backgroundColor:'',color:''}],{duration:240,easing:'ease-out'});
+ }
+}
+
+function setupIngredientPicker(form,onChange){
+ const picker=$('[data-ingredient-picker]',form),select=$('[data-ingredient]',form);
+ if(!picker||!select||!ingredients.length)return null;
+ const input=$('[data-ingredient-search]',picker),list=$('[role="listbox"]',picker);
+ const empty=$('[data-ingredient-empty]',picker),options=$$('[data-ingredient-option]',list);
+ const searchText=food=>[food.name,...(food.aliases||[])].map(name=>name.toLowerCase());
+ const matches=new Map(ingredients.map(food=>[food.id,searchText(food)]));
+ let visible=options,active=-1;
+ function highlight(index){
+  active=index;
+  for(const option of options)option.classList.toggle('is-active',option===visible[active]);
+  if(active<0){input.removeAttribute('aria-activedescendant');return;}
+  input.setAttribute('aria-activedescendant',visible[active].id);
+  visible[active].scrollIntoView({block:'nearest',inline:'nearest'});
+ }
+ function close(){
+  list.hidden=true;empty.hidden=true;
+  input.setAttribute('aria-expanded','false');highlight(-1);
+ }
+ function show(query=''){
+  visible=options.filter(option=>{
+   const found=matches.get(option.dataset.ingredientOption)?.some(name=>name.includes(query));
+   option.hidden=!found;
+   option.setAttribute('aria-selected',String(option.dataset.ingredientOption===select.value));
+   return found;
+  });
+  list.hidden=visible.length===0;empty.hidden=visible.length>0;
+  input.setAttribute('aria-expanded',String(!list.hidden));highlight(-1);
+ }
+ function sync(){
+  input.value=byId.get(select.value)?.name||'';
+  close();
+ }
+ function choose(option){
+  select.value=option.dataset.ingredientOption;
+  sync();
+  onChange();
+ }
+ input.addEventListener('focus',()=>{input.select();show();});
+ input.addEventListener('click',()=>{if(list.hidden&&empty.hidden)show();});
+ input.addEventListener('input',()=>{
+  const query=input.value.trim().toLowerCase();
+  const exact=ingredients.filter(food=>matches.get(food.id).includes(query));
+  if(exact.length===1)select.value=exact[0].id;
+  show(query);
+  onChange();
+ });
+ input.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){
+   event.preventDefault();sync();onChange();
+  }else if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+   event.preventDefault();
+   if(list.hidden&&empty.hidden)show();
+   if(visible.length===0)return;
+   const down=event.key==='ArrowDown';
+   highlight(active<0?(down?0:visible.length-1):(active+(down?1:-1)+visible.length)%visible.length);
+  }else if(event.key==='Enter'){
+   event.preventDefault();
+   if(!list.hidden&&active>=0)choose(visible[active]);
+   else if(!list.hidden&&visible.length===1)choose(visible[0]);
+   else close();
+  }
+ });
+ input.addEventListener('blur',close);
+ list.addEventListener('mousedown',event=>event.preventDefault());
+ list.addEventListener('click',event=>{
+  const option=event.target.closest('[data-ingredient-option]');
+  if(option)choose(option);
+ });
+ $('[data-ingredient-fallback]',form).hidden=true;
+ picker.hidden=false;
+ sync();
+ return {input,sync};
 }
 
 for(const form of $$('[data-calc]')){
  const live=$('[data-live-result]',form);
+ const feedback=$('[data-feedback]',form);
+ const copyButton=$('[data-copy]',form),copyLabel=$('[data-copy-label]',form);
  let spokenTimer=null;
+ let copyTimer=null,copyRequest=0;
+ function clearCopyFeedback(){
+  copyRequest++;
+  clearTimeout(copyTimer);
+  copyButton.classList.remove('is-copied');
+  setText(copyLabel,'Copy result');
+  feedback.removeAttribute('data-error-state');
+  setText(feedback,'');
+ }
  const update=(announceChange=false)=>{
+  if(announceChange)clearCopyFeedback();
   const conversion=renderCalculator(form);
   if(announceChange&&live){
    if(spokenTimer!==null)clearTimeout(spokenTimer);
@@ -145,24 +251,17 @@ for(const form of $$('[data-calc]')){
   }
   return conversion;
  };
- const advanced=$('[data-advanced-units]',form);
- if(advanced&&window.matchMedia('(max-width: 520px)').matches)advanced.open=false;
- const foodSearch=$('[data-ingredient-search]',form),foodSelect=$('[data-ingredient]',form);
- foodSearch?.addEventListener('input',()=>{
-  const query=foodSearch.value.trim().toLowerCase();
-  const found=query?ingredients.find(food=>[food.name,...(food.aliases||[])].some(name=>name.toLowerCase()===query)):null;
-  if(found){foodSelect.value=found.id;update(true);}
- });
  const params=new URLSearchParams(location.search);
  for(const [key,selector] of [['amount','[data-amount]'],['ingredient','[data-ingredient]'],['standard','[data-standard]'],['from','[data-from]'],['to','[data-to]'],['waterMode','[data-water-mode]']]){
   const el=$(selector,form),v=params.get(key);
   if(el&&v&&v.length<80&&(el.tagName==='INPUT'||[...el.options].some(o=>o.value===v)))el.value=v;
  }
- if(foodSearch&&foodSelect)foodSearch.value=byId.get(foodSelect.value)?.name||'';
+ const picker=setupIngredientPicker(form,()=>update(true));
  $$('input,select',form).forEach(el=>{
+  if(el===picker?.input)return;
   el.addEventListener('input',()=>update(true));
   el.addEventListener('change',()=>{
-   if(el===foodSelect&&foodSearch)foodSearch.value=byId.get(foodSelect.value)?.name||'';
+   if(el.matches('[data-ingredient]'))picker?.sync();
    const valid=update(true);
    if(el.tagName==='SELECT'&&valid)animateConversionResult(form);
   });
@@ -172,24 +271,40 @@ for(const form of $$('[data-calc]')){
  }));
  $$('[data-ingredient-preset]',form).forEach(button=>button.addEventListener('click',()=>{
   $('[data-ingredient]',form).value=button.dataset.ingredientPreset;
-  if(foodSearch)foodSearch.value=byId.get(button.dataset.ingredientPreset)?.name||'';
+  picker?.sync();
   if(update(true))animateConversionResult(form);
  }));
  $('[data-swap]',form)?.addEventListener('click',()=>{
   const from=$('[data-from]',form),to=$('[data-to]',form);
-  [from.value,to.value]=[to.value,from.value];if(update(true))animateConversionResult(form);animateSwap($('[data-swap]',form));
+  [from.value,to.value]=[to.value,from.value];if(update(true))animateConversionResult(form);animateSwap($('[data-swap]',form),form);
  });
  $('[data-reset]',form)?.addEventListener('click',()=>{
-  form.reset();if(foodSearch)foodSearch.value=byId.get(foodSelect?.value)?.name||'';
-  setText($('[data-feedback]',form),'');if(update(true))animateConversionResult(form);
+  form.reset();picker?.sync();
+  if(update(true))animateConversionResult(form);
  });
- $('[data-copy]',form)?.addEventListener('click',async()=>{
+ copyButton.addEventListener('click',async()=>{
+  clearCopyFeedback();
   const d=update();if(!d)return;
+  const request=copyRequest;
   const text=d.amount+' '+unitDescription(d.from,d.standard)+(d.isCrossDimension?' of '+d.ingredient?.name:'')+' ≈ '+formatAmount(d.n,4)+' '+d.unit+'. '+d.context;
-  try{await navigator.clipboard.writeText(text);setText($('[data-feedback]',form),'Copied conversion and its context.')}
-  catch{setText($('[data-feedback]',form),'Clipboard unavailable. Select the displayed result to copy it.')}
+  try{
+   await navigator.clipboard.writeText(text);
+   if(request!==copyRequest)return;
+   copyButton.classList.add('is-copied');
+   setText(copyLabel,'✓ Copied');
+   feedback.classList.add('sr-only');
+   setText(feedback,'Copied conversion and its context.');
+   copyTimer=setTimeout(clearCopyFeedback,2200);
+  }catch{
+   if(request!==copyRequest)return;
+   feedback.classList.remove('sr-only');
+   feedback.setAttribute('data-error-state','');
+   setText(feedback,'Clipboard unavailable. Select the displayed result to copy it.');
+  }
  });
  $('[data-share]',form)?.addEventListener('click',async()=>{
+  clearCopyFeedback();
+  feedback.classList.remove('sr-only');
   const d=update();if(!d)return;
   const u=new URL(location.href);u.search='';
   for(const [k,v] of [['amount',d.amount],['ingredient',d.isCrossDimension?d.ingredient?.id:null],['standard',d.standard],['from',d.from],['to',d.to],['waterMode',d.isCrossDimension&&d.ingredient?.id==='water'?d.waterMode:null]])if(v)u.searchParams.set(k,v);
@@ -369,6 +484,23 @@ for(const filter of $$('[data-directory-filter]'))filter.addEventListener('input
  const q=filter.value.trim().toLowerCase();
  for(const item of $$('[data-filter-item]'))item.hidden=!item.textContent.toLowerCase().includes(q);
 });
+
+for(const wrap of $$('.table-scroll')){
+ const hint=$('.table-scroll-hint',wrap.parentElement);
+ const table=$('table',wrap);
+ if(!hint||!table)continue;
+ const check=()=>{
+  const overflows=wrap.scrollWidth>wrap.clientWidth+1;
+  hint.hidden=!overflows;
+  wrap.tabIndex=overflows?0:-1;
+ };
+ if(typeof ResizeObserver==='function'){
+  const observer=new ResizeObserver(check);
+  observer.observe(wrap);
+  observer.observe(table);
+ }else window.addEventListener('resize',check);
+ check();
+}
 
 for(const button of $$('[data-chart-print]'))button.addEventListener('click',()=>window.print());
 

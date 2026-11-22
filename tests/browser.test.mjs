@@ -30,13 +30,18 @@ try{
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(origin+'/',{waitUntil:'networkidle'});
- assert.ok(await page.getByRole('heading',{name:/Grams to cups.*without the guesswork/i}).isVisible(),'hero should show editorial heading');
+ assert.ok(await page.getByRole('heading',{name:/^Grams to cups\.$/i}).isVisible(),'home shows a clear task heading');
  await page.locator('[data-result]').waitFor();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.833','default flour reference');
  assert.equal((await page.locator('.result-amount .result-unit').innerText()).trim(),'US cups',
   'result has a clearly labeled unit');
  assert.equal(await page.locator('.result-amount .result-unit').evaluate(el=>getComputedStyle(el).borderTopWidth),
   '1px','result unit has a readable capsule instead of unstyled text');
+ const [desktopFields,desktopResult]=await Promise.all([
+  page.locator('.calc-fields').boundingBox(),page.locator('.calc-readout .result').boundingBox()
+ ]);
+ assert.ok(desktopResult.x>=desktopFields.x+desktopFields.width&&desktopResult.y+desktopResult.height<=900,
+  'desktop shows inputs next to the complete result in the first viewport');
  assert.ok((await page.locator('.tile[data-food-group="flour"]').count())>0,'flour cards have a visible family');
  assert.ok((await page.locator('.tile[data-food-group="sugar"]').count())>0,'sugar cards use a distinct family');
  assert.equal((await page.locator('.tile[data-food-group="flour"] .tile-kind').first().innerText()).trim(),
@@ -61,11 +66,17 @@ try{
  await page.locator('[data-copy]').click();
  assert.match(await page.evaluate(()=>window.__copiedConversion),/100 grams.*0\.833.*US cups/s,'copied text includes quantity, result and unit');
  assert.match(await page.locator('[data-feedback]').innerText(),/Copied conversion/);
+ assert.match(await page.locator('[data-copy]').innerText(),/Copied/,'copy button shows immediate confirmation');
  await page.locator('[data-share]').click();
  const shared=await page.evaluate(()=>window.__copiedConversion);
  assert.ok(shared.includes('amount=100')&&shared.includes('ingredient=all-purpose-flour')&&shared.includes('from=g')&&shared.includes('to=cup'),
   'shared URL preserves current converter state without uploading data');
  assert.match(await page.locator('[data-feedback]').innerText(),/Shareable link copied/);
+ await page.evaluate(()=>{
+  navigator.clipboard.writeText=async()=>{throw new Error('Clipboard blocked for test')};
+ });
+ await page.locator('[data-copy]').click();
+ assert.match(await page.locator('.calc-readout [data-feedback]').innerText(),/Clipboard unavailable/,'clipboard failures are visible next to actions');
  await page.evaluate(()=>{
   window.__resultFeedbackAnimations=0;
   const output=document.querySelector('[data-result]');
@@ -78,9 +89,16 @@ try{
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.667','amount chip updates live result');
  assert.match(await page.locator('[data-measure-summary]').innerText(),/1 cup \+ 2 × 1\/3 cup/,
   '200 g of flour uses three zero-reference-error cup fills');
- await page.locator('[data-ingredient-search]').fill('bread flour');
+ assert.deepEqual(await page.locator('[data-measure-steps] [data-step-label]').allTextContents(),['1 cup','2 × 1/3 cup']);
+ const ingredient=page.getByRole('combobox',{name:'Ingredient'});
+ await ingredient.fill('bread');
+ await ingredient.press('ArrowDown');
+ assert.equal(await ingredient.getAttribute('aria-activedescendant'),'calc-food-bread-flour');
+ await ingredient.press('Enter');
  assert.equal(await page.locator('[data-ingredient]').inputValue(),'bread-flour',
-  'the main calculator searches the exact source-backed bread flour');
+  'keyboard selection updates the source-backed ingredient');
+ assert.equal(await ingredient.getAttribute('aria-expanded'),'false');
+ assert.ok(await page.locator('[data-ingredient-fallback]').isHidden(),'only one food picker is shown');
  await page.locator('[data-ingredient-preset="granulated-sugar"]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.01','ingredient chip uses distinct density');
  await page.locator('[data-amount-preset="100"]').click();
@@ -90,6 +108,7 @@ try{
  await page.locator('[data-amount-preset="200"]').click();
  assert.equal(await page.evaluate(()=>window.__resultFeedbackAnimations),feedbackCount,
   'reduced-motion preference disables result animations but calculations continue');
+ assert.equal(await page.locator('.measure-fill').first().evaluate(el=>getComputedStyle(el).transitionDuration),'0s');
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.01','reduced motion does not disable calculator');
  await page.emulateMedia({reducedMotion:'no-preference'});
  await page.locator('[data-amount-preset="100"]').click();
@@ -147,12 +166,13 @@ try{
  const fixedShare=await page.evaluate(()=>window.__copiedFixed);
  assert.ok(fixedShare.includes('from=tbsp')&&fixedShare.includes('to=ml'),'fixed-volume share link preserves direction');
  assert.ok(!fixedShare.includes('ingredient='),'fixed-volume share link does not add irrelevant ingredient parameters');
+ await page.locator('[data-advanced-units] summary').click();
  await page.locator('[data-from]').selectOption('g');
  assert.ok(await page.locator('[data-density-field]').first().isVisible(),'show ingredient when switching to mass-volume');
  assert.ok(await page.locator('[data-source-ingredient]').isVisible(),'show source reference only for ingredient-dependent quantities');
  await page.goto(origin+'/cooking/charts/',{waitUntil:'networkidle'});
- assert.equal(await page.locator('[data-chart-table] .table-scroll').getAttribute('tabindex'),'0',
-  'scrollable table can receive keyboard focus');
+ assert.equal(await page.locator('[data-chart-table] .table-scroll').getAttribute('tabindex'),'-1',
+  'a table that fits the desktop is not an extra tab stop');
  assert.ok(await page.locator('[data-chart-table] .table-scroll-hint').isHidden(),
   'wide-screen table does not show an unnecessary mobile swipe instruction');
  await page.locator('[data-chart-filter]').fill('brown sugar');
@@ -424,8 +444,8 @@ try{
  assert.ok(await staticPage.locator('[data-meter-wrap]').isVisible(),'static home calculator shows useful cup progress');
  assert.match(await staticPage.locator('[data-meter-label]').innerText(),/83% of one US cup/,'static progress reflects the actual cup estimate');
  await staticPage.goto(origin+'/cooking/ingredients/all-purpose-flour/',{waitUntil:'domcontentloaded'});
- assert.ok(await staticPage.locator('.table-scroll-hint').first().isVisible(),
-  'static no-JavaScript table still explains how mobile visitors see all columns');
+ assert.ok(await staticPage.locator('.table-scroll').first().evaluate(el=>el.scrollWidth>el.clientWidth&&el.tabIndex===0),
+  'mobile tables remain scrollable without JavaScript');
  await staticPage.goto(origin+'/cooking/half-a-measurement/',{waitUntil:'domcontentloaded'});
  assert.equal((await staticPage.locator('[data-fraction-result]').innerText()).trim(),'3/4',
   'a useful 1/2 + 1/4 example is pre-rendered without JavaScript');
@@ -485,10 +505,18 @@ try{
    assert.ok(await tableRegion.evaluate(el=>el.scrollLeft>0),
     'keyboard input scrolls accessible chart horizontally');
   }
+  if(route==='/cooking/grams-to-cups/200-grams-to-cups/'){
+   const quick=mobile.locator('.quick-answer-panel');
+   assert.equal(await quick.locator('tbody tr').count(),3);
+   assert.equal(await quick.locator('tbody tr').first().evaluate(el=>getComputedStyle(el).display),'grid');
+   assert.ok(await quick.locator('.table-scroll-hint').isHidden(),'stacked quick answers need no scroll hint');
+   assert.ok(await mobile.locator('[data-common-measures] .table-scroll-hint').isVisible(),'full comparison keeps its actual scroll hint');
+  }
   if(route==='/'){
-   const amountBounds=await mobile.locator('[data-amount]').boundingBox();
-   assert.ok(amountBounds&&amountBounds.y<650,
-    'at 375px the main calculator input should be visible earlier, not buried below the hero');
+   for(const target of ['[data-amount]','[data-ingredient-search]','[data-result]']){
+    const bounds=await mobile.locator(target).boundingBox();
+    assert.ok(bounds&&bounds.y>=0&&bounds.y+bounds.height<=812,target+' fits the first 375×812 viewport');
+   }
    const button=mobile.locator('[data-nav-toggle]');
    await button.click();
    assert.equal(await button.getAttribute('aria-expanded'),'true','mobile menu opens');
@@ -504,9 +532,6 @@ try{
    await mobile.mouse.click(7,775);
    assert.equal(await button.getAttribute('aria-expanded'),'false','outside tap closes mobile menu');
    assert.equal(await button.getAttribute('aria-label'),'Open navigation','closed menu is clearly labeled');
-   assert.ok(await mobile.locator('.hero-mobile-cta').isVisible(),'mobile hero includes direct converter action');
-   await mobile.locator('.hero-mobile-cta').click();
-   assert.ok(await mobile.locator('#converter').isVisible(),'mobile jump target exists');
    await mobile.evaluate(()=>window.scrollTo(0,0));
    if(process.env.EMIT_UI_SHOTS==='1'){
     const img=await mobile.screenshot({type:'jpeg',quality:46});
