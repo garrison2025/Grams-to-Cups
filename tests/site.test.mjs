@@ -169,7 +169,7 @@ test('batch conversion uses ingredient-specific values in both directions',()=>{
  assert.equal(cups.rows[3].output,'1/8 US cup Honey');
  const metric=batchConvertIngredients('120 g all-purpose flour',{ingredients:foods,target:'cup',standard:'metric'});
  assert.equal(metric.converted,1);
- assert.equal(metric.rows[0].output,'0.9464 metric cups All-purpose flour','metric cups are distinguishable from US cups');
+ assert.equal(metric.rows[0].output,'0.9464 metric cup All-purpose flour','metric cups are distinguishable from US cups');
  assert.match(metric.rows[0].reason,/120 g \/ 1 US cup/,'metric conversion still cites its original US cup source');
  const grams=batchConvertIngredients('½ cup granulated sugar\n1½ cups milk',{ingredients:foods,target:'g'});
  assert.equal(grams.converted,2);
