@@ -38,6 +38,16 @@ Cloudflare previews should remain noindex. This is intentional, not a reason to 
 - A successful GitHub **build** is not proof of Cloudflare deployment, Google indexing, Lighthouse performance or AdSense approval. A green live-smoke check only proves the tested URLs and headers at the time of execution; Google Search Console and performance still require separate verification.
 - `src/seo-evidence.mjs` prevents empty/missing Semrush KD from being interpreted as KD0 and safely quotes third-party CSV text to neutralize spreadsheet formula injection. Source `research/semrush-us-2300-sample.csv` remains unchanged.
 
+## Final product regression gate before public indexing
+
+All three Cooking chart pages (/cooking/charts/, /cooking/charts/flour/, /cooking/charts/sugar/) must support both US and metric cups and a custom quantity in the 0.001–1,000 cup range. The visible table, printed table and filtered CSV must use the same row numbers and basis. Test 1/3 metric cup and a 1.5 metric cup CSV, as well as invalid input blocking exports. With JavaScript off, each chart retains its useful, correctly labeled US-cup default values.
+
+The recipe scaler must correctly handle 1 ¹⁄₂ cups, 1½ cups, 1–2 cups and 1½–3 cups. If it encounters a compound recipe line that cannot be interpreted without risk, it must leave the original text unchanged and flag it. Its warning is an intentional safety mechanism, not a failure to display the line.
+
+Water is a special explicitly labeled choice: the documented recipe chart uses 227 g / US cup; a separate approximate physical-capacity mode uses about 1 g / mL. The latter may vary with temperature and **must not be described as the chart's published grams-per-cup reference**. Verify the mode in the result, copied text, shareable link, printed water page and all-food chart/CSV. Other food densities must remain tied to their documented state and published references.
+
+The latest code remains in the same open PR. Complete the prelaunch Node/Chromium/Lighthouse and production-domain HTTP/SEO checks before approving `main` publication or any Google indexing.
+
 ## Mobile Lighthouse release acceptance
 
 Use GitHub → **Actions → Lighthouse mobile lab and real-host acceptance**.
