@@ -53,6 +53,20 @@ assert.ok(methods.includes('Source entries used by this website'),'missing origi
 for(const ref of refs.records)assert.ok(methods.includes(ref.label.replaceAll('&','&amp;').replaceAll("'",'&#39;')),'missing methods row '+ref.id);
 
 assert.equal(pages.filter(x=>/\/ingredients\/[^/]+\/\d+-grams-to-cups\/$/.test(x.url)).length,10);
+
+for(const item of refs.records){
+ const url='/cooking/ingredients/'+item.id+'/';
+ const html=pageHtml(url);
+ assert.match(html,/: cups to grams<\/h2>/,'Missing reverse lookup on '+url);
+ assert.match(html,/<th scope="col">US cup amount<\/th>/,'Missing measured cup portions table on '+url);
+ assert.match(html,/<th scope="col">Equivalent metric cups<\/th>/,'Missing metric cups conversion column on '+url);
+}
+for(const page of numberPages){
+ const html=pageHtml(page.url);
+ assert.match(html,/Closest common cup measures for/,'Missing practical measuring guide on '+page.url);
+ assert.match(html,/Weight difference<\/th>/,'Missing measurement precision warning on '+page.url);
+}
+
 assert.equal(pages.find(p=>p.url==='/').indexCandidate,true,'homepage is primary grams-to-cups landing');
 assert.equal(pages.find(p=>p.url==='/cooking/grams-to-cups/').indexCandidate,false,'duplicate core converter must not compete with homepage');
 assert.ok(!pageHtml('/').includes('href="/cooking/grams-to-cups/"'),'internal links must use the primary homepage URL');
