@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {parseSemrushNumber,csvSafeCell} from '../src/seo-evidence.mjs';
+import {parseSemrushNumber,parseSemrushKD,csvSafeCell} from '../src/seo-evidence.mjs';
 import {parseAmount,convertQuantity,approximateFraction,scaleRecipe,csvCell,formatAmount,formatKitchenAmount,batchConvertIngredients,US_CUP_ML,METRIC_CUP_ML,US_TBSP_ML} from '../src/core.mjs';
 const foods=JSON.parse(fs.readFileSync(new URL('../src/ingredients.json',import.meta.url),'utf8'));
 const byId=id=>foods.find(x=>x.id===id);
@@ -186,13 +186,17 @@ test('batch conversion flags unclear ingredients and invalid lines without inven
 });
 
 test('Semrush evidence never treats missing KD as an easy keyword',()=>{
- for(const x of ['',null,undefined,'-','N/A','n/a',' ','unknown','NaN','Infinity','30%', '=0']){
+ for(const x of ['',null,undefined,'-','N/A','n/a',' ','unknown','NaN','Infinity','30%', '=0','-1','-0.25','-100']){
   assert.equal(parseSemrushNumber(x),null,'Should remain unknown: '+String(x));
  }
  assert.equal(parseSemrushNumber('0'),0,'Real observed zero remains zero');
  assert.equal(parseSemrushNumber('29'),29);
  assert.equal(parseSemrushNumber('29.5'),29.5);
  assert.equal(parseSemrushNumber('1300'),1300);
+ for(const x of [-1,101,110,'missing',''])assert.equal(parseSemrushKD(x),null,'Out-of-range KD is unknown, not easy: '+String(x));
+ assert.equal(parseSemrushKD('0'),0);
+ assert.equal(parseSemrushKD('29'),29);
+ assert.equal(parseSemrushKD('100'),100);
 });
 test('exported competitor CSV cannot execute spreadsheet formulas',()=>{
  for(const x of ['=1+1','+SUM(1,2)','-2+3','@SUM(1,2)','  =HYPERLINK("danger")','\u200b=HYPERLINK("danger")','\ufeff  @SUM(1,2)','\t+SUM(2,3)']){
