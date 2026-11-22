@@ -1,0 +1,31 @@
+name: Browser UX & responsive audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'scripts/**'
+      - 'src/**'
+      - 'tests/browser.test.mjs'
+      - '.github/workflows/browser-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run build
+      - name: Install ephemeral headless Chromium test package (not deployed)
+        run: |
+          npm install --no-save --package-lock=false playwright@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Test desktop and mobile interactions
+        run: node tests/browser.test.mjs
+        env:
+          EMIT_UI_SHOTS: '1'
