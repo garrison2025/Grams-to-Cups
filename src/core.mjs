@@ -91,7 +91,7 @@ export function formatKitchenAmount(value,{fractions=true,precision=4}={}){
  if(!Number.isFinite(value)||value<0||value>1e9)throw new Error('Invalid scaled quantity.');
  if(fractions){
   const whole=Math.floor(value),remainder=value-whole;
-  for(const denominator of [2,3,4,6,8,12,16]){
+  for(const denominator of [2,3,4,6,8,16]){
    const numerator=Math.round(remainder*denominator);
    if(Math.abs(remainder-numerator/denominator)>1e-7)continue;
    if(numerator===0)return String(whole);
@@ -139,7 +139,7 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
   try{
    const amount=parseAmount(rawAmount);
    const result=convertQuantity(amount,unit,target,{ingredient:food,standard});
-   return {index,original,status:'converted',output:formatKitchenAmount(result,{fractions})+' '+(target==='cup'?'cups':'g')+' '+food.name,
+   return {index,original,status:'converted',output:formatKitchenAmount(result,{fractions:fractions&&target==='cup'})+' '+(target==='cup'?'cups':'g')+' '+food.name,
      amount,result,from:unit,to:target,ingredient:food.name,ingredientId:food.id,reason:'Reference: '+food.referenceGrams+' g / '+food.referenceAmount+' '+food.referenceUnit};
   }catch(error){
    return {index,original,status:'review',output:original,reason:error.message,ingredient:food.name};
