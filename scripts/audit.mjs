@@ -38,6 +38,20 @@ assert.equal(pages.filter(p=>p.indexCandidate).length,66,'expected 66 audited in
 const numberPages=pages.filter(x=>/\/grams-to-cups\/\d+-grams-to-cups\/$/.test(x.url));
 assert.equal(numberPages.length,21);
 assert.equal(pages.filter(x=>/\/ingredients\/[^/]+\/$/.test(x.url)).length,24);
+
+// Every ingredient page must show its independently checked original chart entry,
+// rather than a bare citation that cannot establish which weight was selected.
+const refs=JSON.parse(fs.readFileSync(path.join(root,'research/ingredient-reference-lock.json'),'utf8'));
+for(const item of refs.records){
+ const route='/cooking/ingredients/'+item.id+'/';
+ const html=pageHtml(route);
+ assert.ok(html.includes('Original published entry:'),'missing provenance on '+route);
+ assert.ok(html.includes(item.label.replaceAll('&','&amp;').replaceAll("'",'&#39;')),'wrong source label on '+route);
+}
+const methods=pageHtml('/cooking/sources-and-methods/');
+assert.ok(methods.includes('Source entries used by this website'),'missing original references table');
+for(const ref of refs.records)assert.ok(methods.includes(ref.label.replaceAll('&','&amp;').replaceAll("'",'&#39;')),'missing methods row '+ref.id);
+
 assert.equal(pages.filter(x=>/\/ingredients\/[^/]+\/\d+-grams-to-cups\/$/.test(x.url)).length,10);
 assert.equal(pages.find(p=>p.url==='/').indexCandidate,true,'homepage is primary grams-to-cups landing');
 assert.equal(pages.find(p=>p.url==='/cooking/grams-to-cups/').indexCandidate,false,'duplicate core converter must not compete with homepage');
