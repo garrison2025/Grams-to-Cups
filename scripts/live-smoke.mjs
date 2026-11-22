@@ -66,8 +66,8 @@ if(approved){
  const {response,body}=await fetchText('/sitemap.xml');
  demand(response,200,'/sitemap.xml');
  const locs=[...body.matchAll(/<loc>([^<]+)<\/loc>/g)].map(x=>x[1]);
- assert.equal(locs.length,65,'Production sitemap should contain 65 index candidates');
- assert.equal(new Set(locs).size,65,'Duplicate sitemap URLs');
+ assert.equal(locs.length,62,'Production sitemap should contain 62 approved index URLs');
+ assert.equal(new Set(locs).size,62,'Duplicate sitemap URLs');
  assert.ok(locs.every(x=>x.startsWith(origin+'/')),'Sitemap contains a different hostname');
  assert.ok(!locs.some(x=>x.endsWith('/cooking/grams-to-cups/')||x.endsWith('/cooking/batch-converter/')||x.includes('1000-grams-to-cups')),'Noindex pages leaked into sitemap');
  checks.push('/sitemap.xml');
