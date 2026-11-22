@@ -127,6 +127,9 @@ try{
  assert.ok(scaled.includes('3/4 tsp salt'),'recipe displays Unicode fraction');
  assert.ok(scaled.includes('pinch of salt  [check manually]'),'unknown serving units stay visible for review');
  assert.ok(scaled.includes('2-3 eggs  [check manually]'),'ranges are not partially scaled into unsafe recipe quantities');
+ await page.locator('[data-recipe-lines]').fill('1 cup milk + 2 tbsp cream');
+ const compound=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(compound.includes('1 cup milk + 2 tbsp cream  [check manually]'),'compound quantities must not be only partially scaled');
  assert.equal(errors.length,0,'no desktop runtime errors after batch conversion and recipe scaling');
  await page.locator('[data-recipe-lines]').fill('1 cup milk\n2 cups water');
  await page.locator('[data-old-servings]').fill('2');
