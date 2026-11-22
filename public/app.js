@@ -73,25 +73,41 @@ function renderCalculator(form){
  }
 }
 for(const form of $$('[data-calc]')){
- const update=()=>renderCalculator(form);
+ const live=$('[data-live-result]',form);
+ let spokenTimer=null;
+ const update=(announceChange=false)=>{
+  const conversion=renderCalculator(form);
+  if(announceChange&&live){
+   if(spokenTimer!==null)clearTimeout(spokenTimer);
+   spokenTimer=null;
+   if(conversion){
+    const displayed=$('[data-result]',form)?.textContent||'';
+    const label=$('[data-result-unit]',form)?.textContent||'';
+    const food=conversion.isCrossDimension?' for '+conversion.ingredient?.name:'';
+    const message='Conversion result: '+displayed+' '+label+food;
+    spokenTimer=setTimeout(()=>{setText(live,message);spokenTimer=null},320);
+   }else setText(live,'');
+  }
+  return conversion;
+ };
  const params=new URLSearchParams(location.search);
  for(const [key,selector] of [['amount','[data-amount]'],['ingredient','[data-ingredient]'],['standard','[data-standard]'],['from','[data-from]'],['to','[data-to]']]){
   const el=$(selector,form),v=params.get(key);
   if(el&&v&&v.length<80&&(el.tagName==='INPUT'||[...el.options].some(o=>o.value===v)))el.value=v;
  }
- $$('input,select',form).forEach(el=>{el.addEventListener('input',update);el.addEventListener('change',update)});
+ $$('input,select',form).forEach(el=>{el.addEventListener('input',()=>update(true));el.addEventListener('change',()=>update(true))});
  $$('[data-amount-preset]',form).forEach(button=>button.addEventListener('click',()=>{
-  $('[data-amount]',form).value=button.dataset.amountPreset;update();
+  $('[data-amount]',form).value=button.dataset.amountPreset;update(true);
  }));
  $$('[data-ingredient-preset]',form).forEach(button=>button.addEventListener('click',()=>{
-  $('[data-ingredient]',form).value=button.dataset.ingredientPreset;update();
+  $('[data-ingredient]',form).value=button.dataset.ingredientPreset;update(true);
  }));
  $('[data-swap]',form)?.addEventListener('click',()=>{
   const from=$('[data-from]',form),to=$('[data-to]',form);
-  [from.value,to.value]=[to.value,from.value];update();
+  [from.value,to.value]=[to.value,from.value];update(true);
  });
  $('[data-reset]',form)?.addEventListener('click',()=>{
-  form.reset();setText($('[data-feedback]',form),'');update();
+  form.reset();setText($('[data-feedback]',form),'');update(true);
  });
  $('[data-copy]',form)?.addEventListener('click',async()=>{
   const d=update();if(!d)return;
