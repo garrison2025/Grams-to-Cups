@@ -1,0 +1,35 @@
+name: Live Cloudflare Pages release verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: 'Exact deployed HTTPS origin, e.g. https://your-project.pages.dev (no path)'
+        required: true
+        type: string
+      expected_indexing:
+        description: 'Expected publication state: true for approved production, false for unindexed preview'
+        required: true
+        type: choice
+        default: 'false'
+        options:
+          - 'false'
+          - 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  live-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check deployed HTTP responses, canonical host, sitemap and noindex
+        run: npm run smoke:live
+        env:
+          LIVE_SITE_URL: ${{ inputs.site_url }}
+          LIVE_EXPECT_INDEX: ${{ inputs.expected_indexing }}
