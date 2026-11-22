@@ -10,7 +10,12 @@ const dist=path.join(root,'dist');
 fs.rmSync(dist,{recursive:true,force:true});fs.mkdirSync(dist,{recursive:true});
 const base=(process.env.SITE_URL||'').trim().replace(/\/+$/,'');
 const origin=/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(base)?base:'';
-const publicIndex=!!origin&&process.env.CF_PAGES_BRANCH==='main'&&process.env.PUBLIC_INDEX_APPROVED==='true';
+const releaseRequested=process.env.CF_PAGES_BRANCH==='main'&&process.env.PUBLIC_INDEX_APPROVED==='true';
+const hostname=origin?new URL(origin).hostname.toLowerCase():'';
+const reservedHost=hostname==='localhost'||hostname==='127.0.0.1'||hostname==='0.0.0.0'||hostname==='example.com'||hostname.endsWith('.example')||hostname.endsWith('.invalid')||hostname.endsWith('.test')||hostname.endsWith('.localhost');
+if(releaseRequested&&!origin)throw new Error('Production publication requested but SITE_URL is missing or invalid. Set the exact stable HTTPS host.');
+if(releaseRequested&&reservedHost&&process.env.CI!=='true')throw new Error('Production SITE_URL cannot be a placeholder or local/test domain. Set your verified public hostname.');
+const publicIndex=releaseRequested&&!!origin;
 const pages=[],e=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
 const primaryUrl=url=>url==='/cooking/grams-to-cups/'?'/':url;
 const f=n=>formatAmount(n,3),link=(url,label,cls='')=>'<a href="'+e(primaryUrl(url))+'"'+(cls?' class="'+e(cls)+'"':'')+'>'+e(label)+'</a>';
@@ -367,8 +372,8 @@ infoPage('contact','Contact and Corrections','Found a questionable food weight o
 writeFile('404.html','<!doctype html><html lang="en"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page not found | Grams & Cups</title><link rel="stylesheet" href="/assets/styles.css"><main class="container section"><h1>Page not found</h1><p>That page does not exist. Try the conversion tools or the ingredient directory.</p>'+link('/cooking/','Browse cooking tools','btn btn-primary')+'</main></html>');
 writeFile('favicon.svg','<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#122e27"/><path d="M18 20h28l-4 26H22z" fill="none" stroke="#eaf2ad" stroke-width="4" stroke-linejoin="round"/><path d="M21 29h22M24 38h16" stroke="#f8f7f2" stroke-width="3" stroke-linecap="round"/></svg>');
 for(const [src,dst] of [['public/styles.css','assets/styles.css'],['public/app.js','assets/app.js'],['src/core.mjs','assets/core.mjs'],['src/ingredients.json','assets/ingredients.json']]){const out=path.join(dist,dst);fs.mkdirSync(path.dirname(out),{recursive:true});fs.copyFileSync(path.join(root,src),out);}
-if(!publicIndex)writeFile('_headers','/*\n  X-Robots-Tag: noindex\n  X-Content-Type-Options: nosniff\n');
-else writeFile('_headers','/*\n  X-Content-Type-Options: nosniff\n');
+if(!publicIndex)writeFile('_headers','/*\n  X-Robots-Tag: noindex\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n');
+else writeFile('_headers','/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n');
 writeFile('robots.txt','User-agent: *\nAllow: /\n'+(publicIndex?'Sitemap: '+origin+'/sitemap.xml\n':''));
 if(publicIndex)writeFile('sitemap.xml','<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+pages.filter(p=>p.indexCandidate).map(p=>'<url><loc>'+e(origin+p.url)+'</loc></url>').join('')+'</urlset>');
 writeFile('site-manifest.json',JSON.stringify({origin:origin||null,publicIndex,generatedAt:new Date().toISOString(),pages},null,2));
