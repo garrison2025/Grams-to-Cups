@@ -11,6 +11,6 @@ export function csvSafeCell(value){
  let s=String(value??'');
  // Excel/Sheets may treat quoted CSV fields as executable spreadsheet formulas.
  // The apostrophe neutralizes formulas while keeping the underlying source file untouched.
- if(/^[\x00-\x20]*[=+@-]/.test(s))s="'"+s;
+ if(/^[\s\u0000-\u001f\u200b-\u200d\ufeff]*[=+@-]/u.test(s))s="'"+s;
  return '"'+s.replaceAll('"','""')+'"';
 }
