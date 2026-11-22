@@ -149,7 +149,7 @@ for(const form of $$('[data-calc]')){
   if(el&&v&&v.length<80&&(el.tagName==='INPUT'||[...el.options].some(o=>o.value===v)))el.value=v;
  }
  if(foodSearch&&foodSelect)foodSearch.value=byId.get(foodSelect.value)?.name||'';
- $('input,select',form).forEach(el=>{
+ $$('input,select',form).forEach(el=>{
   el.addEventListener('input',()=>update(true));
   el.addEventListener('change',()=>{
    if(el===foodSelect&&foodSearch)foodSearch.value=byId.get(foodSelect.value)?.name||'';
