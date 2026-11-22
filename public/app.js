@@ -72,7 +72,28 @@ function renderCalculator(form){
   return null;
  }
 }
-for(const form of $$('[data-calc]')){
+// Short, compositor-friendly feedback only for deliberate actions (not every keystroke).
+// Honor operating-system reduced-motion preference; do not add animation dependencies.
+const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+const resultMotions=new WeakMap();
+function animateConversionResult(form){
+ if(reducedMotion.matches)return;
+ const output=$('[data-result]',form);
+ if(!output?.animate)return;
+ resultMotions.get(output)?.cancel();
+ const motion=output.animate(
+  [{opacity:.64,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],
+  {duration:185,easing:'cubic-bezier(.2,.8,.2,1)'}
+ );
+ resultMotions.set(output,motion);
+}
+function animateSwap(button){
+ if(reducedMotion.matches||!button?.animate)return;
+ button.animate([{transform:'rotate(0deg)'},{transform:'rotate(180deg)'}],
+  {duration:260,easing:'cubic-bezier(.2,.8,.2,1)'});
+}
+
+for(const form of $('[data-calc]')){
  const live=$('[data-live-result]',form);
  let spokenTimer=null;
  const update=(announceChange=false)=>{
@@ -95,19 +116,25 @@ for(const form of $$('[data-calc]')){
   const el=$(selector,form),v=params.get(key);
   if(el&&v&&v.length<80&&(el.tagName==='INPUT'||[...el.options].some(o=>o.value===v)))el.value=v;
  }
- $$('input,select',form).forEach(el=>{el.addEventListener('input',()=>update(true));el.addEventListener('change',()=>update(true))});
+ $('input,select',form).forEach(el=>{
+  el.addEventListener('input',()=>update(true));
+  el.addEventListener('change',()=>{
+   const valid=update(true);
+   if(el.tagName==='SELECT'&&valid)animateConversionResult(form);
+  });
+ });
  $$('[data-amount-preset]',form).forEach(button=>button.addEventListener('click',()=>{
-  $('[data-amount]',form).value=button.dataset.amountPreset;update(true);
+  $('[data-amount]',form).value=button.dataset.amountPreset;if(update(true))animateConversionResult(form);
  }));
  $$('[data-ingredient-preset]',form).forEach(button=>button.addEventListener('click',()=>{
-  $('[data-ingredient]',form).value=button.dataset.ingredientPreset;update(true);
+  $('[data-ingredient]',form).value=button.dataset.ingredientPreset;if(update(true))animateConversionResult(form);
  }));
  $('[data-swap]',form)?.addEventListener('click',()=>{
   const from=$('[data-from]',form),to=$('[data-to]',form);
-  [from.value,to.value]=[to.value,from.value];update(true);
+  [from.value,to.value]=[to.value,from.value];if(update(true))animateConversionResult(form);animateSwap($('[data-swap]',form));
  });
  $('[data-reset]',form)?.addEventListener('click',()=>{
-  form.reset();setText($('[data-feedback]',form),'');update(true);
+  form.reset();setText($('[data-feedback]',form),'');if(update(true))animateConversionResult(form);
  });
  $('[data-copy]',form)?.addEventListener('click',async()=>{
   const d=update();if(!d)return;
@@ -259,8 +286,19 @@ for(const form of $$('[data-half-form]')){
 }
 const toggle=$('[data-nav-toggle]'),nav=$('[data-nav]');
 if(toggle&&nav){
- toggle.addEventListener('click',()=>{const open=nav.classList.toggle('is-open');toggle.setAttribute('aria-expanded',String(open))});
- document.addEventListener('keydown',e=>{if(e.key==='Escape'){nav.classList.remove('is-open');toggle.setAttribute('aria-expanded','false')}});
+ const setNavOpen=open=>{
+  nav.classList.toggle('is-open',open);
+  toggle.setAttribute('aria-expanded',String(open));
+  toggle.setAttribute('aria-label',open?'Close navigation':'Open navigation');
+ };
+ setNavOpen(false);
+ toggle.addEventListener('click',()=>setNavOpen(!nav.classList.contains('is-open')));
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&nav.classList.contains('is-open')){
+  setNavOpen(false);toggle.focus();
+ }});
+ document.addEventListener('pointerdown',e=>{
+  if(nav.classList.contains('is-open')&&!nav.contains(e.target)&&!toggle.contains(e.target))setNavOpen(false);
+ });
 }
 for(const filter of $$('[data-directory-filter]'))filter.addEventListener('input',()=>{
  const q=filter.value.trim().toLowerCase();
