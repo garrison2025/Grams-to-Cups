@@ -145,7 +145,7 @@ function grid(items,cols=3){
   '<span class="tile-leading"><span class="tile-index" aria-hidden="true">'+e(category[2])+'</span><span class="tile-kind">'+e(category[1])+'</span></span>':
   '<span class="tile-index" aria-hidden="true">'+String(i+1).padStart(2,'0')+'</span>';
  return '<a class="tile"'+(category?' data-food-group="'+e(category[0])+'"':'')+
-  ' href="'+e(primaryUrl(url))+'">'+top+'<b>'+e(title)+'</b><p>'+e(desc)+
+  ' href="'+e(primaryUrl(url))+'">'+top+'<h3 class="tile-title">'+e(title)+'</h3><p>'+e(desc)+
   '</p><span class="arrow" aria-hidden="true">↗</span></a>';
  }).join('')+'</div>';
 }
@@ -292,7 +292,7 @@ function home(){
  '</div>'+converterForm({})+'</div>';
  const homeAnswer='<section class="section section-answer"><div class="container"><div class="panel"><h2>How many cups is 100 grams?</h2>'+
  '<p><strong>100 grams of spoon-and-leveled all-purpose flour is about '+e(flour100)+' US cups.</strong> The referenced flour measure is 120 g per US cup. By comparison, 100 g of granulated sugar is about '+e(sugar100)+' US cups using its 198 g per US cup reference. The same mass does not correspond to one universal cup amount.</p>'+
- '<p><strong>To convert grams to US cups, divide the grams by the ingredient’s grams per US cup.</strong> For example, 100 ÷ 120 ≈ '+e(flour100)+' US cups of all-purpose flour.</p>'+
+ '<h3>How to convert grams to US cups</h3><p>To convert grams to US cups, divide the grams by the ingredient’s grams per US cup. For example, 100 ÷ 120 ≈ '+e(flour100)+' US cups of all-purpose flour.</p>'+
  '<p>Choose the correct ingredient and food state above, and select US (236.588 mL) or metric (250 mL) cups. Values are scaled from the '+link(source,'published ingredient weight chart')+'; for precise baking, use the gram weight stated in the recipe. '+link('/cooking/sources-and-methods/','Read our calculation method')+'. For step-by-step examples, open '+link('/cooking/ingredients/all-purpose-flour/100-grams-to-cups/','100 g all-purpose flour to cups')+' or '+link('/cooking/ingredients/granulated-sugar/100-grams-to-cups/','100 g granulated sugar to cups')+'.</p></div></div></section>';
  const body=hero+homeAnswer+strip+
  section('Explore by ingredient','Flour, sugar, butter and more — choose the exact food before converting by volume.',grid(ingredientList.slice(0,8),4),true)+
@@ -551,12 +551,10 @@ function methodology(){
  '<aside class="panel side-panel"><h3>Browse referenced foods</h3>'+data.slice(0,9).map(i=>link('/cooking/ingredients/'+i.id+'/',i.name)).join('')+'</aside></div></section>';
  doc({url:'/cooking/sources-and-methods/',title:'Ingredient Weight Sources and Conversion Methodology',description:'Learn how grams to cups estimates use cited ingredient weights, US and metric cup sizes, measurement states and clear uncertainty notes.',body,bread:[['Cooking','/cooking/'],['Sources and methods',null]]});
 }
-function infoPage(slug,title,bodyText){
- const body=intro(title,bodyText)+
- '<section class="section"><div class="container"><div class="panel"><h2>Helpful information</h2><p>'+e(bodyText)+'</p><p>Our calculators use cited ingredient weights, local JavaScript calculations and no account system. The source measurements and conversion methodology are disclosed on '+link('/cooking/sources-and-methods/','the methodology page')+'.</p>'+
- (slug==='contact'?'<p>Email <!--email_off-->'+link('mailto:'+contactEmail,contactEmail)+'<!--/email_off--> with the ingredient, quantity and selected cup standard. Include the result you expected and a published reference if you have one.</p><p>For a public bug report, use '+link('https://github.com/garrison2025/Grams-to-Cups/issues','Grams-to-Cups GitHub issues')+'. Keep private details in email.</p>':'')+
- (slug==='privacy'?'<p>The conversion inputs and recipe scaler remain in the browser. We do not add analytics, advertising scripts, trackers, logins or cloud storage in this release. A future advertising integration would require updating this policy and any legally required consent controls before it is enabled.</p>':'')+'</div></div></section>';
- doc({url:'/'+slug+'/',title,description:bodyText.slice(0,155),body,bread:[[title,null]]});
+function infoPage(slug,title,description,sectionTitle,contents){
+ const body=intro(title,description)+
+ '<section class="section"><div class="container"><div class="panel"><h2>'+e(sectionTitle)+'</h2>'+contents+'</div></div></section>';
+ doc({url:'/'+slug+'/',title,description,body,bread:[[title,null]]});
 }
 home();hub();
 for(const t of tools)toolPage(t);
@@ -568,9 +566,18 @@ for(const n of sugarNumbers)ingredientNumberPage(byId.get('granulated-sugar'),n)
 for(const type of ['','flour','sugar'])chartPage(type);
 for(const guide of ['measuring-flour','cup-sizes','measuring-odd-cups'])guidePage(guide);
 methodology();
-infoPage('about','About Grams & Cups','Grams & Cups is a free, independent kitchen measurement reference that helps home bakers use grams, cups and spoon measurements more carefully.');
-infoPage('privacy','Privacy Policy','We aim to minimize data collection. The calculator and recipe scaler are local-first browser tools; there is no account, analytics platform or ad network in the current code.');
-infoPage('contact','Contact and Corrections','Ask a question about a conversion, report a bug, or suggest a correction to a published ingredient weight.');
+infoPage('about','About Grams & Cups','Grams & Cups is a free, independent kitchen measurement reference that helps home bakers use grams, cups and spoon measurements more carefully.',
+ 'How Grams & Cups works',
+ '<h3>Ingredient weights and cup sizes</h3><p>We use published recipe weights to estimate mass-to-volume conversions for specific ingredients. The '+link('/cooking/sources-and-methods/','methodology page')+' lists the original measurements, cup sizes and limitations.</p>'+
+ '<h3>Calculators in your browser</h3><p>You can convert measurements, adjust recipe quantities and print kitchen charts without creating an account.</p>');
+infoPage('privacy','Privacy Policy','We aim to minimize data collection. The calculator and recipe scaler are local-first browser tools; there is no account, analytics platform or ad network in the current code.',
+ 'How the site handles your data',
+ '<h3>Calculator and recipe inputs</h3><p>The amounts and recipe text you enter are processed in your browser. The tools do not require an account or upload these inputs to cloud storage. If you create a converter share link, its selected amount, units and ingredient can appear in the URL.</p>'+
+ '<h3>Analytics and advertising</h3><p>The site code does not include analytics, advertising or tracking scripts. If this changes, we will update this policy before adding those services.</p>');
+infoPage('contact','Contact and Corrections','Ask a question about a conversion, report a bug, or suggest a correction to a published ingredient weight.',
+ 'Questions and corrections',
+ '<h3>Email</h3><p>Email <!--email_off-->'+link('mailto:'+contactEmail,contactEmail)+'<!--/email_off--> with the ingredient, quantity and selected cup standard. Include the result you expected and a published reference if you have one.</p>'+
+ '<h3>Public bug reports</h3><p>For a public bug report, use '+link('https://github.com/garrison2025/Grams-to-Cups/issues','Grams-to-Cups GitHub issues')+'. Keep private details in email.</p>');
 writeFile('404.html','<!doctype html><html lang="en"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page not found | Grams & Cups</title><link rel="stylesheet" href="/assets/styles.css"><main class="container section"><h1>Page not found</h1><p>That page does not exist. Try the conversion tools or the ingredient directory.</p>'+link('/cooking/','Browse cooking tools','btn btn-primary')+'</main></html>');
 writeFile('favicon.svg','<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#122e27"/><path d="M18 20h28l-4 26H22z" fill="none" stroke="#eaf2ad" stroke-width="4" stroke-linejoin="round"/><path d="M21 29h22M24 38h16" stroke="#f8f7f2" stroke-width="3" stroke-linecap="round"/></svg>');
 for(const [src,dst] of [['public/styles.css','assets/styles.css'],['public/app.js','assets/app.js'],['src/core.mjs','assets/core.mjs'],['src/ingredients.json','assets/ingredients.json']]){const out=path.join(dist,dst);fs.mkdirSync(path.dirname(out),{recursive:true});fs.copyFileSync(path.join(root,src),out);}
