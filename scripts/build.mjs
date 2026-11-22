@@ -309,7 +309,7 @@ function batchPage(){
  '<form class="calc-body" data-batch novalidate>'+
  '<div class="field full"><label for="batch-list">Ingredients — one amount, unit and exact ingredient per line</label>'+
  '<textarea id="batch-list" rows="8" maxlength="16000" data-batch-lines spellcheck="false">'+e(defaultList)+'</textarea>'+
- '<small>Examples: 120 g all-purpose flour · ½ cup butter · 2 tbsp honey. “Flour” alone is not specific enough for a reliable weight-to-volume conversion.</small></div>'+
+ '<small>Examples: 120 g all-purpose flour · ½ US cup butter · 2 tbsp honey. Specify US cup or metric cup when copying a labeled amount; unqualified “cup” uses the selected cup standard. “Flour” alone is not a specific enough food state.</small></div>'+
  '<div class="form-grid mt-3"><div class="field"><label for="batch-target">Convert all lines to</label><select id="batch-target" data-batch-target><option value="cup">US cups</option><option value="g">Grams (g)</option></select></div>'+
  '<div class="field"><label for="batch-standard">Cup standard</label><select id="batch-standard" data-batch-standard><option value="us">US · 236.588 mL</option><option value="metric">Metric · 250 mL</option></select></div></div>'+
  '<div class="batch-options"><label class="toggle-option"><input type="checkbox" data-batch-fraction checked> Show familiar cup fractions when exact</label></div>'+
@@ -321,7 +321,7 @@ function batchPage(){
  '</form></div>'+
  '<div class="panel mt-3"><h2>How the batch converter protects accuracy</h2>'+
  '<p>Every mass-to-volume result depends on the exact ingredient and its original published reference weight. Packed brown sugar differs from loose brown sugar; sifted sugar differs from unsifted. Ambiguous names are flagged instead of silently converted.</p>'+
- '<p>The tool supports fractional quantities, grams, ounces, cups, teaspoons, tablespoons and milliliters. Each row is processed locally; you can export both the converted lines and any review warnings for your recipe notes.</p>'+
+ '<p>The tool supports fractional quantities, grams, ounces, US cups, metric cups, teaspoons, tablespoons and milliliters. Explicit input cup labels take precedence over the selected result cup standard, so a US cup pasted into a metric conversion is not silently treated as 250 mL. Unqualified cups use the selected standard. Each row is processed locally; export converted lines and any review warnings for your recipe notes.</p>'+
  '<div class="inline-note">This is a measurement assistant, not recipe rewriting. Keep ingredient temperature, packaging and the original cooking instructions in mind when substituting volume for weight.</div></div></div>'+
  '<aside class="panel side-panel"><h3>Related tools</h3>'+
  link('/cooking/recipe-scaler/','Scale serving sizes')+
@@ -337,7 +337,7 @@ function recipePage(){
  const body=intro('Free Recipe Scaler','Increase or decrease serving amounts using browser-local calculations. This tool changes quantities but does not guess missing ingredients or replace a baker’s judgment.')+
  '<section class="section"><div class="container content-grid"><div><div class="calc-card"><div class="calc-top"><strong><span class="live-dot"></span>Scale your recipe</strong><span class="muted">No upload · No account</span></div>'+
  '<form class="calc-body" data-recipe><div class="form-grid"><div class="field"><label for="old-servings">Original servings</label><input id="old-servings" data-old-servings type="text" value="4" inputmode="decimal"></div><div class="field"><label for="new-servings">New servings</label><input id="new-servings" data-new-servings type="text" value="6" inputmode="decimal"></div>'+
- '<div class="field full"><label for="recipe-lines">One ingredient per line</label><textarea id="recipe-lines" data-recipe-lines spellcheck="false">200 g all-purpose flour\n1 1/2 cups milk\n2 tbsp honey\n1/4 tsp salt</textarea><small>Start each line with a quantity. Unicode fractions like ½ and 1½ work. Unsupported lines remain unchanged and are flagged for review.</small></div></div>'+
+ '<div class="field full"><label for="recipe-lines">One ingredient per line</label><textarea id="recipe-lines" data-recipe-lines spellcheck="false">200 g all-purpose flour\n1 1/2 cups milk\n2 tbsp honey\n1/4 tsp salt</textarea><small>Start each line with a quantity. Unicode fractions like ½ and 1½ work; explicit US cups and metric cups keep their labels when scaled. Unsupported or compound amounts remain unchanged for manual review.</small></div></div>'+
  '<div class="batch-options"><label class="toggle-option"><input type="checkbox" data-recipe-fraction checked> Show common cup fractions when exact (e.g., 2 1/4)</label></div>'+
  '<div class="calc-actions"><button class="btn btn-primary" type="submit">Scale recipe</button><button class="btn" type="button" data-download-csv>Download CSV</button><button class="btn" type="button" data-recipe-print>Print</button></div>'+
  '<p class="error" data-recipe-error role="alert" hidden></p><div class="result recipe-results"><div class="result-label">Scaled ingredient list</div><pre data-recipe-output aria-live="polite"></pre></div></form></div>'+
