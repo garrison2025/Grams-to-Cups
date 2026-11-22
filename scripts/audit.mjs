@@ -96,7 +96,7 @@ console.log('Internal link graph passed:',depth.size,'reachable pages,',ingredie
 const files=['assets/app.js','assets/core.mjs','assets/ingredients.json','assets/styles.css','robots.txt','404.html','favicon.svg'];
 for(const f of files)assert.ok(fs.existsSync(path.join(dist,f)),'missing '+f);
 assert.ok(manifest.publicIndex?fs.existsSync(path.join(dist,'sitemap.xml')):!fs.existsSync(path.join(dist,'sitemap.xml')));
-assert.equal(pages.filter(p=>p.indexCandidate).length,65,'expected 65 audited index candidates');
+assert.equal(pages.filter(p=>p.indexCandidate).length,62,'expected 62 audited index candidates after editorial review');
 const numberPages=pages.filter(x=>/\/grams-to-cups\/\d+-grams-to-cups\/$/.test(x.url));
 assert.equal(numberPages.length,21);
 assert.equal(pages.filter(x=>/\/ingredients\/[^/]+\/$/.test(x.url)).length,24);
