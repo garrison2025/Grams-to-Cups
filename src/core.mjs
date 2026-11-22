@@ -97,9 +97,9 @@ export function suggestKitchenMeasures(targetCups,{standard='us',allowSpoons=tru
   {label:'1/8 cup',ml:mlPerCup/8}
  ];
  if(allowSpoons)parts.push(
-  {label:'1 US tbsp',ml:US_TBSP_ML},
-  {label:'1 US tsp',ml:US_TSP_ML},
-  {label:'1/2 US tsp',ml:US_TSP_ML/2}
+  {label:'1 US tbsp',ml:US_TBSP_ML,kind:'spoon',fill:1},
+  {label:'1 US tsp',ml:US_TSP_ML,kind:'spoon',fill:1},
+  {label:'1/2 US tsp',ml:US_TSP_ML/2,kind:'spoon',fill:.5}
  );
  // Most recipes need only a small residual after complete cup fills.
  // Bounded volume DP merges equivalent fills, rather than enumerating every
@@ -150,11 +150,13 @@ export function suggestKitchenMeasures(targetCups,{standard='us',allowSpoons=tru
  const ml=best.candidate.ml+whole*mlPerCup;
  const errorMl=Math.abs(ml-targetMl);
  if(errorMl>Math.max(targetMl*.12,1))return null;
- const steps=best.candidate.counts.map((count,i)=>
-  count?{label:parts[i].label,count}:null).filter(Boolean);
+ const steps=best.candidate.counts.flatMap((count,i)=>{
+  const part=parts[i];
+  return count?[{label:part.label,count,kind:part.kind||'cup',fill:part.fill??part.ml/mlPerCup}]:[];
+ });
  if(whole){
   if(steps[0]?.label==='1 cup')steps[0].count+=whole;
-  else steps.unshift({label:'1 cup',count:whole});
+  else steps.unshift({label:'1 cup',count:whole,kind:'cup',fill:1});
  }
  const differenceMl=ml-targetMl;
  const differenceGrams=gramsPerCup===null?null:differenceMl/mlPerCup*gramsPerCup;

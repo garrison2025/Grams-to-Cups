@@ -137,25 +137,37 @@ function grid(items,cols=3){
  }).join('')+'</div>';
 }
 
-function table(headers,rows,{rowIds=null}={}){
- return '<div class="table-shell"><div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable cooking conversion table"><table><thead><tr>'+
- headers.map(x=>'<th scope="col">'+e(x)+'</th>').join('')+'</tr></thead><tbody>'+
- rows.map((r,index)=>'<tr'+(rowIds?.[index]?' data-chart-food-id="'+e(rowIds[index])+'"':'')+'>'+
- r.map((x,i)=>i===0?'<th scope="row">'+e(x)+'</th>':'<td>'+e(x)+'</td>').join('')+'</tr>').join('')+
- '</tbody></table></div><p class="table-scroll-hint">↔ Swipe sideways to view the other columns</p></div>';
+function table(headers,rows,{rowIds=null,stacked=false}={}){
+ const role=name=>stacked?' role="'+name+'"':'';
+ return '<div class="table-shell'+(stacked?' table-shell-stacked':'')+'"><div class="table-scroll" tabindex="0" role="region" aria-label="Cooking conversion table"><table'+role('table')+'><thead'+role('rowgroup')+'><tr'+role('row')+'>'+
+ headers.map(x=>'<th scope="col"'+role('columnheader')+'>'+e(x)+'</th>').join('')+'</tr></thead><tbody'+role('rowgroup')+'>'+
+ rows.map((r,index)=>'<tr'+role('row')+(rowIds?.[index]?' data-chart-food-id="'+e(rowIds[index])+'"':'')+'>'+
+ r.map((x,i)=>i===0?'<th scope="row"'+role('rowheader')+'>'+e(x)+'</th>':'<td'+role('cell')+'>'+(stacked?'<span class="stacked-cell-label" aria-hidden="true">'+e(headers[i])+'</span>':'')+e(x)+'</td>').join('')+'</tr>').join('')+
+ '</tbody></table></div><p class="table-scroll-hint" hidden>↔ Scroll to view the other columns</p></div>';
 }
 function unitSelect(label,which,selected){
  const options=units.map(u=>'<option value="'+u+'"'+(selected===u?' selected':'')+'>'+e(unitDescription(u))+'</option>').join('');
  return '<div class="field"><label for="'+which+'">'+e(label)+'</label><select id="'+which+'" data-'+which+'>'+options+'</select></div>';
 }
 function ingredientSelect(selected='all-purpose-flour',hidden=false){
- const suggestions=data.map(i=>'<option value="'+e(i.name)+'"></option>').join('');
- return '<div class="field full" data-density-field'+(hidden?' hidden':'')+'><label for="ingredient-search-calc">Search ingredient</label>'+
- '<input id="ingredient-search-calc" type="search" list="calc-ingredient-suggestions" data-ingredient-search value="'+e(byId.get(selected)?.name||'')+'" placeholder="Bread flour, sugar, cocoa…" autocomplete="off" spellcheck="false" aria-describedby="ingredient-search-help">'+
- '<datalist id="calc-ingredient-suggestions">'+suggestions+'</datalist>'+
- '<small id="ingredient-search-help">Choose an exact food or use the reference list. Food state and measuring method affect the result.</small>'+
- '<label for="ingredient-choice" class="ingredient-picker-label">Selected reference</label>'+
- '<select id="ingredient-choice" data-ingredient>'+data.map(i=>'<option value="'+e(i.id)+'"'+(i.id===selected?' selected':'')+'>'+e(i.name)+'</option>').join('')+'</select></div>';
+ const options=data.map(i=>'<option value="'+e(i.id)+'"'+(i.id===selected?' selected':'')+'>'+e(i.name)+'</option>').join('');
+ return '<div class="field" data-density-field'+(hidden?' hidden':'')+'>'+
+ '<div class="ingredient-picker" data-ingredient-picker hidden><label for="ingredient-search-calc">Ingredient</label>'+
+ '<input id="ingredient-search-calc" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="calc-ingredient-suggestions" data-ingredient-search placeholder="Search ingredients" autocomplete="off" spellcheck="false">'+
+ '<ul id="calc-ingredient-suggestions" class="ingredient-options" role="listbox" aria-label="Ingredients" hidden>'+data.map(i=>'<li role="option" id="calc-food-'+e(i.id)+'" data-ingredient-option="'+e(i.id)+'">'+e(i.name)+'</li>').join('')+'</ul>'+
+ '<p class="ingredient-options ingredient-no-match" data-ingredient-empty role="status" hidden>No matching ingredient.</p></div>'+
+ '<div class="ingredient-fallback" data-ingredient-fallback><label for="ingredient-choice">Ingredient</label>'+
+ '<select id="ingredient-choice" data-ingredient>'+options+'</select></div></div>';
+}
+
+const measureStepIcon='<span class="measure-vessel"><span class="measure-fill"></span></span><span data-step-label></span>';
+function measureSteps(guide){
+ const steps=(guide?.steps||[]).map(step=>{
+  const label=(step.count>1?step.count+' × ':'')+step.label;
+  return '<li class="measure-step" data-step-kind="'+step.kind+'" style="--measure-fill:'+step.fill+'"><span class="measure-vessel"><span class="measure-fill"></span></span><span data-step-label>'+e(label)+'</span></li>';
+ }).join('');
+ return '<ul class="measure-steps" data-measure-steps aria-hidden="true">'+steps+'</ul>'+
+  '<template data-measure-step-template><li class="measure-step">'+measureStepIcon+'</li></template>';
 }
 function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flour',heading='Instant conversion'}={}){
  const ref=byId.get(ingredient)||data[0];
@@ -177,19 +189,15 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  const cupDifference=cupsOnly?'Cups only · '+measureReferenceDifference(cupsOnly):'';
  const initialNote=crossDimension?(ref.id==='water'?'Recipe chart method: King Arthur Baking lists 227 g per US cup of water. This differs from a physical-capacity estimate of about 1 g/mL.':'Based on '+referenceText+' of '+ref.name+'. This is an approximate recipe measurement.'):
   'These units have a defined conversion; an ingredient reference is not needed.';
- const shortUnit=({cup:'US cups',g:'g',kg:'kg',oz:'oz',ml:'mL',tbsp:'tbsp',tsp:'tsp','fl-oz':'US fl oz'})[to]||to;
- return '<div class="calc-card" id="converter"><div class="calc-top"><strong><span class="live-dot" aria-hidden="true"></span>'+e(heading)+'</strong><span class="muted">PRIVATE · INSTANT</span></div>'+
- '<form class="calc-body" data-calc novalidate><div class="form-grid">'+
- '<div class="field full"><label for="quantity">How much are you measuring?</label><input id="quantity" data-amount type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="'+e(amount)+'" aria-describedby="amount-help"><small id="amount-help">Try 1/4, 1 1/2, or 125.5.</small></div>'+
- '<div class="field full"><div class="quick-row" role="group" aria-label="Common quantities"><span class="micro-label">QUICK VALUES</span>'+amountButtons+'</div></div>'+
- ingredientSelect(ingredient,!crossDimension)+
- '<div class="standard-line" data-water-mode-row'+(crossDimension&&ref.id==='water'?'':' hidden')+'><label for="water-mode">Water measurement method</label><select id="water-mode" data-water-mode><option value="recipe" selected>Recipe chart · 227 g per US cup</option><option value="capacity">Physical capacity · approximately 1 g/mL</option></select><small>Recipe reference and physical capacity are different estimates; the physical approximation varies with temperature.</small></div>'+
- '<div class="field full" data-density-field'+(crossDimension?'':' hidden')+'><div class="quick-row" role="group" aria-label="Popular ingredients"><span class="micro-label">POPULAR</span>'+foodButtons+'</div></div>'+
- '<details class="advanced-units" open data-advanced-units><summary>More conversion units <span data-advanced-label>'+e(unitDescription(from))+' → '+e(unitDescription(to))+'</span></summary><div class="advanced-inner"><div class="unit-stage">'+unitSelect('From unit','from',from)+
- '<button class="unit-switch" type="button" data-swap aria-label="Swap from and to units" title="Swap conversion direction">⇄</button>'+
- unitSelect('To unit','to',to)+'</div></div></details>'+
- '<div class="standard-line" data-cup-standard-row'+(standardRelevant?'':' hidden')+'><label for="cup-standard">Cup standard</label><select id="cup-standard" data-standard><option value="us" selected>US · 236.588 mL</option><option value="metric">Metric · 250 mL</option></select></div>'+
- '</div>'+
+ const shortUnit=shortUnitLabel(to);
+ return '<div class="calc-card conversion-card" id="converter"><div class="calc-top"><strong>'+e(heading)+'</strong><span class="conversion-direction"><span data-advanced-label>'+e(shortUnitLabel(from))+' → '+e(shortUnitLabel(to))+'</span>'+
+ '<button class="unit-switch" type="button" data-swap aria-label="Swap from and to units" title="Swap conversion direction">⇄</button></span></div>'+
+ '<form class="calc-body calc-workbench" data-calc novalidate>'+
+ '<div class="calc-fields"><div class="calc-main-fields">'+
+ '<div class="field amount-field"><label for="quantity">Amount <span data-amount-unit>'+e(shortUnitLabel(from))+'</span></label><input id="quantity" data-amount type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="'+e(amount)+'" aria-describedby="amount-help"><small class="sr-only" id="amount-help">You can enter decimals or fractions, such as 125.5 or 1/4.</small></div>'+
+ ingredientSelect(ingredient,!crossDimension)+'</div>'+
+ '<div class="quick-row calc-quantity-presets" role="group" aria-label="Common quantities">'+amountButtons+'</div></div>'+
+ '<div class="calc-readout">'+
  '<div class="result" role="group" aria-label="Live conversion result">'+
  '<div class="result-label">YOUR CONVERSION</div>'+
  '<div class="result-amount"><output class="result-number" data-result>'+e(preview)+'</output><span class="result-unit" data-result-unit>'+e(shortUnit)+'</span></div>'+
@@ -197,22 +205,30 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  '<p class="result-text" data-result-note>'+e(initialNote)+'</p>'+
  '<div class="cup-meter-wrap" data-meter-wrap'+(showMeter?'':' hidden')+'><div class="cup-meter" aria-hidden="true"><div class="cup-meter-fill" data-meter-fill style="width:'+(showMeter?(meterPercent===0?0.5:meterPercent):0)+'%"></div></div><div class="cup-meter-label" data-meter-label>'+(showMeter?(meterPercent===0?'Less than 1%':meterPercent+'%')+' of one US cup':'')+'</div></div>'+
  '<div class="measure-guide" data-measure-guide'+(guide?'':' hidden')+'><span class="measure-guide-label">HOW TO MEASURE</span>'+
- '<strong data-measure-summary>'+e(guide?.instruction||'')+'</strong>'+
+ '<strong class="sr-only" data-measure-summary>'+e(guide?.instruction||'')+'</strong>'+measureSteps(guide)+
  '<p data-measure-alternative'+(!cupsOnly||cupsOnly.instruction===guide?.instruction?' hidden':'')+'>Cups only: '+e(cupsOnly?.instruction||'')+' — '+e(cupDifference)+'</p>'+
  '<p data-measure-error>'+e(guideDifference)+'</p>'+
  '<small>Use level measures and the stated food preparation; for precise baking, weigh the requested grams.</small></div>'+
  '<div class="result-meta"><span><span data-meta-kind>'+(crossDimension?'Ingredient':'Conversion')+'</span>: <b data-meta-ingredient>'+e(crossDimension?ref.name:'Fixed units')+'</b></span><span>Reference: <b data-meta-reference>'+e(crossDimension?referenceText:'Defined unit relationship')+'</b></span></div>'+
  '</div>'+
  '<p data-error class="error" role="alert" hidden></p>'+
- '<div class="calc-actions"><button class="btn btn-primary" type="button" data-copy>↗ Copy result</button>'+
+ '<div class="calc-actions"><button class="btn btn-primary" type="button" data-copy><span data-copy-label>Copy result</span></button>'+
  '<button class="btn" type="button" data-share>Share link</button><button class="btn" type="button" data-print>Print</button>'+
  '<button class="btn btn-ghost" type="button" data-reset>Reset</button></div>'+
- '<p class="source-chip"><span data-feedback role="status"></span>'+
+ '<p class="calc-feedback" data-feedback role="status"></p></div>'+
+ '<div class="calc-extras">'+
+ '<div class="quick-row calc-food-presets" role="group" aria-label="Popular ingredients" data-density-field'+(crossDimension?'':' hidden')+'>'+foodButtons+'</div>'+
+ '<div class="standard-line" data-water-mode-row'+(crossDimension&&ref.id==='water'?'':' hidden')+'><label for="water-mode">Water measurement method</label><select id="water-mode" data-water-mode><option value="recipe" selected>Recipe chart · 227 g per US cup</option><option value="capacity">Physical capacity · approximately 1 g/mL</option></select><small>Water density varies with temperature.</small></div>'+
+ '<div class="standard-line" data-cup-standard-row'+(standardRelevant?'':' hidden')+'><label for="cup-standard">Cup standard</label><select id="cup-standard" data-standard><option value="us" selected>US · 236.588 mL</option><option value="metric">Metric · 250 mL</option></select></div>'+
+ '<details class="advanced-units" data-advanced-units><summary>More conversion units</summary><div class="advanced-inner"><div class="unit-stage">'+unitSelect('From unit','from',from)+unitSelect('To unit','to',to)+'</div></div></details>'+
+ '<p class="source-chip">'+
  '<span data-source-ingredient'+(crossDimension?'':' hidden')+'>Ingredient-based estimate from '+link(source,'King Arthur Baking’s published weight chart')+'. Actual food preparation affects measurements.</span>'+
  '<span data-source-fixed'+(crossDimension?' hidden':'')+'>This conversion uses defined units and does not require ingredient weights. '+link('/cooking/sources-and-methods/','View our measurement standards')+'.</span>'+
  '<span data-source-capacity hidden>Capacity-based water estimate: approximately 1 g per mL, varying with temperature. This is <strong>not</strong> the 227 g per US cup published recipe reference.</span></p>'+
- '</form></div>';
+ '</div></form></div>';
 }
+
+const shortUnitLabel=unit=>({g:'g',kg:'kg',oz:'oz',cup:'US cups',ml:'mL',tbsp:'tbsp',tsp:'tsp','fl-oz':'US fl oz'})[unit]||unit;
 
 function answerFor(amount,ingredient='all-purpose-flour',standard='us'){
  const i=byId.get(ingredient),cups=convertQuantity(amount,'g','cup',{ingredient:i,standard});
@@ -251,14 +267,10 @@ function home(){
  '<span>100 g · level cup</span></div>'+
  '<p class="compare-caption" data-compare-caption>100 g of flour needs more cup space than 100 g of granulated sugar.</p>'+
  '</div></div></section>';
- const hero='<div class="container hero"><div class="hero-grid"><div class="hero-copy">'+
- '<span class="eyebrow">THE EVERYDAY BAKING TOOLKIT</span>'+
- '<h1 class="hero-heading">Grams to cups, <em>without the guesswork.</em></h1>'+
- '<p class="lede">Not every cup weighs the same. Get the conversion that fits <strong>your ingredient</strong>, with a clear weight reference behind every answer.</p>'+
- '<a class="btn btn-primary hero-mobile-cta" href="#converter">Start converting <span aria-hidden="true">↓</span></a>'+
- '<div class="hero-points"><span>27 source-backed ingredients</span><span>US & metric cups</span><span>Instant local calculations</span></div>'+
- '<div class="hero-story"><div class="hero-story-symbol" aria-hidden="true">½</div><div><b>Measure less. Make more.</b><p>Precise baking starts with the right ingredient and the right cup size.</p><small>Source-backed kitchen math, beautifully simple.</small></div></div>'+
- '</div>'+converterForm({})+'</div></div>';
+ const hero='<div class="container hero"><div class="hero-copy">'+
+ '<h1 class="hero-heading">Grams to <em>cups.</em></h1>'+
+ '<p class="lede">Choose an ingredient to convert by weight and see how to measure it.</p>'+
+ '</div>'+converterForm({})+'</div>';
  const homeAnswer='<section class="section section-answer"><div class="container"><div class="panel"><h2>How many cups is 100 grams?</h2>'+
  '<p><strong>100 grams of spoon-and-leveled all-purpose flour is about '+e(flour100)+' US cups.</strong> The referenced flour measure is 120 g per US cup. By comparison, 100 g of granulated sugar is about '+e(sugar100)+' US cups using its 198 g per US cup reference. The same mass does not correspond to one universal cup amount.</p>'+
  '<p>Choose the correct ingredient and food state above, and select US (236.588 mL) or metric (250 mL) cups. Values are scaled from the '+link(source,'published ingredient weight chart')+'; for precise baking, use the gram weight stated in the recipe. '+link('/cooking/sources-and-methods/','Read our calculation method')+'. For step-by-step examples, open '+link('/cooking/ingredients/all-purpose-flour/100-grams-to-cups/','100 g all-purpose flour to cups')+' or '+link('/cooking/ingredients/granulated-sugar/100-grams-to-cups/','100 g granulated sugar to cups')+'.</p></div></div></section>';
@@ -307,7 +319,7 @@ function measureReferenceDifference(plan){
  const unit=plan.differenceGrams===null?'mL':'g';
  const difference=Math.abs(delta)<.01?'Under 0.01 '+unit:
   f(Math.abs(delta))+' '+unit+' '+(delta>0?'above':'below')+' target';
- return difference+' ('+f(Math.abs(plan.percentError))+'% difference)'+
+ return difference+' ('+(Math.abs(plan.percentError)<.0005?'0':f(Math.abs(plan.percentError)))+'% difference)'+
   (Math.abs(plan.percentError)>=5?' · Prefer a kitchen scale':'');
 }
 function quickAnswerFor(n){
@@ -319,7 +331,7 @@ function quickAnswerFor(n){
  });
  return '<div class="panel quick-answer-panel"><h2>'+n+' grams to cups: quick answers</h2>'+
  '<p>Flour, sugar and butter weigh differently. These are referenced US cup estimates, not a universal weight-to-volume formula.</p>'+
- table(['Ingredient','Calculated US cups','Practical cup fills','Reference weight difference'],rows)+
+ table(['Ingredient','Calculated US cups','Practical cup fills','Reference weight difference'],rows,{stacked:true})+
  '<p class="source-chip">Source: '+link(source,'King Arthur Baking Ingredient Weight Chart')+
  '. Exact baking weights are best measured on a scale. Select metric cups in the calculator below.</p></div>';
 }
@@ -458,7 +470,7 @@ function batchPage(){
  '<div class="calc-actions"><button class="btn btn-primary" type="button" data-batch-run>Convert list</button><button class="btn" type="button" data-batch-copy>Copy results</button>'+
  '<button class="btn" type="button" data-batch-csv>Download CSV</button><button class="btn btn-ghost" type="button" data-batch-clear>Clear</button></div>'+
  '<p class="error" role="alert" data-batch-error hidden></p><p class="batch-feedback" data-batch-feedback role="status"></p><div class="batch-summary" role="status" data-batch-summary>Results appear below as you type.</div>'+
- '<div class="table-shell"><div class="table-scroll batch-result-table" tabindex="0" role="region" aria-label="Batch conversion results; scroll horizontally for both columns"><table><thead><tr><th scope="col">Original line</th><th scope="col">Conversion / review</th></tr></thead><tbody data-batch-results></tbody></table></div><p class="table-scroll-hint">↔ Swipe sideways to compare original and converted lines</p></div>'+
+ '<div class="table-shell"><div class="table-scroll batch-result-table" tabindex="0" role="region" aria-label="Batch conversion results"><table><thead><tr><th scope="col">Original line</th><th scope="col">Conversion / review</th></tr></thead><tbody data-batch-results></tbody></table></div><p class="table-scroll-hint" hidden>↔ Scroll to compare original and converted lines</p></div>'+
  '<p class="source-chip">Ingredient weights from '+link(source,'King Arthur Baking’s ingredient weight chart')+'. Original lines are preserved if an ingredient or unit cannot be safely identified. Your text stays in your browser.</p>'+
  '</form></div>'+
  '<div class="panel mt-3"><h2>How the batch converter protects accuracy</h2>'+
