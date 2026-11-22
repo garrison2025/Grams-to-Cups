@@ -339,12 +339,63 @@ for(const root of $$('[data-compare]')){
  // Initial values, bars and preset state are server-rendered for the 100g
  // reference. Avoid eager DOM/layout work in the homepage's critical path.
 }
-/* The chart is useful as an interactive lookup as well as a printable source table. */
+/* All three charts use one calculation and one live table as the source of
+   truth for the screen, accessible print view and downloaded CSV. */
 for(const chart of $$('[data-chart]')){
  const search=$('[data-chart-filter]',chart),table=$('[data-chart-table] table',chart);
- if(!table||!search)continue;
- const rows=$$('tbody tr',table),head=$$('thead th',table).map(th=>th.textContent.trim());
+ const standard=$('[data-chart-standard]',chart),custom=$('[data-chart-custom]',chart);
+ const waterMode=$('[data-chart-water-mode]',chart),error=$('[data-chart-error]',chart);
+ const download=$('[data-chart-download]',chart),print=$('[data-chart-print]');
+ if(!table||!search||!standard||!custom)continue;
+ const rows=$$('tbody tr',table),head=$$('thead th',table);
+ const setValid=valid=>{
+  if(download)download.disabled=!valid;
+  if(print)print.disabled=!valid;
+  custom.setAttribute('aria-invalid',String(!valid));
+ };
  const update=()=>{
+  try{
+   const cups=parseAmount(custom.value);
+   if(cups<.001||cups>1000)throw new Error('Enter a custom cup amount from 0.001 to 1,000.');
+   const cupStandard=standard.value,mode=waterMode?.value||'recipe';
+   if(!['us','metric'].includes(cupStandard)||!['recipe','capacity'].includes(mode))
+    throw new Error('Choose a supported cup and water measurement method.');
+   const prepared=rows.map(row=>{
+    const food=byId.get(row.dataset.chartFoodId);
+    if(!food)throw new Error('The reference ingredient data is unavailable.');
+    const waterBasis=food.id==='water'?mode:'recipe';
+    return {
+     row,
+     values:[.25,.5,cups].map(n=>formatAmount(convertQuantity(n,'cup','g',
+      {ingredient:food,standard:cupStandard,waterMode:waterBasis}),3)+' g'),
+     method:food.id==='water'&&mode==='capacity'
+      ?'Physical capacity estimate (~1 g/mL; temperature-dependent)':food.method
+    };
+   });
+   const unit=cupStandard==='metric'?'metric cup':'US cup';
+   const fmt=n=>n===.25?'1/4':n===.5?'1/2':n===1?'1':
+    Math.abs(n-1/3)<1e-12?'1/3':formatAmount(n,4);
+   [0.25,0.5,cups].forEach((quantity,i)=>setText(head[i+1],fmt(quantity)+' '+unit));
+   for(const {row,values,method} of prepared){
+    values.forEach((value,i)=>setText(row.cells[i+1],value));
+    setText(row.cells[4],method);
+   }
+   const waterText=waterMode?(mode==='capacity'
+    ?'Water uses physical-capacity estimation (approximately 1 g/mL, varying with temperature), NOT the published recipe weight.'
+    :'Water uses the published 227 g per US cup recipe reference, NOT a physical capacity conversion.'):
+    'Every row retains its published ingredient preparation method.';
+   setText($('[data-chart-context]',chart),'Showing 1/4, 1/2 and '+fmt(cups)+' '+unit+
+    ' ('+(cupStandard==='us'?'236.588':'250')+' mL per cup). '+waterText);
+   if(error){error.hidden=true;setText(error,'');}
+   setValid(true);
+   return true;
+  }catch(ex){
+   if(error){error.hidden=false;setText(error,ex.message||'Enter a supported cup quantity.');}
+   setValid(false);
+   return false;
+  }
+ };
+ const filter=()=>{
   const query=search.value.trim().toLowerCase();
   let visible=0;
   for(const row of rows){
@@ -355,13 +406,20 @@ for(const chart of $$('[data-chart]')){
   const empty=$('[data-chart-empty]',chart);
   if(empty)empty.hidden=visible!==0;
  };
- search.addEventListener('input',update);
- $('[data-chart-download]',chart)?.addEventListener('click',()=>{
-  const included=[...rows].filter(row=>!row.hidden).map(row=>[...row.cells].map(td=>td.textContent.trim()));
-  const content=[head,...included].map(row=>row.map(csvCell).join(',')).join('\r\n');
+ standard.addEventListener('change',update);
+ custom.addEventListener('input',update);
+ waterMode?.addEventListener('change',update);
+ search.addEventListener('input',filter);
+ download?.addEventListener('click',()=>{
+  if(!update())return;
+  const headers=head.map(th=>th.textContent.trim());
+  const included=rows.filter(row=>!row.hidden)
+   .map(row=>[...row.cells].map(cell=>cell.textContent.trim()));
+  const content=[headers,...included].map(row=>row.map(csvCell).join(',')).join('\r\n');
   const url=URL.createObjectURL(new Blob(['\ufeff'+content],{type:'text/csv;charset=utf-8'}));
   const a=document.createElement('a');a.href=url;a.download='cooking-conversion-chart.csv';a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  });
  update();
+ filter();
 }
