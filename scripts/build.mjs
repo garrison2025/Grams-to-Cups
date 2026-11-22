@@ -202,7 +202,7 @@ function numberPage(n){
    const options=convenientCups.map(([cups,label])=>({cups,label,weight:convertQuantity(cups,'cup','g',{ingredient:i})}));
    const closest=options.sort((a,b)=>Math.abs(a.weight-n)-Math.abs(b.weight-n))[0];
    const difference=closest.weight-n;
-   return [i.name,f(exactCups)+' cups',closest.label+' US cup'+(closest.cups===1?'':'s'),(Math.abs(difference)<0.0000001?'Exact at reference precision':f(Math.abs(difference))+' g '+(difference>0?'above':'below')+' '+n+' g')];
+   return [i.name,f(exactCups)+' cups',closest.label+' US cup'+(closest.cups>1?'s':''),(Math.abs(difference)<0.0000001?'Exact at reference precision':f(Math.abs(difference))+' g '+(difference>0?'above':'below')+' '+n+' g')];
  });
  const body=intro('How Many Cups Is '+n+' Grams?','The answer depends on the ingredient. Compare common baking foods using documented weights, then choose a different cup standard in the calculator.')+
  '<section class="section"><div class="container content-grid"><div>'+answer.html+converterForm({amount:n,heading:n+' grams to cups'})+
