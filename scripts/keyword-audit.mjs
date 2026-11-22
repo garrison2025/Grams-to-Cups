@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
+import {parseSemrushNumber,csvSafeCell} from '../src/seo-evidence.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const input=fs.readFileSync(path.join(root,'research/semrush-us-2300-sample.csv'),'utf8');
@@ -32,21 +33,10 @@ for(const name of required)assert.ok(name in fields,'Missing field '+name);
 assert.equal(records.length,2300,'Semrush sample unexpectedly changed; rerun analysis before publishing SEO changes');
 for(const line of records)assert.equal(line.length,headers.length,'Malformed CSV row');
 const val=(r,name)=>r[fields[name]];
-const csvEscape=value=>{
- let s=String(value??'');
- // Opening audit reports in Excel must not execute untrusted third-party text.
- if(/^[\x00-\x20]*[=+@-]/.test(s))s="'"+s;
- return '"'+s.replaceAll('"','""')+'"';
-};
+const csvEscape=csvSafeCell;
 const quotedRows=rows=>rows.map(row=>row.map(csvEscape).join(',')).join('\r\n')+'\r\n';
 const isMassWeight=x=>/(?:\bgrams?\b|\bgm\b|\b\d+\s*g\b|\bounces?\b|\boz\b|\bpounds?\b|\blb\b|\bkilograms?\b|\bkg\b)/i.test(x);
-const num=value=>{
- const s=String(value??'').trim();
- if(!s||s==='-'||/^n\/?a$/i.test(s))return null; // An unknown KD must NEVER count as KD=0.
- if(!/^-?(?:\d+(?:\.\d+)?|\.\d+)$/.test(s))return null;
- const n=Number(s);
- return Number.isFinite(n)?n:null;
-};
+const num=parseSemrushNumber;
 const canonical=url=>url==='/cooking/grams-to-cups/'?'/':url;
 
 function classifyUnmapped(text){
