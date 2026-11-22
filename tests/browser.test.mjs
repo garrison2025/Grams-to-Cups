@@ -293,6 +293,15 @@ try{
  assert.equal(await page.locator('[data-batch-review="0"]').count(),0,
   'unsafe multi-quantity row does not offer a food override');
  assert.match(await page.locator('[data-batch-results] .batch-review-row').innerText(),/Split into separate ingredient lines/);
+ await page.locator('[data-batch-lines]').fill('1 US cup milk, 2eggs\n120 g all-purpose flour');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'1 converted · 1 need review · 0 blank',
+  'joined quantity and ingredient is not a partial conversion');
+ assert.equal(await page.locator('[data-batch-review="0"]').count(),0,
+  'an unsafe compact multi-item row must not offer manual ingredient replacement');
+ assert.ok((await page.locator('[data-batch-results] .batch-review-row').innerText()).includes('1 US cup milk, 2eggs'),
+  'compact quantity retains the entire original row');
+ assert.doesNotMatch(await page.locator('[data-batch-results] .batch-review-row').innerText(),/227 g Milk, fresh/,
+  'milk alone is not reported as converted when eggs were also entered');
  await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
  await page.locator('[data-batch-target]').selectOption('cup');
  await page.locator('[data-batch-standard]').selectOption('metric');
@@ -368,10 +377,10 @@ try{
  const compound=(await page.locator('[data-recipe-output]').innerText()).trim();
  assert.ok(compound.includes('1 cup milk + 2 tbsp cream  [check manually]'),'compound quantities must not be only partially scaled');
  await page.locator('[data-recipe-lines]').fill(
-  '1 cup milk, 2 eggs\n1 cup milk; 2 eggs\n15 minutes\n350°F\n180°C\n2 eggs\n1 cup flour, sifted'
+  '1 cup milk, 2 eggs\n1 cup milk; 2 eggs\n1 cup milk, 2eggs\n1 cup milk and2eggs\n15 minutes\n350°F\n180°C\n2 eggs\n1 cup flour, sifted'
  );
  const guarded=(await page.locator('[data-recipe-output]').innerText()).trim();
- for(const unchanged of ['1 cup milk, 2 eggs','1 cup milk; 2 eggs','15 minutes','350°F','180°C']){
+ for(const unchanged of ['1 cup milk, 2 eggs','1 cup milk; 2 eggs','1 cup milk, 2eggs','1 cup milk and2eggs','15 minutes','350°F','180°C']){
   assert.ok(guarded.includes(unchanged+'  [check manually]'),
    'ambiguous ingredient or cooking instruction must stay unchanged and visibly request review: '+unchanged);
  }

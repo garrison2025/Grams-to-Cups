@@ -212,10 +212,17 @@ function unsafeIngredientRemainder(text){
  // quantities in parentheses, and quantities after preparation notes.
  // Numeric food descriptions like "2% milk" are intentionally conservative:
  // leave the whole line unchanged rather than guessing.
- const secondAmount=/(?:^|[^\p{L}\p{N}])(?:\d+(?:[.,]\d+)?(?:\/\d+)?|\.\d+)(?=$|[^\p{L}\p{N}])/u;
+ // A second number is unsafe even if it touches its ingredient or unit:
+ // "2eggs", "0.5tsp", "2large eggs". The LEFT boundary still avoids
+ // interpreting embedded food labels such as "B12" as separate quantities.
+ const secondAmount=/(?:^|[^\p{L}\p{N}])(?:\d+(?:[.,]\d+)?(?:\/\d+)?|\.\d+)(?=$|[^\p{L}\p{N}]|\p{L})/u;
+ // A missing space after a connector also must not evade the atomic-row
+ // check (e.g. "1 cup milk and2eggs").
+ const compactConjunction=/(?:^|[^\p{L}\p{N}])(?:and|plus|with)\s*\d+(?:[.,]\d+)?\p{L}/iu;
  const spelledSecondAmount=/(?:,|，|;|\+|&|\/|\band\b|\bplus\b|\bwith\b)\s*(?:(?:about|roughly|approximately)\s+)?(?:one|two|three|four|five|six|seven|eight|nine|ten|half|quarter|an?|a\s+few)\b/iu;
  return /;/u.test(rest)||
   secondAmount.test(rest)||
+  compactConjunction.test(rest)||
   spelledSecondAmount.test(rest)||
   /^\s*[,\.]\s*\d/u.test(rest)||
   /^\s*(?:[-–—/]|to\b|or\b)\s*(?:\d|\.)/iu.test(rest)||

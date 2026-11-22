@@ -411,7 +411,16 @@ test('manual food override never permits partial conversion of a multi-ingredien
   '1 cup milk plus half a teaspoon cream',
   '1 cup milk, ½ tsp cinnamon',
   '1 cup milk with one egg',
-  '1 cup milk; 2 eggs'
+  '1 cup milk; 2 eggs',
+  '1 US cup milk, 2eggs',
+  '1 US cup milk,2eggs',
+  '1 cup milk 2eggs',
+  '1 cup milk and2eggs',
+  '1 cup milk with 2large eggs',
+  '1 cup milk + 2tbsp honey',
+  '1 cup milk, 0.5tsp cinnamon',
+  '1 cup milk, 2Eggs',
+  '1 cup milk, 2cloves garlic'
  ];
  for(const line of unsafe){
   const result=batchConvertIngredients(line,{ingredients:foods,target:'g',ingredientOverrides:{0:'milk-fresh'}});
@@ -426,6 +435,17 @@ test('manual food override never permits partial conversion of a multi-ingredien
  assert.equal(safe.converted,1,'explicit single-food milk row remains convertible');
  assert.equal(safe.rows[0].output,'227 g Milk, fresh');
  assert.equal(safe.rows[1].output,'2 eggs','unsupported countable food remains unchanged');
+ const recipe=scaleRecipe(unsafe.join('\n'),2,3,{fractions:true});
+ assert.equal(recipe.unparsed,unsafe.length,'compact second ingredients must never be scaled partially');
+ recipe.rows.forEach((row,index)=>{
+  assert.equal(row.scaled,unsafe[index],'recipe must preserve full multi-ingredient source: '+unsafe[index]);
+  assert.equal(row.ok,false,'multi-ingredient recipe row remains for manual review');
+ });
+ const ordinary=scaleRecipe('2 eggs\n1 cup milk\n1 cup vitamin B12',2,3,{fractions:true});
+ assert.equal(ordinary.rows[0].scaled,'3 eggs');
+ assert.equal(ordinary.rows[1].scaled,'1 1/2 cups milk');
+ assert.equal(ordinary.rows[2].scaled,'1 1/2 cups vitamin B12',
+  'numbers embedded within food names must not be mistaken for independent amounts');
 });
 
 test('compact time and temperature instructions are never scaled as ingredients',()=>{
