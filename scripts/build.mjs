@@ -97,7 +97,7 @@ function doc(spec){
  if(url==='/cooking/sources-and-methods/')webpage.citation=[source,volumeSource];
  if(sourceReferenced){
   webpage.citation=source;
-  webpage.about={'@type':'Thing',name:'Ingredient-specific cooking weight and volume conversion'};
+  webpage.about={'@type':'Thing',name:title};
  }
  const schema=permitted?
   (url==='/'?jsonld({'@context':'https://schema.org','@type':'WebSite','@id':websiteId,name:'Grams & Cups',url:origin+'/',inLanguage:'en'}):'')+
@@ -112,6 +112,7 @@ function doc(spec){
  const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f8f7f2">'+
  '<meta name="description" content="'+e(description)+'"><meta name="robots" content="'+(permitted?'index,follow':'noindex,follow')+'">'+
  (permitted?'<link rel="canonical" href="'+e(canonical)+'">':'')+'<title>'+e(pageTitle)+'</title>'+
+ (permitted&&url==='/'&&origin===productionOrigin?'<meta name="google-site-verification" content="5U3A9UOS0g5EKSXt9Bc7JcdGziKzL10f2XXB8kPFldk">':'')+
  '<meta property="og:type" content="website"><meta property="og:site_name" content="Grams &amp; Cups"><meta property="og:locale" content="en_US">'+
  '<meta property="og:title" content="'+e(pageTitle)+'"><meta property="og:description" content="'+e(description)+'">'+
  '<meta name="twitter:card" content="summary"><meta name="twitter:title" content="'+e(pageTitle)+'"><meta name="twitter:description" content="'+e(description)+'">'+
@@ -242,15 +243,18 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
 
 const shortUnitLabel=unit=>({g:'g',kg:'kg',oz:'oz',cup:'US cups',ml:'mL',tbsp:'tbsp',tsp:'tsp','fl-oz':'US fl oz'})[unit]||unit;
 
-function answerFor(amount,ingredient='all-purpose-flour'){
- const i=byId.get(ingredient);
- const cups=convertQuantity(amount,'g','cup',{ingredient:i,standard:'us'});
- const metric=convertQuantity(amount,'g','cup',{ingredient:i,standard:'metric'});
- return {cups,html:'<div class="seo-answer"><strong>'+e(f(amount))+' grams of '+e(i.name)+' ≈ '+e(f(cups))+' US cups</strong>'+
- '<p>The same '+e(f(amount))+' g is about <strong>'+e(f(metric))+' metric cups</strong>. A US cup holds '+e(f(US_CUP_ML))+' mL and a metric cup holds '+METRIC_CUP_ML+' mL.</p>'+
- '<p>For '+e(i.state)+' measured by '+e(i.method)+', this estimate scales '+e(f(i.referenceGrams))+' g per '+e(i.referenceAmount)+' '+(i.referenceUnit==='cup'?'US cup':'US tablespoon')+' from '+link(i.sourceUrl,i.sourceName)+'. This is an ingredient-specific cooking estimate, not a universal mass-to-volume equation.</p></div>'};
+function answerFor(amount,ingredient='all-purpose-flour',standard='us'){
+ const i=byId.get(ingredient),cups=convertQuantity(amount,'g','cup',{ingredient:i,standard});
+ const usCups=convertQuantity(amount,'g','cup',{ingredient:i,standard:'us'});
+ const metricCups=convertQuantity(amount,'g','cup',{ingredient:i,standard:'metric'});
+ const gramsPerUsCup=convertQuantity(1,'cup','g',{ingredient:i,standard:'us'});
+ const basis=f(i.referenceGrams)+' g per '+f(i.referenceAmount)+' '+(i.referenceUnit==='cup'?'US cup':'US tablespoon');
+ return {cups,html:'<div class="seo-answer"><strong>'+e(f(amount))+' grams of '+e(i.name)+' ≈ '+e(f(cups))+' '+(standard==='us'?'US':'metric')+' cups</strong>'+
+ '<p>For '+e(i.state)+' measured by '+e(i.method)+', '+e(f(amount))+' g works out to about '+e(f(cups))+' '+(standard==='us'?'US':'metric')+' cups. The calculation scales '+e(basis)+' from '+link(i.sourceUrl,i.sourceName)+'. This is an ingredient-specific cooking estimate, not a universal mass-to-volume equation.</p>'+
+ '<div class="answer-evidence" data-answer-evidence><p><b>Calculation:</b> '+e(f(amount))+' g ÷ '+e(f(gramsPerUsCup))+' g per US cup ≈ '+e(f(usCups))+' US cups. With a 250 mL metric cup, the same amount is approximately <b>'+e(f(metricCups))+' metric cups</b> (US cup: '+e(f(US_CUP_ML))+' mL).</p>'+
+ '<p><b>Reference and scope:</b> '+e(i.sourceEntry)+' ('+e(i.state)+'; '+e(i.method)+'). Original published pair: '+e(basis)+'. '+link(i.sourceUrl,'View the original weight chart')+'. Reference checked '+e(i.reviewedAt)+'. These are proportional recipe estimates, not individual laboratory measurements.</p></div></div>'};
 }
-function numberComparison(amount,exclude=''){const top=data.filter(i=>i.id!==exclude);return table(['Ingredient','US cups for '+amount+' g','Source grams / US cup'],top.map(i=>[i.name,f(convertQuantity(amount,'g','cup',{ingredient:i})),f(convertQuantity(1,'cup','g',{ingredient:i}))+' g']));}
+function numberComparison(amount,exclude=''){const top=data.filter(i=>i.id!==exclude);return table(['Ingredient','US cups for '+amount+' g','Reference g per US cup','Food state and measuring method'],top.map(i=>[i.name,f(convertQuantity(amount,'g','cup',{ingredient:i})),f(convertQuantity(1,'cup','g',{ingredient:i}))+' g',i.state+' · '+i.method]));}
 function intro(title,body){return '<div class="container"><div class="page-intro"><span class="eyebrow">Cooking measurement reference</span><h1>'+e(title)+'</h1><p class="lede">'+e(body)+'</p></div></div>';}
 const hubList=tools.map(t=>['/cooking/'+t[0]+'/',t[1],t[5]==='ingredient'?'Ingredient-aware conversion':'Fixed US volume units']);
 const ingredientList=pageIngredients.map(i=>['/cooking/ingredients/'+i.id+'/',i.name,i.method]);
@@ -348,7 +352,7 @@ function quickAnswerFor(n){
    measureReferenceDifference(measure)];
  });
  return '<div class="panel quick-answer-panel"><h2>'+n+' grams to cups: quick answers</h2>'+
- '<p>Flour, sugar and butter weigh differently. These are referenced US cup estimates, not a universal weight-to-volume formula.</p>'+
+ '<p>Flour, sugar and butter weigh differently. These are referenced US cup estimates, not a universal weight-to-volume formula. Verify the matching food state and measuring method in the complete reference table below before using a result.</p>'+
  table(['Ingredient','Calculated US cups','Practical cup fills','Reference weight difference'],rows,{stacked:true})+
  '<p class="source-chip">Source: '+link(source,'King Arthur Baking Ingredient Weight Chart')+
  '. Exact baking weights are best measured on a scale. Select metric cups in the calculator below.</p></div>';
@@ -394,7 +398,8 @@ function ingredientPage(i){
  '<section class="section"><div class="container content-grid"><div>'+
  '<div class="facts"><div class="fact"><strong>'+e(f(convertQuantity(1,'cup','g',{ingredient:i})))+' g</strong><span>per US cup'+(i.id==='water'?' · recipe chart':'')+'</span></div><div class="fact"><strong>'+e(f(preview))+' cups</strong><span>per 100 grams'+(i.id==='water'?' · recipe chart':'')+'</span></div><div class="fact"><strong>'+e(i.method)+'</strong><span>measurement method</span></div></div>'+
  '<div class="panel mt-3"><h2>How many grams are in one US cup of '+e(i.name.toLowerCase())+'?</h2>'+
- '<p>One US cup of '+e(i.name.toLowerCase())+' is approximately <strong>'+e(f(convertQuantity(1,'cup','g',{ingredient:i})))+' grams</strong> using the cited '+e(i.referenceGrams)+' g per '+e(i.referenceAmount)+' '+(i.referenceUnit==='cup'?'US cup':'US tablespoon')+' reference. Conversely, 100 grams is about <strong>'+e(f(preview))+' US cups</strong>. This estimate applies to '+e(i.state)+' measured by '+e(i.method)+', not to every preparation or brand. Source: '+link(i.sourceUrl,i.sourceName)+'.</p></div>'+
+ '<p>One US cup of '+e(i.name.toLowerCase())+' is approximately <strong>'+e(f(convertQuantity(1,'cup','g',{ingredient:i})))+' grams</strong> using the cited '+e(i.referenceGrams)+' g per '+e(i.referenceAmount)+' '+(i.referenceUnit==='cup'?'US cup':'US tablespoon')+' reference. Conversely, 100 grams is about <strong>'+e(f(preview))+' US cups</strong>. This estimate applies to '+e(i.state)+' measured by '+e(i.method)+', not to every preparation or brand. Source: '+link(i.sourceUrl,i.sourceName)+'.</p>'+
+ '<p class="ingredient-evidence" data-ingredient-evidence><strong>For a metric cup:</strong> 100 g ≈ '+e(f(convertQuantity(100,'g','cup',{ingredient:i,standard:'metric'})))+' metric cups, while 1 metric cup ≈ '+e(f(convertQuantity(1,'cup','g',{ingredient:i,standard:'metric'})))+' g. These values scale the same published recipe reference from a '+e(f(US_CUP_ML))+' mL US cup to a 250 mL metric cup; they are not separate measurements. '+link('/cooking/guides/cup-sizes/','Compare cup standards')+'.</p></div>'+
  waterPanel+'<div class="mt-3">'+converterForm({amount:100,ingredient:i.id,heading:i.name+' conversion'})+'</div>'+
  '<div class="panel mt-3"><h2>'+e(i.name)+' conversion chart</h2><p>These quantities are calculated from '+e(i.referenceGrams)+' g per '+e(i.referenceAmount)+' '+e(i.referenceUnit)+'. '+e(i.note)+'</p>'+
  table(['Grams','US cups','Metric cups'],values.map(n=>[n+' g',f(convertQuantity(n,'g','cup',{ingredient:i,standard:'us'})),f(convertQuantity(n,'g','cup',{ingredient:i,standard:'metric'}))]))+
@@ -540,6 +545,8 @@ function methodology(){
  '<p><strong>US customary cup:</strong> '+US_CUP_ML+' mL. <strong>Metric cup:</strong> '+METRIC_CUP_ML+' mL. <strong>US tablespoon:</strong> '+US_TBSP_ML+' mL. Metric cup baking weights are scaled from US recipe references. For the US customary cup, see the volume conversion table in '+link(volumeSource,'NIST Letter Circular 1098')+'.</p>'+
  '<h2>Important limitations</h2><p>Recipe chart weights are not necessarily physical density at a specified temperature. For example, the cited chart assigns 227 g per cup to water while a physical 236.588 mL cup of water weighs about 236.6 g near ordinary room conditions. We explicitly label the former as a recipe-reference value.</p>'+
  '<p>Packed brown sugar, unsifted confectioners sugar, and uncooked rice are distinct states. We do not apply one state’s weight to another. For repeatability, use the weight printed in the original recipe and prefer a scale.</p>'+
+ '<h2>How to verify a quoted conversion</h2><p>A complete cooking answer needs the ingredient, food state, cup standard, source weight, and measurement method. For example, 100 g of spooned-and-leveled all-purpose flour is about '+e(f(convertQuantity(100,'g','cup',{ingredient:byId.get('all-purpose-flour')})))+' US cups: 100 g divided by 120 g per US cup. The same 100 g is about '+e(f(convertQuantity(100,'g','cup',{ingredient:byId.get('all-purpose-flour'),standard:'metric'})))+' metric cups using a 250 mL metric cup. The source is '+link(source,'King Arthur Baking’s Ingredient Weight Chart')+', not an independent measurement made by this website.</p>'+
+ '<p>We report the date on which our reference entries were checked, not a claim that the publisher updated its chart on that date. Rounded display values are estimates. Do not cite a result without its food state or infer that sugar, rice, oil, or water shares flour’s grams-per-cup value. '+link('/contact/','Report a questionable value')+'.</p>'+
  '<h2>Source entries used by this website</h2><p>The table below reproduces the identifying entry names and original measurement pairs used for each ingredient. These are the specific published references, not universal averages across brands or food states.</p>'+ table(['Our ingredient','Original chart entry','Original weight / volume','Measurement condition'],data.map(i=>[i.name,i.sourceEntry,f(i.referenceGrams)+' g / '+f(i.referenceAmount)+' '+(i.referenceUnit==='tablespoon'?'US tablespoon':'US cup'),i.method]))+ '<p class="source-chip">Source checked '+e(data[0].reviewedAt)+': '+link(source,'King Arthur Baking Ingredient Weight Chart')+'. Review the original source when applying measurements to another brand or recipe.</p>'+ '<h2>Corrections and privacy</h2><p>All calculations are local in the browser. We do not collect the recipe lines typed into the scaler. If an ingredient weight looks wrong, '+link('/contact/','send a correction')+' with the food, quantity, cup standard and a published source if available.</p></div></div>'+
  '<aside class="panel side-panel"><h3>Browse referenced foods</h3>'+data.slice(0,9).map(i=>link('/cooking/ingredients/'+i.id+'/',i.name)).join('')+'</aside></div></section>';
  doc({url:'/cooking/sources-and-methods/',title:'Ingredient Weight Sources and Conversion Methodology',description:'Learn how grams to cups estimates use cited ingredient weights, US and metric cup sizes, measurement states and clear uncertainty notes.',body,bread:[['Cooking','/cooking/'],['Sources and methods',null]]});

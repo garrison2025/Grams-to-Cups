@@ -45,14 +45,21 @@ for(const page of manifest.pages){
   state=html.includes('spoon-and-leveled');
   assert.ok(html.includes('divide the grams by the ingredient’s grams per US cup'),'Homepage must show the conversion formula');
   assert.ok(sourceVisible,'Homepage answer must show a usable published reference');
+  assert.ok(html.includes('The same mass does not correspond to one universal cup amount.'),
+   'Homepage must not imply a universal weight-to-volume ratio');
  }else if(combo){
   type='ingredientWeight';
   const food=foodById.get(combo[1]);
   assert.ok(food,'Unknown ingredient in combo '+url);
   const n=Number(combo[2]),answer=formatAmount(convertQuantity(n,'g','cup',{ingredient:food}),3);
   direct=html.includes(n+' grams of '+food.name+' ≈ '+answer+' US cups');
+  unit=html.includes(answer+' US cups');
   const metric=formatAmount(convertQuantity(n,'g','cup',{ingredient:food,standard:'metric'}),3);
-  unit=html.includes(answer+' US cups')&&html.includes('<strong>'+metric+' metric cups</strong>');
+  assert.ok(html.includes('data-answer-evidence'),'Missing cited conversion trace '+url);
+  assert.ok(html.includes('approximately <b>'+metric+' metric cups</b>'),
+   'Missing separately calculated metric cup result '+url);
+  assert.ok(html.includes(food.sourceEntry)&&html.includes(food.reviewedAt)&&html.includes(food.method),
+   'Missing source entry, checked date or measuring method '+url);
   state=html.includes(food.state)&&html.includes(food.method);
   excerpt=strip(html.match(/<div class="seo-answer">([\s\S]*?)<\/div>/)?.[1]||'');
   assert.ok(sourceVisible,'Ingredient+number answer must link the published source: '+url);
@@ -61,8 +68,13 @@ for(const page of manifest.pages){
   const n=Number(numeric[1]),flour=foodById.get('all-purpose-flour');
   const answer=formatAmount(convertQuantity(n,'g','cup',{ingredient:flour}),3);
   direct=html.includes(formatAmount(n,3)+' grams of All-purpose flour ≈ '+answer+' US cups');
+  unit=html.includes(answer+' US cups');
   const metric=formatAmount(convertQuantity(n,'g','cup',{ingredient:flour,standard:'metric'}),3);
-  unit=html.includes(answer+' US cups')&&html.includes('<strong>'+metric+' metric cups</strong>');
+  assert.ok(html.includes('data-answer-evidence'),'Missing cited conversion trace '+url);
+  assert.ok(html.includes('approximately <b>'+metric+' metric cups</b>'),
+   'Numeric page missing separately calculated metric value '+url);
+  assert.ok(html.includes('Food state and measuring method')&&html.includes(flour.state)&&html.includes(flour.method),
+   '27-food comparison must expose distinct measurement states '+url);
   state=html.includes(flour.state)&&html.includes(flour.method);
   excerpt=strip(html.match(/<div class="seo-answer">([\s\S]*?)<\/div>/)?.[1]||'');
   assert.ok(sourceVisible,'Numeric answer must show its mass-to-volume source: '+url);
@@ -73,6 +85,10 @@ for(const page of manifest.pages){
   const grams=formatAmount(convertQuantity(1,'cup','g',{ingredient:food}),3);
   direct=html.includes('How many grams are in one US cup of '+food.name.toLowerCase()+'?');
   unit=html.includes('approximately <strong>'+grams+' grams</strong>');
+  const metric=formatAmount(convertQuantity(100,'g','cup',{ingredient:food,standard:'metric'}),3);
+  assert.ok(html.includes('data-ingredient-evidence'),'Ingredient page missing explicit metric basis '+url);
+  assert.ok(html.includes('100 g ≈ '+metric+' metric cups'),
+   'Metric cup weight must match the same ingredient source '+url);
   state=html.includes(food.state)&&html.includes(food.method);
   excerpt=strip(html.match(/<h2>How many grams are in one US cup[\s\S]*?<\/p>/)?.[0]||'');
   assert.ok(sourceVisible,'Ingredient direct answer must link the original published source '+url);
