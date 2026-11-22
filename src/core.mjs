@@ -139,7 +139,7 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
   try{
    const amount=parseAmount(rawAmount);
    const result=convertQuantity(amount,unit,target,{ingredient:food,standard});
-   return {index,original,status:'converted',output:formatKitchenAmount(result,{fractions:fractions&&target==='cup'})+' '+(target==='cup'?'cups':'g')+' '+food.name,
+   return {index,original,status:'converted',output:formatKitchenAmount(result,{fractions:fractions&&target==='cup'})+' '+(target==='cup'?(Math.abs(result-1)<1e-10?'cup':'cups'):'g')+' '+food.name,
      amount,result,from:unit,to:target,ingredient:food.name,ingredientId:food.id,reason:'Reference: '+food.referenceGrams+' g / '+food.referenceAmount+' '+food.referenceUnit};
   }catch(error){
    return {index,original,status:'review',output:original,reason:error.message,ingredient:food.name};
