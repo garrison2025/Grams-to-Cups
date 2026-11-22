@@ -231,9 +231,15 @@ function chartPage(type){
  const rows=chosen.map(i=>[i.name,f(convertQuantity(.25,'cup','g',{ingredient:i}))+' g',f(convertQuantity(.5,'cup','g',{ingredient:i}))+' g',f(convertQuantity(1,'cup','g',{ingredient:i}))+' g',i.method]);
  const title=type==='flour'?'Flour Cups to Grams Chart':type==='sugar'?'Sugar Cups to Grams Chart':'Printable Cooking Conversion Chart';
  const body=intro(title,'A print-friendly kitchen reference based on published ingredient weights. Different preparation and packing methods change the result; use the listed method.')+
- '<section class="section"><div class="container"><div class="panel"><h2>Measured US cup portions</h2><p>Choose your exact ingredient; values below are calculated from the listed reference and rounded to three decimal places. Print from your browser or save as PDF.</p>'+
- table(['Ingredient','1/4 cup','1/2 cup','1 cup','Method'],rows)+
- '<p class="source-chip">Source: '+link(source,'King Arthur Baking Ingredient Weight Chart')+'. These are approximate recipe-volume references.</p>'+
+ '<section class="section"><div class="container"><div class="panel"><h2>Measured US cup portions</h2>'+
+ '<p>Find the specific food you use, then print the reference chart or export the visible rows. These values are approximations from the ingredient measurement source.</p>'+
+ '<div data-chart><div class="chart-toolbar"><div class="field"><label for="chart-filter">Find an ingredient</label>'+
+ '<input id="chart-filter" type="search" data-chart-filter placeholder="Search flour, sugar, butter…" autocomplete="off"></div>'+
+ '<div class="chart-tools"><span class="chart-count" role="status" data-chart-count>'+chosen.length+' of '+chosen.length+' ingredients shown</span>'+
+ '<button class="btn" type="button" data-chart-download>Download CSV</button></div></div>'+
+ '<div data-chart-table>'+table(['Ingredient','1/4 cup','1/2 cup','1 cup','Method'],rows)+'</div>'+
+ '<p class="chart-empty" data-chart-empty hidden>No matching ingredients. Try another search.</p></div>'+
+ '<p class="source-chip">Source: '+link(source,'King Arthur Baking Ingredient Weight Chart')+'. The listed methods and ingredient states matter.</p>'+
  '<div class="calc-actions"><button class="btn btn-primary" type="button" data-chart-print>Print this chart</button>'+link('/cooking/guides/cup-sizes/','Cup-size guide','btn')+'</div></div></div></section>'+
  section('Other chart formats','Choose a focused chart to reduce confusion.',grid([['/cooking/charts/','All foods','24 source-backed ingredient entries'],['/cooking/charts/flour/','Flour','Compare different flours'],['/cooking/charts/sugar/','Sugar','Compare packing and processing']],3),true);
  doc({url:'/cooking/charts/'+(type?type+'/':''),title,description:'Print a cups to grams chart for '+(type||'24 kitchen ingredients')+' with sourced measurements and ingredient-specific method notes.',body,bread:[['Cooking','/cooking/'],['Charts',type?'/cooking/charts/':null],...(type?[[title,null]]:[])],kind:'WebPage'});
