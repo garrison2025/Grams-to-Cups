@@ -343,6 +343,13 @@ try{
   assert.ok(overflow<=1,route+' mobile overflow '+overflow);
   assert.ok(await mobile.locator('h1').first().isVisible(),route+' mobile heading hidden');
   assert.equal(mobileErrors.length,0,route+' browser errors: '+mobileErrors.join(','));
+  if(route==='/cooking/batch-converter/'){
+   const tableRegion=mobile.locator('.batch-result-table');
+   assert.equal(await tableRegion.getAttribute('tabindex'),'0',
+    'batch conversion results are keyboard focusable on mobile');
+   assert.ok(await mobile.locator('.table-scroll-hint').first().isVisible(),
+    'batch results explain horizontal swiping to reach the conversion column');
+  }
   if(route==='/cooking/charts/'){
    const tableRegion=mobile.locator('[data-chart-table] .table-scroll');
    const dims=await tableRegion.evaluate(el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}));
