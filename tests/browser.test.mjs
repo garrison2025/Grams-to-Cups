@@ -33,6 +33,28 @@ try{
  assert.ok(await page.getByRole('heading',{name:/Grams to cups.*without the guesswork/i}).isVisible(),'hero should show editorial heading');
  await page.locator('[data-result]').waitFor();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.833','default flour reference');
+ // Real keyboard typing, not only programmatic .fill(), must update the result.
+ await page.locator('[data-amount]').focus();
+ await page.keyboard.press('ControlOrMeta+A');
+ await page.keyboard.type('125');
+ assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.042','keyboard input updates conversion');
+ await page.locator('[data-reset]').click();
+ // Test the native copy action and the non-Web-Share fallback without browser permission prompts.
+ await page.evaluate(()=>{
+  window.__copiedConversion='';
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+   writeText:async value=>{window.__copiedConversion=value}
+  }});
+  Object.defineProperty(navigator,'share',{configurable:true,value:undefined});
+ });
+ await page.locator('[data-copy]').click();
+ assert.match(await page.evaluate(()=>window.__copiedConversion),/100 grams.*0\.833.*US cups/s,'copied text includes quantity, result and unit');
+ assert.match(await page.locator('[data-feedback]').innerText(),/Copied conversion/);
+ await page.locator('[data-share]').click();
+ const shared=await page.evaluate(()=>window.__copiedConversion);
+ assert.ok(shared.includes('amount=100')&&shared.includes('ingredient=all-purpose-flour')&&shared.includes('from=g')&&shared.includes('to=cup'),
+  'shared URL preserves current converter state without uploading data');
+ assert.match(await page.locator('[data-feedback]').innerText(),/Shareable link copied/);
  await page.locator('[data-amount-preset="200"]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.667','amount chip updates live result');
  await page.locator('[data-ingredient-preset="granulated-sugar"]').click();
@@ -149,6 +171,15 @@ try{
  const units=(await page.locator('[data-recipe-output]').innerText()).trim();
  assert.ok(units.includes('2 cups milk'),'recipe multiplier pluralizes singular unit');
  assert.ok(units.includes('4 cups water'),'recipe multiplier preserves plural unit');
+ const recipeCsv=page.waitForEvent('download');
+ await page.locator('[data-download-csv]').click();
+ assert.equal((await recipeCsv).suggestedFilename(),'scaled-recipe.csv','recipe export is downloadable locally');
+ // Pages include usable, source-backed HTML answers even with JavaScript disabled.
+ const staticPage=await browser.newPage({viewport:{width:375,height:812},javaScriptEnabled:false});
+ await staticPage.goto(origin+'/cooking/ingredients/all-purpose-flour/',{waitUntil:'domcontentloaded'});
+ assert.ok(await staticPage.getByRole('heading',{name:'All-purpose flour: cups to grams'}).isVisible(),'source-based result remains readable without JavaScript');
+ assert.ok((await staticPage.locator('table').nth(1).innerText()).includes('60 g'),'static half-cup conversion survives with JavaScript disabled');
+ await staticPage.close();
 
  const mobile=await browser.newPage({viewport:{width:375,height:812},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  const mobileErrors=[];
@@ -183,6 +214,11 @@ try{
    const button=mobile.locator('[data-nav-toggle]');
    await button.click();
    assert.equal(await button.getAttribute('aria-expanded'),'true','mobile menu opens');
+   await mobile.keyboard.press('Escape');
+   assert.equal(await button.getAttribute('aria-expanded'),'false','Escape closes mobile navigation');
+   await button.focus();
+   await mobile.keyboard.press('Enter');
+   assert.equal(await button.getAttribute('aria-expanded'),'true','keyboard Enter opens mobile menu');
    await button.click();
    assert.equal(await button.getAttribute('aria-expanded'),'false','mobile menu closes');
    assert.ok(await mobile.locator('.hero-mobile-cta').isVisible(),'mobile hero includes direct converter action');
