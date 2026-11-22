@@ -51,7 +51,21 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for exact production settings and QA gates.
 
 The full supplied (not full-domain) Semrush material is preserved at [research/semrush-us-2300-sample.csv](research/semrush-us-2300-sample.csv): 1,000 keyword rows from `gramstocupsconverter.cc`, 700 from `gramstocup.com`, 600 from `gramstocups.io`. These are third-party organic ranking estimates, not Search Console traffic or evidence of ad revenue. `site_target_suggestion` is explicitly heuristic and must never be interpreted as an observed ranking of this site.
 
-**Publication policy:** All 77 Cooking routes are functional; 14 have `noindex` by default because the supplied partial keyword and page evidence does not directly establish an independent SEO target. That is **not a feature omission**: users can still navigate, calculate, print and share those tools/pages. Main production sitemap holds **67 approved page candidates including home/legal pages**, rather than dumping every possible numeric URL into Google.
+**Publication policy:** All 77 Cooking routes are functional; 15 have `noindex` by default because the supplied partial keyword and page evidence does not directly establish an independent SEO target. That is **not a feature omission**: users can still navigate, calculate, print and share those tools/pages. Main production sitemap holds **66 approved page candidates including home/legal pages**, rather than dumping every possible numeric URL into Google.
+
+## SEO keyword integrity and duplicate-page protection
+
+The core query \`grams to cups\` is assigned to the **homepage \`/\` only**. The original \`/cooking/grams-to-cups/\` still functions when opened directly but stays \`noindex\`; the site's internal links now direct visitors and crawlers to \`/\` for that intent. No new 301 redirects were invented for URLs that were never confirmed live.
+
+Every \`npm run build\` also executes \`scripts/keyword-audit.mjs\`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates three **non-public** audit reports:
+
+- \`reports/seo-keyword-decisions.csv\`: one record per imported keyword, original estimated data unchanged, target URL, status and classification reason.
+- \`reports/seo-page-evidence.csv\`: one record per site page, index eligibility and number of mapped keyword observations.
+- \`reports/seo-summary.json\`: counts and gaps, so missing keyword evidence is never incorrectly equated to zero demand.
+
+The GitHub Actions **Site build and tests** workflow attaches the three reports as \`grams-to-cups-seo-review\` for download (30-day artifact retention). Reports are **not included in \`dist/\`** and are not exposed to site visitors.
+
+**Important limitation:** The 1,823 mapped rows remain \`heuristic\` until intent and competitor relevance are manually reviewed; 477 previously unmapped rows are categorized rather than automatically assigned to new SEO URLs. Out-of-scope conversions and ambiguous “oz” queries are not grounds for generating thin pages. All requested competitor ranking exports remain partial, not full-domain SEO coverage.
 
 Avoid cloning third-party prose. Original calculation tools and source-backed explanatory content are the product.
 
@@ -88,6 +102,7 @@ public/app.js                Browser calculator and recipe interaction
 public/styles.css            Responsive + print styles
 scripts/build.mjs            Generate complete static site, robots, sitemap
 scripts/audit.mjs            Page/link/meta/index gate audit
+scripts/keyword-audit.mjs    Reproducible keyword intent/evidence gate and reports
 tests/site.test.mjs          Reference, Unicode fractions, batch safety and regression tests
  tests/browser.test.mjs       Chromium desktop/mobile functional audit (CI-only Playwright)
 research/semrush-us-2300-sample.csv  User-provided partial Semrush exports
