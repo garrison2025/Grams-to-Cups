@@ -57,22 +57,25 @@ The full supplied (not full-domain) Semrush material is preserved at [research/s
 
 The core query `grams to cups` is assigned to the **homepage `/` only**. The original `/cooking/grams-to-cups/` still functions when opened directly but stays `noindex`; the site's internal links now direct visitors and crawlers to `/` for that intent. No new 301 redirects were invented for URLs that were never confirmed live.
 
-Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates four **non-public** audit reports:
+Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates five **non-public** audit reports:
 
 - `reports/seo-keyword-decisions.csv`: one record per imported keyword, original estimated data unchanged, target URL, status and classification reason.
 - `reports/seo-page-evidence.csv`: one record per site page, index eligibility and number of mapped keyword observations.
 - `reports/seo-summary.json`: counts and gaps, so missing keyword evidence is never incorrectly equated to zero demand.
 - `reports/seo-numeric-intent.csv`: independently matched numeric search phrases, competitor sample KD, and eligibility for each of the 21 grams-to-cups number pages.
+- `reports/seo-ingredient-intent.csv`: secondary, exact-ingredient search-intent matches, with explicit food-state checks and no automatic keyword ownership.
 
-The GitHub Actions **Site build and tests** workflow attaches the four reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
+The GitHub Actions **Site build and tests** workflow attaches the five reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
 
-**Coverage warning:** 27 of 65 index candidates have no matching suggestion in the partial supplied keyword sample. Some are navigational, methodology or trust pages; absence from the sample is not proof of zero demand. See the per-page report before deciding whether each deserves separate indexing.
+**Coverage warning:** 27 of 65 index candidates have no original suggested URL in the partial supplied keyword sample. Strict secondary food-phrase matching recovered observed conversion queries for 6 of those pages, leaving 21 without direct or secondary keyword evidence. Such absence in a partial export is not proof of zero search demand. Some are navigational, methodology or trust pages; absence from the sample is not proof of zero demand. See the per-page report before deciding whether each deserves separate indexing.
 
 **Important limitation:** The 1,823 mapped rows remain `heuristic` until intent and competitor relevance are manually reviewed; 477 previously unmapped rows are categorized rather than automatically assigned to new SEO URLs. Out-of-scope conversions and ambiguous “oz” queries are not grounds for generating thin pages. All requested competitor ranking exports remain partial, not full-domain SEO coverage.
 
 Avoid cloning third-party prose. Original calculation tools and source-backed explanatory content are the product.
 
 **Numeric intent rule:** All 21 number pages have direct observed competitor keyword examples. For 20 of them, at least one example has Semrush KD≤29. The `1000 grams to cups` page remains functional but defaults to `noindex` because its supplied sample contains only KD37 results. This is a conservative publication choice, not a claim that the page has no demand.
+
+**Content utility additions:** All 24 ingredient pages now show both grams→cups and common cup-fractions→grams tables, with US-to-metric cup equivalents. All 21 numeric weight pages show the closest familiar US cup measures for four common ingredients and the gram difference from the requested weight. The latter is a convenience comparison, never a recommendation to replace accurate weighing with an unmarked approximation.
 
 ## Data model and accuracy
 
