@@ -116,7 +116,7 @@ for(const form of $$('[data-calc]')){
   const el=$(selector,form),v=params.get(key);
   if(el&&v&&v.length<80&&(el.tagName==='INPUT'||[...el.options].some(o=>o.value===v)))el.value=v;
  }
- $('input,select',form).forEach(el=>{
+ $$('input,select',form).forEach(el=>{
   el.addEventListener('input',()=>update(true));
   el.addEventListener('change',()=>{
    const valid=update(true);
