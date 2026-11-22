@@ -26,7 +26,8 @@ assert.equal(eligibility.length,65,'Expected 65 index candidates');
 if(production){
  assert.match(manifest.origin,/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i);
  const hostname=new URL(manifest.origin).hostname;
- if(process.env.CI!=='true')assert.ok(!/^(?:example\.com|localhost|127\.0\.0\.1)$/.test(hostname)&&!/\.(?:example|test|invalid|localhost)$/.test(hostname),'Placeholder host must not be published');
+ const fixture=process.env.CI==='true'&&process.env.SITE_URL_FIXTURE_APPROVED_FOR_CI==='true'&&hostname==='example.com';
+ assert.ok(fixture||!/^(?:example\.com|localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(hostname)&&!/\.(?:example|test|invalid|localhost)$/.test(hostname),'Placeholder host must not be published');
 }else assert.ok(!fs.existsSync(path.join(dist,'sitemap.xml')),'Preview has a sitemap');
 const headers=read('_headers');
 assert.match(headers,/X-Content-Type-Options:\s*nosniff/);
