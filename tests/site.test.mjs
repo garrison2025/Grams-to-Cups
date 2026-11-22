@@ -145,6 +145,20 @@ test('recipe scaler adjusts full-unit singular and plural grammar',()=>{
  assert.equal(fraction.rows[0].scaled,'1/2 cup milk');
 });
 
+test('recipe scaler cleans unitless spacing and safely changes common countable ingredient nouns',()=>{
+ const larger=scaleRecipe('1 egg\n1 large egg\n2 eggs\n1 clove of garlic\n1 pinch of salt\n1 tomato\n1 leaf lettuce\n1 constructor\n2 unknown items',2,4);
+ assert.equal(larger.unparsed,0);
+ assert.deepEqual(larger.rows.map(x=>x.scaled),[
+  '2 eggs','2 large eggs','4 eggs','2 cloves of garlic','2 pinches of salt',
+  '2 tomatoes','2 leaves lettuce','2 constructor','4 unknown items'
+ ]);
+ const smaller=scaleRecipe('2 large eggs\n2 cloves garlic\n2 pinches salt\n2 tomatoes',4,2);
+ assert.deepEqual(smaller.rows.map(x=>x.scaled),[
+  '1 large egg','1 clove garlic','1 pinch salt','1 tomato'
+ ]);
+ assert.equal(scaleRecipe('1 tiny amount of spice',4,2,{fractions:true}).rows[0].scaled,'1/2 tiny amount of spice');
+});
+
 test('CSV escaping prevents spreadsheet formula injection',()=>{
  assert.equal(csvCell('=HYPERLINK("bad")'),'"\'=HYPERLINK(""bad"")"');
  assert.equal(csvCell('a,b'),'"a,b"');
