@@ -1,0 +1,111 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import assert from 'node:assert/strict';
+
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const input=fs.readFileSync(path.join(root,'research/semrush-us-2300-sample.csv'),'utf8');
+const manifest=JSON.parse(fs.readFileSync(path.join(root,'dist/site-manifest.json'),'utf8'));
+const index=new Map(manifest.pages.map(page=>[page.url,page]));
+
+function csvRows(text){
+ const records=[];let row=[],field='',inQuotes=false;
+ for(let i=0;i<text.length;i++){
+  const c=text[i];
+  if(c==='"'){if(inQuotes&&text[i+1]==='"'){field+='"';i++;}else inQuotes=!inQuotes;}
+  else if(!inQuotes&&c===','){row.push(field);field='';}
+  else if(!inQuotes&&(c==='\n'||c==='\r')){
+   if(c==='\r'&&text[i+1]==='\n')i++;
+   row.push(field);field='';
+   if(row.some(x=>x!==''))records.push(row);
+   row=[];
+  }else field+=c;
+ }
+ if(inQuotes)throw new Error('Unclosed quoted CSV field');
+ if(field!==''||row.length){row.push(field);if(row.some(x=>x!==''))records.push(row)}
+ return records;
+}
+const [headers,...records]=csvRows(input);
+const required=['competitor','keyword','observed_position_or_serp','estimated_us_keyword_traffic','us_volume','semrush_kd','ranking_url','site_target_suggestion'];
+const fields=Object.fromEntries(headers.map((name,i)=>[name,i]));
+for(const name of required)assert.ok(name in fields,'Missing field '+name);
+assert.equal(records.length,2300,'Semrush sample unexpectedly changed; rerun analysis before publishing SEO changes');
+for(const line of records)assert.equal(line.length,headers.length,'Malformed CSV row');
+const val=(r,name)=>r[fields[name]];
+const csvEscape=value=>'"'+String(value??'').replaceAll('"','""')+'"';
+const quotedRows=rows=>rows.map(row=>row.map(csvEscape).join(',')).join('\r\n')+'\r\n';
+const isMassWeight=x=>/(?:\bgrams?\b|\bgm\b|\b\d+\s*g\b|\bounces?\b|\boz\b|\bpounds?\b|\blb\b|\bkilograms?\b|\bkg\b)/i.test(x);
+const num=s=>{const n=Number(s);return Number.isFinite(n)?n:null};
+const canonical=url=>url==='/cooking/grams-to-cups/'?'/':url;
+
+function classifyUnmapped(text){
+ const q=text.toLowerCase().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
+ const c=!!q.match(/\bcups?\b/),g=!!q.match(/\b(?:grams?|gm|gr)\b|\b\d+\s*g\b/);
+ const tbsp=/\b(?:tablespoons?|tbsp)\b/.test(q),ml=/\b(?:ml|millilit(?:ers?|res?))\b/.test(q);
+ const ounces=/\b(?:oz|ounces?|fl oz|fluid ounces?)\b/.test(q);
+ const temperature=/\b(?:celsius|fahrenheit|kelvin)\b|\b(?:\d+\s*[cf]\s+(?:to|in|as)\s*[cf])\b/.test(q);
+ if(temperature)return {status:'outside_core_scope',reason:'Temperature conversion; deliberately excluded from focused food mass-volume SEO'};
+ if(c&&ounces&&!/\bfluid\b|\bfl\b/.test(q))return {status:'ambiguous_oz_intent',reason:'Cup-to-oz can mean mass or US fluid ounces; do not automatically create a landing'};
+ if((g||isMassWeight(q))&&ounces&&!c)return {status:'supported_without_target_page',reason:'Mass ounces ↔ grams calculator supports this; independent SEO page not justified in core cluster'};
+ if(/\b(?:quarts?|gallons?|liters?|litres?|pints?|pounds?|lb|kilograms?|kg)\b/.test(q))
+   return {status:'outside_core_scope',reason:'Other volume or mass conversion cluster beyond core grams ↔ cups'};
+ if(c&&ml)return {status:'supported_without_target_page',reason:'Existing calculator supports cups ↔ mL; no dedicated indexed page approved'};
+ if(g&&tbsp)return {status:'candidate_existing_page',reason:'Related to grams ↔ tablespoons; review ingredient-dependent intent before manual mapping'};
+ if(c&&tbsp)return {status:'candidate_existing_page',reason:'Related to cups ↔ tablespoons; direction needs manual verification'};
+ if(c&&!g)return {status:'needs_intent_review',reason:'Cup measurement query lacking a clear ingredient or grams conversion'};
+ if(g&&!c)return {status:'needs_intent_review',reason:'Mass measurement query without enough evidence for this core landing'};
+ return {status:'outside_or_unclear',reason:'Not safely attributable to the scoped grams ↔ cups keyword clusters'};
+}
+
+const reviewHeader=['competitor','keyword','position_raw','us_volume','kd','sample_keyword_traffic','ranking_url','original_suggested_url','consolidated_target','page_index_eligible','decision','decision_reason'];
+const detailed=[reviewHeader],stats={records:records.length,sourceCounts:{},uniqueTerms:0,initiallyUnmapped:0,primaryTargetConsolidated:0,decisions:{},indexCandidates:manifest.pages.filter(p=>p.indexCandidate).length};
+const uniqueTerms=new Set(),grouped=new Map(),outOfScope=[];
+for(const row of records){
+ const competitor=val(row,'competitor'),keyword=val(row,'keyword'),suggested=val(row,'site_target_suggestion').trim();
+ stats.sourceCounts[competitor]=(stats.sourceCounts[competitor]||0)+1;
+ uniqueTerms.add(keyword.toLowerCase().trim());
+ let target=suggested?canonical(suggested):'';
+ let decision,reason,eligible='';
+ if(suggested==='/cooking/grams-to-cups/')stats.primaryTargetConsolidated++;
+ if(suggested){
+  assert.ok(index.has(target),'Suggested URL not in generated website: '+target);
+  eligible=index.get(target).indexCandidate?'yes':'no';
+  if(eligible==='yes'){decision='heuristic_mapped_needs_review';reason=target==='/'?'Primary keyword assigned to homepage, avoiding duplicate tool landing':'Provisional matching URL; verify exact search intent and uniqueness';}
+  else{decision='usable_page_noindex';reason='Working tool or page does not have independent SEO approval';}
+ }else{
+  stats.initiallyUnmapped++;
+  const unclassified=classifyUnmapped(keyword);decision=unclassified.status;reason=unclassified.reason;
+ }
+ stats.decisions[decision]=(stats.decisions[decision]||0)+1;
+ const kd=num(val(row,'semrush_kd')),traffic=num(val(row,'estimated_us_keyword_traffic')),vol=num(val(row,'us_volume'));
+ if(target){
+  const group=grouped.get(target)||{rows:0,unique:new Set(),lowKdRows:0,trafficSampleSum:0,candidates:[]};
+  group.rows++;group.unique.add(keyword.toLowerCase().trim());
+  if(kd!==null&&kd<=29)group.lowKdRows++;
+  if(traffic!==null)group.trafficSampleSum+=traffic;
+  group.candidates.push({kw:keyword,kd,vol,traffic,competitor});
+  grouped.set(target,group);
+ }else{outOfScope.push({kw:keyword,decision,traffic,vol,kd,competitor})}
+ detailed.push([competitor,keyword,val(row,'observed_position_or_serp'),val(row,'us_volume'),val(row,'semrush_kd'),val(row,'estimated_us_keyword_traffic'),val(row,'ranking_url'),suggested,target,eligible,decision,reason]);
+}
+stats.uniqueTerms=uniqueTerms.size;
+const pageHeader=['url','index_candidate','keyword_rows_mapped','distinct_sample_keywords','kd_le29_rows','sum_of_sample_traffic_NOT_SITE_TRAFFIC','top_sample_keyword','top_keyword_us_volume','top_keyword_kd','top_keyword_competitor','evidence_status'];
+const pageReport=[pageHeader];
+for(const page of manifest.pages){
+ const group=grouped.get(page.url);
+ const best=group?.candidates.slice().sort((a,b)=>(b.traffic??-1)-(a.traffic??-1))[0];
+ pageReport.push([page.url,page.indexCandidate?'yes':'no',group?.rows||0,group?.unique.size||0,group?.lowKdRows||0,group?.trafficSampleSum||0,best?.kw||'',best?.vol??'',best?.kd??'',best?.competitor||'',!page.indexCandidate?'noindex_tool_or_unverified_page':group?'has_provisional_keyword_evidence':'no_sample_mapping_do_not_infer_zero_demand']);
+}
+assert.equal(stats.records,2300);
+assert.equal(stats.indexCandidates,66,'Homepage / converter duplicate policy changed');
+const targetUrl=pageReport.find(x=>x[0]==='/');
+assert.ok(targetUrl&&targetUrl[2]>0,'Core keyword must link to homepage');
+assert.ok(!index.get('/cooking/grams-to-cups/').indexCandidate,'Duplicate core converter URL must remain noindex');
+const out=path.join(root,'reports');
+fs.mkdirSync(out,{recursive:true});
+fs.writeFileSync(path.join(out,'seo-keyword-decisions.csv'),'\ufeff'+quotedRows(detailed));
+fs.writeFileSync(path.join(out,'seo-page-evidence.csv'),'\ufeff'+quotedRows(pageReport));
+fs.writeFileSync(path.join(out,'seo-summary.json'),JSON.stringify({...stats,mappedPageCount:grouped.size,pagesMissingMapping:pageReport.slice(1).filter(x=>x[1]==='yes'&&Number(x[2])===0).length},null,2)+'\n');
+console.log('SEO evidence audit passed:',stats.records,'source keyword observations,',stats.uniqueTerms,'distinct phrases,',stats.indexCandidates,'index candidates.');
+console.log('Keyword review decisions:',JSON.stringify(stats.decisions));
+console.log('Reports written to reports/ (not included in the public site build).');
