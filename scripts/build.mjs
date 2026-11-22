@@ -8,13 +8,14 @@ const data=JSON.parse(fs.readFileSync(path.join(root,'src/ingredients.json'),'ut
 const byId=new Map(data.map(i=>[i.id,i]));
 const dist=path.join(root,'dist');
 fs.rmSync(dist,{recursive:true,force:true});fs.mkdirSync(dist,{recursive:true});
-const base=(process.env.SITE_URL||((process.env.CF_PAGES_BRANCH==='main')?process.env.CF_PAGES_URL:'')||'').trim().replace(/\/+$/,'');
+const base=(process.env.SITE_URL||'').trim().replace(/\/+$/,'');
 const origin=/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(base)?base:'';
 const publicIndex=!!origin&&process.env.CF_PAGES_BRANCH==='main'&&process.env.PUBLIC_INDEX_APPROVED==='true';
 const pages=[],e=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
 const f=n=>formatAmount(n,3),link=(url,label,cls='')=>'<a href="'+e(url)+'"'+(cls?' class="'+e(cls)+'"':'')+'>'+e(label)+'</a>';
 const source='https://www.kingarthurbaking.com/learn/ingredient-weight-chart';
 const numberValues=[25,30,50,60,75,80,100,125,150,180,200,225,250,300,350,400,450,500,600,750,1000];
+const noIndexCandidatePaths=new Set(['/cooking/cups-to-fluid-ounces/','/cooking/fluid-ounces-to-cups/','/cooking/recipe-scaler/','/cooking/ingredients/whole-wheat-flour/','/cooking/ingredients/coconut-flour/','/cooking/ingredients/gluten-free-flour/','/cooking/ingredients/brown-rice-cooked/','/cooking/ingredients/maple-syrup/','/cooking/ingredients/olive-oil/','/cooking/ingredients/cornstarch/','/cooking/ingredients/pumpkin-puree/','/cooking/ingredients/walnuts-chopped/','/cooking/guides/measuring-flour/']);
 const flourNumbers=[100,125,150,200,250,300,400,500],sugarNumbers=[100,200];
 const tools=[
 ['grams-to-cups','Grams to Cups','g','cup',100,'ingredient'],
@@ -43,7 +44,8 @@ function doc(spec){
  const {url,title,description,body,bread=[],kind='WebPage',index=true}=spec;
  if(!url.startsWith('/')||pages.some(p=>p.url===url))throw Error('Duplicate or invalid route: '+url);
  const canonical=origin?origin+url:'';
- const permitted=publicIndex&&index;
+ const eligible=index&&!noIndexCandidatePaths.has(url);
+ const permitted=publicIndex&&eligible;
  const pageTitle=title+' | Grams & Cups';
  const crumbs=[{name:'Home',item:origin+'/'},...bread.map(x=>({name:x[0],item:origin+(x[1]||url)}))];
  const schema=permitted?jsonld({'@context':'https://schema.org','@type':'WebPage',name:pageTitle,url:canonical,description,inLanguage:'en',isPartOf:{'@type':'WebSite',name:'Grams & Cups',url:origin+'/'}})+(bread.length?jsonld({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:crumbs.map((x,i)=>({'@type':'ListItem',position:i+1,name:x.name,item:x.item}))}):'')+(kind==='WebApplication'?jsonld({'@context':'https://schema.org','@type':'WebApplication',name:title,url:canonical,applicationCategory:'UtilitiesApplication',operatingSystem:'Any modern web browser',offers:{'@type':'Offer',price:'0',priceCurrency:'USD'}}):''):'';
@@ -54,7 +56,7 @@ function doc(spec){
  '<script type="module" src="/assets/app.js" defer></script></head><body>'+nav()+'<main id="main">'+
  '<div class="container">'+breadHtml(bread)+'</div>'+body+'</main>'+footer()+'</body></html>';
  writeFile(fileFor(url),html);
- pages.push({url,title,description,kind,indexCandidate:index,wordCount:body.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().split(' ').length});
+ pages.push({url,title,description,kind,indexCandidate:eligible,wordCount:body.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().split(' ').length});
 }
 function section(title,intro,contents,alt=false){return '<section class="section'+(alt?' section-alt':'')+'"><div class="container"><div class="section-head"><h2>'+e(title)+'</h2><p>'+e(intro)+'</p></div>'+contents+'</div></section>';}
 function grid(items,cols=3){return '<div class="cards'+(cols===4?' four':'')+'">'+items.map(([url,title,desc])=>'<a class="tile" href="'+e(url)+'"><b>'+e(title)+'</b><p>'+e(desc)+'</p><span class="arrow" aria-hidden="true">↗</span></a>').join('')+'</div>';}
@@ -96,7 +98,7 @@ function home(){
 function hub(){
  const body=intro('Cooking measurement converters','Every ingredient has its own weight per cup. Explore all conversion directions, 24 ingredient references, popular amounts, printable charts, and practical measurement guides.')+
  section('All cooking converters','Ingredient-aware mass and volume tools, plus fixed-volume conversions.',grid(hubList))+
- '<div id="ingredients"></div>'+section('Browse 24 ingredients','The name and measurement state matter. Packed sugar and dry rice do not convert like flour.',grid(ingredientList,4),true)+
+ '<div id="ingredients"></div>'+section('Browse 24 ingredients','The name and measurement state matter. Packed sugar and dry rice do not convert like flour.','<div data-directory><div class="field" style="margin-bottom:18px"><label for="ingredient-search">Find an ingredient</label><input id="ingredient-search" type="search" placeholder="Search flour, sugar, butter…" data-directory-filter autocomplete="off"></div>'+grid(ingredientList,4).replaceAll('class="tile"','class="tile" data-filter-item')+'</div>',true)+
  section('Convert a specific weight','Select an amount, then compare multiple ingredients using referenced weights.',grid(numberList,4))+
  section('Charts and measuring guides','Practical tools with sources and printable results.',grid([['/cooking/charts/','All conversion charts','A print-friendly table of basic weights'],['/cooking/charts/flour/','Flour conversion chart','All-purpose, whole wheat, coconut and more'],['/cooking/charts/sugar/','Sugar conversion chart','Packed, granulated and unsifted varieties'],['/cooking/guides/measuring-flour/','Measuring flour','Avoid volume errors from compaction'],['/cooking/guides/cup-sizes/','Cup sizes','US vs metric cooking standards'],['/cooking/guides/measuring-odd-cups/','Odd cup amounts','Make 2/3 or 1/8 cup from common tools']]));
  doc({url:'/cooking/',title:'Cooking Measurement Converters & Ingredient Charts',description:'Explore ingredient-specific grams to cups, cups to grams, weight charts, recipe scaling and cited kitchen measurements.',body,bread:[['Cooking measurements',null]]});
