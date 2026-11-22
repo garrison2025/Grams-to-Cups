@@ -133,7 +133,7 @@ for(const form of $$('[data-recipe]')){
 }
 
 /* Local recipe list conversion. Rows use textContent rather than injecting user text as HTML. */
-for(const form of $('[data-batch]')){
+for(const form of $$('[data-batch]')){
  const input=$('[data-batch-lines]',form),target=$('[data-batch-target]',form),
        standard=$('[data-batch-standard]',form),fraction=$('[data-batch-fraction]',form),
        tbody=$('[data-batch-results]',form),summary=$('[data-batch-summary]',form),
@@ -209,7 +209,7 @@ for(const form of $('[data-batch]')){
  compute();
 }
 
-for(const form of $('[data-half-form]')){
+for(const form of $$('[data-half-form]')){
  const input=$('[data-half-input]',form),output=$('[data-half-result]',form),error=$('[data-half-error]',form);
  const run=()=>{try{const v=parseAmount(input.value)/2;setText(output,formatAmount(v,4)+(approximateFraction(v)?' (about '+approximateFraction(v)+')':''));if(error)error.hidden=true;}catch(e){setText(output,'—');announce(error,e.message)}};
  input.addEventListener('input',run);run();
