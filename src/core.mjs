@@ -75,7 +75,7 @@ export function scaleRecipe(text,originalServings,newServings){
  if(rows.length>100)throw new Error('Limit the recipe to 100 lines.');
  const output=rows.map(raw=>{
   if(!raw.trim())return {original:raw,scaled:'',ok:true};
-  const m=raw.match(/^\s*((?:\d+\s+)?\d+\/\d+|\d+\s?[¼½¾⅓⅔⅛⅜⅝⅞]|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:\d+(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
+  const m=normalizeFractionInput(raw).match(/^\s*((?:\d+\s+)?\d+\/\d+|\d+\s?[¼½¾⅓⅔⅛⅜⅝⅞]|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:\d+(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
   if(!m)return {original:raw,scaled:raw,ok:false};
   try{const scaled=parseAmount(m[1])*factor;if(!Number.isFinite(scaled)||scaled>1e9)throw Error();
   return {original:raw,scaled:formatAmount(scaled,4)+' '+(m[2]||'')+(m[3]||''),ok:true};
@@ -129,7 +129,7 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
  if(lines.length>100)throw new Error('Limit the ingredient list to 100 lines.');
  const rows=lines.map((original,index)=>{
   if(!original.trim())return {index,original,status:'blank',output:'',reason:'',ingredient:''};
-  const match=original.match(BATCH_LINE);
+  const match=normalizeFractionInput(original).match(BATCH_LINE);
   if(!match)return {index,original,status:'review',output:original,reason:'Use amount + unit + a specific ingredient (e.g., 200 g all-purpose flour).',ingredient:''};
   const [,rawAmount,rawUnit,foodName]=match;
   const unit=UNIT_ALIASES[rawUnit.toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim()];
