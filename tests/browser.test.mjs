@@ -85,6 +85,17 @@ try{
  assert.ok(await page.locator('[data-chart-empty]').isVisible(),'empty search feedback is visible');
  assert.equal(errors.length,0,'no desktop runtime errors after charts');
 
+ await page.goto(origin+'/cooking/ingredients/all-purpose-flour/',{waitUntil:'networkidle'});
+ assert.ok(await page.getByRole('heading',{name:'All-purpose flour: cups to grams'}).isVisible(),'ingredient reverse lookup is visible');
+ const reverseChart=page.locator('table').nth(1);
+ assert.ok((await reverseChart.innerText()).includes('1/2 cup'),'reverse chart includes practical cup sizes');
+ assert.ok((await reverseChart.innerText()).includes('60 g'),'flour half-cup uses cited 120g-per-cup source');
+ assert.ok((await reverseChart.innerText()).includes('metric cups'),'reverse chart explains metric differences');
+ await page.goto(origin+'/cooking/grams-to-cups/100-grams-to-cups/',{waitUntil:'networkidle'});
+ assert.ok(await page.getByRole('heading',{name:'Closest common cup measures for 100 grams'}).isVisible(),'numeric landing offers useful measuring comparisons');
+ assert.ok((await page.locator('table').nth(1).innerText()).includes('Weight difference'),'numeric page warns about grams difference');
+ assert.equal(errors.length,0,'no browser errors after expanded reference pages');
+
  await page.goto(origin+'/cooking/batch-converter/',{waitUntil:'networkidle'});
  assert.ok(await page.getByRole('heading',{name:/Batch Ingredient Converter/i}).isVisible(),'batch converter page renders');
  assert.ok((await page.locator('[data-batch-summary]').innerText()).includes('4 converted'),'default list identifies four supported ingredients');
