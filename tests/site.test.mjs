@@ -145,6 +145,8 @@ test('Unicode and narrow-space kitchen fractions are parsed without a guess',()=
  assert.equal(formatKitchenAmount(1/3),'1/3');
  assert.equal(formatKitchenAmount(0.505,{fractions:true}),'0.505');
  assert.equal(formatKitchenAmount(340.5,{fractions:false}),'340.5');
+ assert.equal(formatKitchenAmount(1234.5),'1,234 1/2');
+ assert.equal(formatKitchenAmount(1000),'1,000');
 });
 test('Unicode fraction recipe scaler does not mistake unit labels',()=>{
  const scaled=scaleRecipe('1½ cups milk\n½ tsp salt\n3⁄4 cup honey',2,3);
@@ -161,7 +163,7 @@ test('batch conversion uses ingredient-specific values in both directions',()=>{
  assert.equal(cups.rows[0].output,'1 cup All-purpose flour');
  const large=batchConvertIngredients('1,000 g all-purpose flour',{ingredients:foods,target:'cup'});
  assert.equal(large.converted,1,'Batch converter accepts correctly grouped input');
- assert.equal(large.rows[0].output,'8.333 cups All-purpose flour');
+ assert.equal(large.rows[0].output,'8.3333 cups All-purpose flour');
  assert.equal(cups.rows[1].output,'1 cup Granulated white sugar');
  assert.equal(cups.rows[2].output,'1/2 cup Butter');
  assert.equal(cups.rows[3].output,'1/8 cup Honey');
