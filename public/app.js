@@ -56,8 +56,8 @@ function renderCalculator(form){
    if(shown){
     const percent=Math.round(n*100);
     const bar=$('[data-meter-fill]',form);
-    if(bar)bar.style.width=Math.max(0,Math.min(100,percent))+'%';
-    setText($('[data-meter-label]',form),percent+'% of one '+cupSize+' cup');
+    if(bar)bar.style.width=(percent===0?0.5:Math.max(0,Math.min(100,percent)))+'%';
+    setText($('[data-meter-label]',form),percent===0?'Less than 1% of one '+cupSize+' cup':percent+'% of one '+cupSize+' cup');
    }
   }
   if(error)error.hidden=true;
