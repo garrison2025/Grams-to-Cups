@@ -371,7 +371,7 @@ function numberPage(n){
  (flourNumbers.includes(n)?link('/cooking/ingredients/all-purpose-flour/'+n+'-grams-to-cups/',n+' g flour','chip'):'')+
  (sugarNumbers.includes(n)?link('/cooking/ingredients/granulated-sugar/'+n+'-grams-to-cups/',n+' g sugar','chip'):'')+'</div>':'')+
  '</aside></div></section>';
- doc({url:'/cooking/grams-to-cups/'+n+'-grams-to-cups/',title:n+' Grams to Cups — '+data.length+' Ingredient Comparison',description:'See '+n+' grams in US cups for flour, sugar, butter and 21 more ingredients using documented weights, with a free interactive converter.',body,bread:[['Cooking','/cooking/'],['Grams to cups','/cooking/grams-to-cups/'],[n+' grams',null]],kind:'WebApplication'});
+ doc({url:'/cooking/grams-to-cups/'+n+'-grams-to-cups/',title:n+' Grams to Cups — '+data.length+' Ingredient Comparison',description:'See '+n+' grams in US cups across 27 ingredient states, including flour, sugar and butter, using documented weights and a free interactive converter.',body,bread:[['Cooking','/cooking/'],['Grams to cups','/cooking/grams-to-cups/'],[n+' grams',null]],kind:'WebApplication'});
 }
 function ingredientPage(i){
  const preview=convertQuantity(100,'g','cup',{ingredient:i});
