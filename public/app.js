@@ -291,7 +291,7 @@ for(const root of $$('[data-compare]')){
   $$('[data-compare-preset]',root).forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.comparePreset)===grams)));
  };
  slider.addEventListener('input',update);
- $('[data-compare-preset]',root).forEach(button=>button.addEventListener('click',()=>{slider.value=button.dataset.comparePreset;update()}));
+ $$('[data-compare-preset]',root).forEach(button=>button.addEventListener('click',()=>{slider.value=button.dataset.comparePreset;update()}));
  // Initial values, bars and preset state are server-rendered for the 100g
  // reference. Avoid eager DOM/layout work in the homepage's critical path.
 }
