@@ -55,6 +55,7 @@ await inspect('/cooking/grams-to-cups/100-grams-to-cups/');
 await inspect('/cooking/grams-to-cups/',{indexed:false});
 await inspect('/cooking/batch-converter/',{indexed:false});
 await inspect('/cooking/grams-to-cups/1000-grams-to-cups/',{indexed:false});
+for(const route of ['/cooking/tablespoons-to-grams/','/cooking/ingredients/almond-flour/','/cooking/ingredients/water/'])await inspect(route,{indexed:false});
 for(const item of ['/assets/app.js','/assets/core.mjs','/assets/ingredients.json','/assets/styles.css','/favicon.svg']){
  const {response,body}=await fetchText(item);
  demand(response,200,item);
@@ -71,7 +72,7 @@ if(approved){
  assert.equal(locs.length,62,'Production sitemap should contain 62 approved index URLs');
  assert.equal(new Set(locs).size,62,'Duplicate sitemap URLs');
  assert.ok(locs.every(x=>x.startsWith(origin+'/')),'Sitemap contains a different hostname');
- assert.ok(!locs.some(x=>x.endsWith('/cooking/grams-to-cups/')||x.endsWith('/cooking/batch-converter/')||x.includes('1000-grams-to-cups')),'Noindex pages leaked into sitemap');
+ assert.ok(!locs.some(x=>['/cooking/grams-to-cups/','/cooking/batch-converter/','/cooking/tablespoons-to-grams/','/cooking/ingredients/almond-flour/','/cooking/ingredients/water/'].some(y=>x.endsWith(y))||x.includes('1000-grams-to-cups')),'Noindex pages leaked into sitemap');
  checks.push('/sitemap.xml');
 }else{
  assert.ok(!robots.includes('Sitemap:'),'Unindexed preview should not advertise a sitemap');
