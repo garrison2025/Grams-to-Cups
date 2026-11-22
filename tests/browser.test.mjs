@@ -171,6 +171,22 @@ try{
  assert.match(await page.locator('[data-batch-results]').innerText(),/metric cup Granulated white sugar/,'metric cup results are unambiguous');
  await page.locator('[data-batch-standard]').selectOption('us');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'US cup label restored after switching standard');
+ // The tool must accept its own formatted cup labels when copied back into the input.
+ await page.locator('[data-batch-lines]').fill('1 US cup All-purpose flour\n1 metric cup All-purpose flour');
+ await page.locator('[data-batch-target]').selectOption('g');
+ await page.locator('[data-batch-standard]').selectOption('metric');
+ const roundTripRows=page.locator('[data-batch-results] .batch-converted-row');
+ assert.equal(await roundTripRows.count(),2,'both explicit cup standards parse when pasted');
+ assert.ok((await roundTripRows.first().innerText()).includes('120 g All-purpose flour'),
+  'metric dropdown must not reinterpret an explicitly labeled US cup');
+ assert.ok((await roundTripRows.nth(1).innerText()).includes('126.8'),
+  'explicit metric cup retains its distinct mass');
+ await page.locator('[data-batch-target]').selectOption('cup');
+ await page.locator('[data-batch-lines]').fill('1 US cup All-purpose flour');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('0.9464 metric cup All-purpose flour'),
+  'US-to-metric cup conversion must change the numeric cup result');
+ await page.locator('[data-batch-standard]').selectOption('us');
+ await page.locator('[data-batch-target]').selectOption('cup');
  await page.locator('[data-batch-lines]').fill('1,000 g all-purpose flour');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('8 1/3 US cups All-purpose flour'),'batch supports US thousands separators');
  await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
@@ -225,6 +241,10 @@ try{
  const units=(await page.locator('[data-recipe-output]').innerText()).trim();
  assert.ok(units.includes('2 cups milk'),'recipe multiplier pluralizes singular unit');
  assert.ok(units.includes('4 cups water'),'recipe multiplier preserves plural unit');
+ await page.locator('[data-recipe-lines]').fill('1 US cup milk\n½ metric cup cream');
+ const qualified=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(qualified.includes('2 US cups milk'),'US cup label survives scaling');
+ assert.ok(qualified.includes('1 metric cup cream'),'metric cup label survives scaling');
  await page.locator('[data-recipe-lines]').fill('1 large egg\n2 cloves garlic\n1 pinch salt');
  const counts=(await page.locator('[data-recipe-output]').innerText()).trim();
  assert.ok(counts.includes('2 large eggs'),'unitless eggs become plural when scaled');
