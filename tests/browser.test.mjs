@@ -159,9 +159,6 @@ try{
  assert.match(await page.locator('[data-chart-context]').innerText(),/Metric|metric cup/i,
   'visible chart caption identifies actual cup unit and context');
  const sugarRow=page.locator('[data-chart-food-id="brown-sugar-packed"]');
- assert.equal((await sugarRow.locator('td').nth(2).innerText()).trim(),
-  (await sugarRow.locator('td').nth(2).innerText()).trim(),
-  'browser can query the active custom column');
  const sugarThird=(await sugarRow.locator('td').nth(2).innerText()).trim();
  assert.match(sugarThird,/\d.*g/,'custom metric column contains calculated gram weights');
  await page.locator('[data-chart-custom]').fill('0');
@@ -188,7 +185,7 @@ try{
  await page.locator('[data-chart-filter]').fill('water');
  await page.locator('[data-chart-custom]').fill('1');
  assert.equal((await page.locator('[data-chart-food-id="water"] td').nth(2).innerText()).trim(),
-  '239.841 g','metric cup water retains original 227 g / US cup recipe basis');
+  '239.868 g','metric cup water retains original 227 g / US cup recipe basis');
  await page.locator('[data-chart-water-mode]').selectOption('capacity');
  assert.equal((await page.locator('[data-chart-food-id="water"] td').nth(2).innerText()).trim(),
   '250 g','physical capacity mode applies about 1 g/mL to metric cup');
