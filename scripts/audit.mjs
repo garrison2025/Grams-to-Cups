@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),dist=path.join(root,'dist');
 const manifest=JSON.parse(fs.readFileSync(path.join(dist,'site-manifest.json'),'utf8'));
 const pages=manifest.pages;
-assert.equal(pages.length,80,'77 app pages plus 3 legal pages');
+assert.equal(pages.length,81,'78 app pages plus 3 legal pages');
 assert.equal(new Set(pages.map(p=>p.url)).size,pages.length,'duplicate routes');
 assert.equal(new Set(pages.map(p=>p.title)).size,pages.length,'duplicate SEO titles');
 const known=new Set(pages.map(p=>p.url));
@@ -39,4 +39,7 @@ const numberPages=pages.filter(x=>/\/grams-to-cups\/\d+-grams-to-cups\/$/.test(x
 assert.equal(numberPages.length,21);
 assert.equal(pages.filter(x=>/\/ingredients\/[^/]+\/$/.test(x.url)).length,24);
 assert.equal(pages.filter(x=>/\/ingredients\/[^/]+\/\d+-grams-to-cups\/$/.test(x.url)).length,10);
+assert.ok(known.has('/cooking/batch-converter/'),'missing batch converter route');
+assert.equal(pages.find(x=>x.url==='/cooking/batch-converter/').indexCandidate,false,'batch tool stays noindex without search demand evidence');
+assert.match(pageHtml('/cooking/batch-converter/'),/data-batch-results/,'missing interactive batch results');
 console.log('Audit passed:',pages.length,'pages,',numberPages.length,'number pages,',files.length,'static assets. publicIndex='+manifest.publicIndex);
