@@ -100,6 +100,11 @@ img,svg{max-width:100%}
 .standard-line{display:flex;gap:14px;justify-content:space-between;align-items:center;grid-column:1/-1;padding-top:5px}
 .standard-line label{white-space:nowrap;margin:0;letter-spacing:.025em;color:var(--muted);font-size:.76rem;font-weight:680}
 .standard-line select{background:#f3f6ef;border:1px solid #e1e8de;padding:9px 30px 9px 13px;border-radius:999px;min-height:41px;color:var(--forest-dark);font-size:.75rem;font-weight:750;max-width:260px}
+[data-water-mode-row]{flex-wrap:wrap;align-items:start;row-gap:7px;padding:14px 13px;border:1px solid #d6e4d9;border-radius:13px;background:#edf4ed}
+[data-water-mode-row] label{padding-top:9px}
+[data-water-mode-row] select{max-width:min(100%,360px);width:auto;min-height:44px}
+[data-water-mode-row] small{flex:0 0 100%;margin:0;line-height:1.45;color:#3e5b4b}
+
 .result{position:relative;background:var(--ink-deep);border:1px solid #0d3224;border-radius:20px;margin-top:23px;padding:25px 26px 22px;color:#f7f8ee;overflow:hidden}
 .result::after{content:"";width:150px;height:150px;border:1px solid rgba(216,239,166,.1);border-radius:50%;position:absolute;top:-90px;right:-20px;box-shadow:0 0 0 30px rgba(216,239,166,.04),0 0 0 65px rgba(216,239,166,.025);pointer-events:none}
 .result-label{font-size:.67rem;font-weight:820;letter-spacing:.16em;text-transform:uppercase;color:#b4ceb8;position:relative}
@@ -374,6 +379,14 @@ tbody th[scope="row"]{font-size:.86rem;color:#214839;font-weight:680;line-height
 .compare-item .compare-bar-fill{height:100%;border-radius:999px;background:#347454;transition:width .26s ease}
 .compare-item:nth-child(2) .compare-bar-fill{background:#b08037}
 .compare-caption{grid-column:1/-1;max-width:44ch;color:#b8ceb8;font-size:.76rem;line-height:1.6;margin:1px 0 0}
+.chart-settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0 10px;padding:17px 18px;background:#f0f5ed;border:1px solid #dce7d9;border-radius:16px}
+.chart-settings .field{min-width:0;margin:0}
+.chart-settings .field select,.chart-settings .field input{width:100%;min-height:45px;background:#fff}
+.chart-context{padding:11px 14px;margin:8px 0 14px;background:#f7f9f4;border-left:3px solid #50755d;border-radius:0 9px 9px 0;font-size:.78rem;line-height:1.6;color:#3c5b48}
+[data-chart-custom][aria-invalid="true"]{border-color:#b95534;outline-color:#b95534}
+@media(max-width:780px){.chart-settings{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.chart-settings{grid-template-columns:minmax(0,1fr);padding:14px}}
+@media print{.chart-settings,.chart-toolbar{display:none!important}.chart-context{display:block!important;break-after:avoid;border:1px solid #ccc;color:#111;background:#fff}}
 .chart-toolbar{display:flex;justify-content:space-between;align-items:end;gap:15px;flex-wrap:wrap;margin:15px 0 18px}
 .chart-toolbar .field{flex:1 1 250px}
 .chart-toolbar .field input{min-height:45px}
