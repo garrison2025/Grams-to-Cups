@@ -1,0 +1,175 @@
+{
+  "description": "Verified original published weight and volume pairs; preserve original half-cup/tablespoon units rather than normalizing source claims.",
+  "source": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+  "checked": "2026-11-22",
+  "records": [
+    {
+      "id": "all-purpose-flour",
+      "grams": 120,
+      "amount": 1,
+      "unit": "cup",
+      "label": "All-Purpose Flour"
+    },
+    {
+      "id": "whole-wheat-flour",
+      "grams": 113,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Whole Wheat Flour (Premium 100%)"
+    },
+    {
+      "id": "almond-flour",
+      "grams": 96,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Toasted Almond Flour"
+    },
+    {
+      "id": "coconut-flour",
+      "grams": 128,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Coconut Flour"
+    },
+    {
+      "id": "gluten-free-flour",
+      "grams": 156,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Gluten-Free All-Purpose Flour"
+    },
+    {
+      "id": "granulated-sugar",
+      "grams": 198,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Sugar (granulated white)"
+    },
+    {
+      "id": "brown-sugar-packed",
+      "grams": 213,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Brown sugar (dark or light, packed)"
+    },
+    {
+      "id": "powdered-sugar-unsifted",
+      "grams": 113,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Confectioners' sugar (unsifted)"
+    },
+    {
+      "id": "butter",
+      "grams": 113,
+      "amount": 0.5,
+      "unit": "cup",
+      "label": "Butter"
+    },
+    {
+      "id": "milk-fresh",
+      "grams": 227,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Milk (fresh)"
+    },
+    {
+      "id": "water",
+      "grams": 227,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Water"
+    },
+    {
+      "id": "long-grain-rice-dry",
+      "grams": 99,
+      "amount": 0.5,
+      "unit": "cup",
+      "label": "Rice (long grain, dry)"
+    },
+    {
+      "id": "brown-rice-cooked",
+      "grams": 170,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Brown rice (cooked)"
+    },
+    {
+      "id": "rolled-oats",
+      "grams": 89,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Oats (old-fashioned or quick-cooking)"
+    },
+    {
+      "id": "honey",
+      "grams": 21,
+      "amount": 1,
+      "unit": "tablespoon",
+      "label": "Honey"
+    },
+    {
+      "id": "maple-syrup",
+      "grams": 156,
+      "amount": 0.5,
+      "unit": "cup",
+      "label": "Maple syrup"
+    },
+    {
+      "id": "vegetable-oil",
+      "grams": 198,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Vegetable oil"
+    },
+    {
+      "id": "olive-oil",
+      "grams": 50,
+      "amount": 0.25,
+      "unit": "cup",
+      "label": "Olive oil"
+    },
+    {
+      "id": "sour-cream",
+      "grams": 227,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Sour cream"
+    },
+    {
+      "id": "cornstarch",
+      "grams": 28,
+      "amount": 0.25,
+      "unit": "cup",
+      "label": "Cornstarch"
+    },
+    {
+      "id": "coconut-oil",
+      "grams": 113,
+      "amount": 0.5,
+      "unit": "cup",
+      "label": "Coconut oil"
+    },
+    {
+      "id": "cream-cheese",
+      "grams": 227,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Cream cheese"
+    },
+    {
+      "id": "pumpkin-puree",
+      "grams": 227,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Pumpkin purée"
+    },
+    {
+      "id": "walnuts-chopped",
+      "grams": 113,
+      "amount": 1,
+      "unit": "cup",
+      "label": "Walnuts (chopped)"
+    }
+  ]
+}
