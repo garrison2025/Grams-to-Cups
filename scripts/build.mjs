@@ -202,7 +202,7 @@ function numberPage(n){
    const options=convenientCups.map(([cups,label])=>({cups,label,weight:convertQuantity(cups,'cup','g',{ingredient:i})}));
    const closest=options.sort((a,b)=>Math.abs(a.weight-n)-Math.abs(b.weight-n))[0];
    const difference=closest.weight-n;
-   return [i.name,f(exactCups)+' cups',closest.label+' US cup'+(closest.cups===1?'':'s'),f(Math.abs(difference))+' g '+(difference>=0?'above':'below')+' '+n+' g'];
+   return [i.name,f(exactCups)+' cups',closest.label+' US cup'+(closest.cups===1?'':'s'),(Math.abs(difference)<0.0000001?'Exact at reference precision':f(Math.abs(difference))+' g '+(difference>0?'above':'below')+' '+n+' g')];
  });
  const body=intro('How Many Cups Is '+n+' Grams?','The answer depends on the ingredient. Compare common baking foods using documented weights, then choose a different cup standard in the calculator.')+
  '<section class="section"><div class="container content-grid"><div>'+answer.html+converterForm({amount:n,heading:n+' grams to cups'})+
@@ -224,7 +224,7 @@ function ingredientPage(i){
  '<div class="panel mt-3"><h2>'+e(i.name)+' conversion chart</h2><p>These quantities are calculated from '+e(i.referenceGrams)+' g per '+e(i.referenceAmount)+' '+e(i.referenceUnit)+'. '+e(i.note)+'</p>'+
  table(['Grams','US cups','Metric cups'],values.map(n=>[n+' g',f(convertQuantity(n,'g','cup',{ingredient:i,standard:'us'})),f(convertQuantity(n,'g','cup',{ingredient:i,standard:'metric'}))]))+
  '<h2>'+e(i.name)+': cups to grams</h2><p>For weighing a recipe rather than filling cups, use this reverse chart. The numbers assume the same food state, measuring technique, and US cup standard as the published reference. A metric cup (250 mL) uses a different quantity.</p>'+ 
- table(['US cup amount','Approximate grams','Equivalent metric cups'],cupFractions.map(([cup,label])=>[label,f(convertQuantity(cup,'cup','g',{ingredient:i,standard:'us'}))+' g',f(convertQuantity(cup,'cup','cup',{ingredient:i,standard:'us'})*US_CUP_ML/METRIC_CUP_ML)+' metric cups']))+
+ table(['US cup amount','Approximate grams','Equivalent metric cups'],cupFractions.map(([cup,label])=>[label,f(convertQuantity(cup,'cup','g',{ingredient:i,standard:'us'}))+' g',f(cup*US_CUP_ML/METRIC_CUP_ML)+' metric cups']))+
  '<div class="inline-note">These are estimates from the original reference pair, not separate laboratory weighings. For precise baking, weigh ingredients directly in grams when the recipe supplies a mass.</div>'+ 
  '<p class="source-chip">Original published entry: <strong>'+e(i.sourceEntry)+'</strong> · '+link(i.sourceUrl,i.sourceName)+' · reference checked '+e(i.reviewedAt)+'. These cooking reference weights are approximate.</p></div></div>'+
  '<aside class="panel side-panel"><h3>Measurement context</h3><p><b>Food state:</b> '+e(i.state)+'</p><p><b>Method:</b> '+e(i.method)+'</p><p>'+e(i.note)+'</p><div class="inline-note">For repeatable baking, follow the weight written in your recipe and use a scale if available.</div>'+link('/cooking/sources-and-methods/','About the data')+'</aside></div></section>'+
