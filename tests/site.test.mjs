@@ -178,7 +178,7 @@ test('Semrush evidence never treats missing KD as an easy keyword',()=>{
  assert.equal(parseSemrushNumber('1300'),1300);
 });
 test('exported competitor CSV cannot execute spreadsheet formulas',()=>{
- for(const x of ['=1+1','+SUM(1,2)','-2+3','@SUM(1,2)','  =HYPERLINK("danger")']){
+ for(const x of ['=1+1','+SUM(1,2)','-2+3','@SUM(1,2)','  =HYPERLINK("danger")','\u200b=HYPERLINK("danger")','\ufeff  @SUM(1,2)','\t+SUM(2,3)']){
   const value=csvSafeCell(x);
   assert.ok(value.startsWith('"\'')||value.startsWith('"\u0027'),'Formula must be prefixed with apostrophe');
   assert.ok(value.includes(x.replaceAll('"','""')),'CSV must preserve original content after escape');
