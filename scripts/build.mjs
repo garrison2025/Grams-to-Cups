@@ -69,7 +69,8 @@ function doc(spec){
  const crumbs=[{name:'Home',item:origin+'/'},...bread.map(x=>({name:x[0],item:origin+(x[1]||url)}))];
  // The visible source-linked answer is the basis of the citation. Avoid false
  // Recipe, FAQ rich-result, Review or organization claims for a calculator.
- const sourceReferenced=url==='/'||/^\/cooking\/grams-to-cups\/\d+-grams-to-cups\/$/.test(url)||
+ const sourceReferenced=url==='/'||
+  /^\/cooking\/(?:grams-to-cups|cups-to-grams|grams-to-tablespoons|tablespoons-to-grams)\/$/.test(url)||/^\/cooking\/grams-to-cups\/\d+-grams-to-cups\/$/.test(url)||
   /^\/cooking\/ingredients\/[^/]+\/$/.test(url)||
   /^\/cooking\/ingredients\/[^/]+\/\d+-grams-to-cups\/$/.test(url)||
   /^\/cooking\/charts\//.test(url);
