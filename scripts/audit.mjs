@@ -144,6 +144,8 @@ assert.equal(pages.filter(x=>/\/ingredients\/[^/]+\/\d+-grams-to-cups\/$/.test(x
 
 for(const item of refs.records){
  const url='/cooking/ingredients/'+item.id+'/';
+ // Source-verified tool/chart-only foods have no individual index landing page.
+ if(!known.has(url))continue;
  const html=pageHtml(url);
  assert.match(html,/: cups to grams<\/h2>/,'Missing reverse lookup on '+url);
  assert.match(html,/<th scope="col">US cup amount<\/th>/,'Missing measured cup portions table on '+url);
