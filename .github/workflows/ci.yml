@@ -14,4 +14,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm run build
+      - name: Test preview noindex build
+        run: npm run build
+      - name: Test approved production canonical and sitemap
+        run: npm run build
+        env:
+          CF_PAGES_BRANCH: main
+          SITE_URL: https://example.com
+          PUBLIC_INDEX_APPROVED: 'true'
