@@ -58,12 +58,28 @@ try{
  assert.ok(shared.includes('amount=100')&&shared.includes('ingredient=all-purpose-flour')&&shared.includes('from=g')&&shared.includes('to=cup'),
   'shared URL preserves current converter state without uploading data');
  assert.match(await page.locator('[data-feedback]').innerText(),/Shareable link copied/);
+ await page.evaluate(()=>{
+  window.__resultFeedbackAnimations=0;
+  const output=document.querySelector('[data-result]');
+  const original=output.animate.bind(output);
+  output.animate=(...args)=>{window.__resultFeedbackAnimations++;return original(...args)};
+ });
  await page.locator('[data-amount-preset="200"]').click();
+ assert.equal(await page.evaluate(()=>window.__resultFeedbackAnimations),1,
+  'preset clicks should give quick compositor-only result feedback');
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.667','amount chip updates live result');
  await page.locator('[data-ingredient-preset="granulated-sugar"]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.01','ingredient chip uses distinct density');
  await page.locator('[data-amount-preset="100"]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.505','100 grams sugar');
+ const feedbackCount=await page.evaluate(()=>window.__resultFeedbackAnimations);
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.locator('[data-amount-preset="200"]').click();
+ assert.equal(await page.evaluate(()=>window.__resultFeedbackAnimations),feedbackCount,
+  'reduced-motion preference disables result animations but calculations continue');
+ assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.01','reduced motion does not disable calculator');
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.locator('[data-amount-preset="100"]').click();
  await page.locator('[data-swap]').click();
  await page.locator('[data-amount]').fill('0.5');
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'99','half cup sugar grams');
@@ -276,6 +292,11 @@ try{
  await staticPage.goto(origin+'/cooking/half-a-measurement/',{waitUntil:'domcontentloaded'});
  assert.equal((await staticPage.locator('[data-fraction-result]').innerText()).trim(),'3/4',
   'a useful 1/2 + 1/4 example is pre-rendered without JavaScript');
+ await staticPage.goto(origin+'/',{waitUntil:'domcontentloaded'});
+ assert.ok(await staticPage.locator('[data-nav]').isVisible(),
+  'responsive header navigation must remain usable without JavaScript');
+ assert.ok(await staticPage.locator('[data-nav-toggle]').isHidden(),
+  'no-JavaScript visitors must not get an inert menu toggle');
  await staticPage.close();
 
  const mobile=await browser.newPage({viewport:{width:375,height:812},deviceScaleFactor:1,isMobile:true,hasTouch:true});
@@ -308,9 +329,13 @@ try{
   assert.ok(await mobile.locator('h1').first().isVisible(),route+' mobile heading hidden');
   assert.equal(mobileErrors.length,0,route+' browser errors: '+mobileErrors.join(','));
   if(route==='/'){
+   const amountBounds=await mobile.locator('[data-amount]').boundingBox();
+   assert.ok(amountBounds&&amountBounds.y<650,
+    'at 375px the main calculator input should be visible earlier, not buried below the hero');
    const button=mobile.locator('[data-nav-toggle]');
    await button.click();
    assert.equal(await button.getAttribute('aria-expanded'),'true','mobile menu opens');
+   assert.equal(await button.getAttribute('aria-label'),'Close navigation','expanded menu is clearly labeled');
    await mobile.keyboard.press('Escape');
    assert.equal(await button.getAttribute('aria-expanded'),'false','Escape closes mobile navigation');
    await button.focus();
@@ -318,6 +343,10 @@ try{
    assert.equal(await button.getAttribute('aria-expanded'),'true','keyboard Enter opens mobile menu');
    await button.click();
    assert.equal(await button.getAttribute('aria-expanded'),'false','mobile menu closes');
+   await button.click();
+   await mobile.mouse.click(7,775);
+   assert.equal(await button.getAttribute('aria-expanded'),'false','outside tap closes mobile menu');
+   assert.equal(await button.getAttribute('aria-label'),'Open navigation','closed menu is clearly labeled');
    assert.ok(await mobile.locator('.hero-mobile-cta').isVisible(),'mobile hero includes direct converter action');
    await mobile.locator('.hero-mobile-cta').click();
    assert.ok(await mobile.locator('#converter').isVisible(),'mobile jump target exists');
