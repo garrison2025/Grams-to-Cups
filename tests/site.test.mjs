@@ -159,6 +159,42 @@ test('recipe scaler cleans unitless spacing and safely changes common countable 
  assert.equal(scaleRecipe('1 tiny amount of spice',4,2,{fractions:true}).rows[0].scaled,'1/2 tiny amount of spice');
 });
 
+test('batch explicit US and metric cup quantities round-trip correctly across selected standards',()=>{
+ const flour=byId('all-purpose-flour');
+ const source='1 US cup All-purpose flour\n1 metric cup All-purpose flour\n1 cup All-purpose flour';
+ const metricPage=batchConvertIngredients(source,{ingredients:foods,target:'g',standard:'metric'});
+ assert.equal(metricPage.converted,3);
+ assert.equal(metricPage.review,0);
+ assert.equal(metricPage.rows[0].output,'120 g All-purpose flour',
+  'explicit US cup is not silently treated as metric');
+ const metricGrams=convertQuantity(1,'cup','g',{ingredient:flour,standard:'metric'});
+ assert.ok(Math.abs(metricPage.rows[1].result-metricGrams)<1e-9);
+ assert.ok(Math.abs(metricPage.rows[2].result-metricGrams)<1e-9,'unqualified cup uses selected standard');
+ const usPage=batchConvertIngredients('1 metric cup All-purpose flour',{ingredients:foods,target:'cup',standard:'us',fractions:false});
+ assert.equal(usPage.converted,1);
+ assert.ok(Math.abs(usPage.rows[0].result-METRIC_CUP_ML/US_CUP_ML)<1e-10);
+ assert.match(usPage.rows[0].output,/US cups All-purpose flour$/);
+ const metricOutput=batchConvertIngredients('1 US cup All-purpose flour',{ingredients:foods,target:'cup',standard:'metric',fractions:false});
+ assert.equal(metricOutput.converted,1);
+ assert.ok(Math.abs(metricOutput.rows[0].result-US_CUP_ML/METRIC_CUP_ML)<1e-10);
+ assert.match(metricOutput.rows[0].output,/metric cup All-purpose flour$/);
+ const generated=batchConvertIngredients('120 g all-purpose flour',{ingredients:foods,target:'cup'});
+ assert.equal(generated.rows[0].output,'1 US cup All-purpose flour');
+ const pasted=batchConvertIngredients(generated.rows[0].output,{ingredients:foods,target:'g',standard:'metric'});
+ assert.equal(pasted.rows[0].status,'converted');
+ assert.equal(pasted.rows[0].output,'120 g All-purpose flour','the output label can be pasted back as valid input');
+});
+
+test('recipe serving scaler pluralizes explicit US and metric cup units without changing the standard',()=>{
+ const enlarged=scaleRecipe('1 US cup milk\n½ metric cup cream\n2 metric cups water',2,4,{fractions:true});
+ assert.equal(enlarged.unparsed,0);
+ assert.deepEqual(enlarged.rows.map(r=>r.scaled),[
+  '2 US cups milk','1 metric cup cream','4 metric cups water'
+ ]);
+ const smaller=scaleRecipe('2 US cups milk\n2 metric cups cream',4,2,{fractions:true});
+ assert.deepEqual(smaller.rows.map(r=>r.scaled),['1 US cup milk','1 metric cup cream']);
+});
+
 test('CSV escaping prevents spreadsheet formula injection',()=>{
  assert.equal(csvCell('=HYPERLINK("bad")'),'"\'=HYPERLINK(""bad"")"');
  assert.equal(csvCell('a,b'),'"a,b"');
