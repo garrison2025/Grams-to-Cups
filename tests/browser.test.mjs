@@ -50,6 +50,13 @@ try{
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'—','bad values must not look valid');
  assert.ok(await page.locator('[data-error]').isVisible(),'invalid quantity shows clear error');
  await page.locator('[data-reset]').click();
+ await page.locator('[data-compare-preset="250"]').click();
+ assert.equal((await page.locator('[data-compare-grams]').innerText()).trim(),'250 g','comparison preset changes grams');
+ assert.equal((await page.locator('[data-compare-flour]').innerText()).trim(),'2.083','flour comparison uses 120 g/cup');
+ assert.equal((await page.locator('[data-compare-sugar]').innerText()).trim(),'1.263','sugar comparison uses 198 g/cup');
+ assert.equal(await page.locator('[data-compare-preset="250"]').getAttribute('aria-pressed'),'true','comparison selected preset is accessible');
+ await page.locator('[data-compare-input]').evaluate(el=>{el.value='300';el.dispatchEvent(new Event('input',{bubbles:true}))});
+ assert.equal((await page.locator('[data-compare-flour]').innerText()).trim(),'2.5','range slider updates same-weight comparison');
  assert.equal(errors.length,0,'no browser errors on desktop: '+errors.join(', '));
  const desktopOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
  assert.ok(desktopOverflow<=1,'desktop horizontal overflow '+desktopOverflow);
@@ -58,10 +65,29 @@ try{
   const img=await page.screenshot({type:'jpeg',quality:42});
   console.log('DESKTOP_SHOT_BEGIN'+img.toString('base64')+'DESKTOP_SHOT_END');
  }
+ await page.goto(origin+'/cooking/tablespoons-to-ml/',{waitUntil:'networkidle'});
+ assert.ok(await page.locator('[data-density-field]').first().isHidden(),'hide ingredient controls for fixed volume conversions');
+ assert.ok(await page.locator('[data-cup-standard-row]').isHidden(),'hide irrelevant cup standard when no cup involved');
+ assert.ok(await page.locator('[data-source-fixed]').isVisible(),'fixed unit source messaging is visible');
+ await page.locator('[data-from]').selectOption('g');
+ assert.ok(await page.locator('[data-density-field]').first().isVisible(),'show ingredient when switching to mass-volume');
+ assert.ok(await page.locator('[data-source-ingredient]').isVisible(),'show source reference only for ingredient-dependent quantities');
+ await page.goto(origin+'/cooking/charts/',{waitUntil:'networkidle'});
+ await page.locator('[data-chart-filter]').fill('brown sugar');
+ assert.equal((await page.locator('[data-chart-count]').innerText()).trim(),'1 of 24 ingredients shown','chart filters ingredient rows');
+ const visibleRows=await page.locator('[data-chart-table] tbody tr:visible').count();
+ assert.equal(visibleRows,1,'chart only shows matching rows');
+ const download=page.waitForEvent('download');
+ await page.locator('[data-chart-download]').click();
+ const exportFile=await download;
+ assert.equal(exportFile.suggestedFilename(),'cooking-conversion-chart.csv','filtered chart downloads CSV');
+ await page.locator('[data-chart-filter]').fill('zzz never an ingredient');
+ assert.ok(await page.locator('[data-chart-empty]').isVisible(),'empty search feedback is visible');
+ assert.equal(errors.length,0,'no desktop runtime errors after charts');
  const mobile=await browser.newPage({viewport:{width:375,height:812},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  const mobileErrors=[];
  mobile.on('pageerror',err=>mobileErrors.push(err.message));
- for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/','/cooking/grams-to-cups/200-grams-to-cups/']){
+ for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/','/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/']){
   await mobile.goto(origin+route,{waitUntil:'networkidle'});
   const overflow=await mobile.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
   assert.ok(overflow<=1,route+' mobile overflow '+overflow);
@@ -83,7 +109,7 @@ try{
    }
   }
  }
- console.log('Browser audit passed: conversion presets, ingredient switching, invalid input, reset, desktop/mobile rendering, accessible mobile nav and no horizontal overflow.');
+ console.log('Browser audit passed: live ingredient volume comparison, mass-volume context switching, searchable CSV chart, conversion presets, browser errors, mobile menu and no horizontal overflow.');
 }catch(err){failed=true;console.error(err.stack||err)}
 finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 if(failed)process.exit(1);
