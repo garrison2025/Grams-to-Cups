@@ -49,11 +49,24 @@ for(let i=0;i<routes.length;i++){
   Math.round(rawResult.categories[c].score*100);
  const lcp=rawResult.audits['largest-contentful-paint']?.numericValue;
  const cls=rawResult.audits['cumulative-layout-shift']?.numericValue;
+ const failedAudits=category=>(rawResult.categories[category]?.auditRefs||[])
+  .filter(ref=>ref.weight>0&&rawResult.audits[ref.id]?.score!==null&&rawResult.audits[ref.id]?.score<1)
+  .map(ref=>({id:ref.id,title:rawResult.audits[ref.id].title,
+   score:rawResult.audits[ref.id].score,
+   display:rawResult.audits[ref.id].displayValue||null,
+   weight:ref.weight}))
+  .sort((a,b)=>a.score-b.score||b.weight-a.weight)
+  .slice(0,10);
  const row={
   route,url,performance:score('performance'),accessibility:score('accessibility'),
   bestPractices:score('best-practices'),seo:score('seo'),
   labLcpMs:Number.isFinite(lcp)?Math.round(lcp):null,
   labCls:Number.isFinite(cls)?Number(cls.toFixed(4)):null,
+  labFcpMs:Math.round(rawResult.audits['first-contentful-paint']?.numericValue||0),
+  labTbtMs:Math.round(rawResult.audits['total-blocking-time']?.numericValue||0),
+  labSpeedIndexMs:Math.round(rawResult.audits['speed-index']?.numericValue||0),
+  failingPerformanceAudits:failedAudits('performance'),
+  failingAccessibilityAudits:failedAudits('accessibility'),
   lighthouseVersion:rawResult.lighthouseVersion,
   reportFile:path.relative(root,file),
   statusCode:rawResult.audits['http-status-code']?.displayValue||null
