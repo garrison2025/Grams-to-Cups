@@ -45,6 +45,12 @@ The 21 formerly unresolved SEO decisions have now been completed on the basis of
 - After the real site is deployed, open **GitHub → Actions → Live Cloudflare Pages release verification → Run workflow**. Supply the exact public HTTPS origin and choose whether it is supposed to be indexed. The native Node smoke test checks the live site, not merely the static generator. It has **not** been run for a real host because no deployed URL has been confirmed in this repository.
 - Alternatively run `npm run smoke:live` with `LIVE_SITE_URL` and `LIVE_EXPECT_INDEX` environment variables. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
+## Lighthouse mobile lab quality gate
+
+The [Lighthouse mobile lab workflow](.github/workflows/lighthouse-audit.yml) tests representative pages on pull requests using a local, intentionally `noindex` preview and uploads raw JSON evidence. It measures **performance, accessibility, best practices, lab LCP and CLS**, enforcing a mobile accessibility score of at least 95. Preview SEO scores are deliberately **not** used because preview pages are meant to be `noindex`.
+
+Once the actual independent-site HTTPS origin is confirmed, run the same workflow manually with the `site_url` input and `expected_indexing=true`; it first performs real-host HTTP/sitemap checks and then audits live mobile SEO, accessibility and performance. The final-host SEO and accessibility targets are both 95 or higher. These are repeatable **lab** results, not real-user INP or Google Search Console proof. CLI dependencies are installed only on GitHub Actions and are not bundled with the site.
+
 ## Cloudflare Pages
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for exact production settings and QA gates.
