@@ -24,6 +24,15 @@ const source='https://www.kingarthurbaking.com/learn/ingredient-weight-chart';
 const numberValues=[25,30,50,60,75,80,100,125,150,180,200,225,250,300,350,400,450,500,600,750,1000];
 // Same search intent as the homepage: keep the tool usable but direct internal SEO links to /.
 const noIndexCandidatePaths=new Set(['/cooking/grams-to-cups/','/cooking/grams-to-cups/1000-grams-to-cups/','/cooking/cups-to-fluid-ounces/','/cooking/fluid-ounces-to-cups/','/cooking/recipe-scaler/','/cooking/ingredients/whole-wheat-flour/','/cooking/ingredients/coconut-flour/','/cooking/ingredients/gluten-free-flour/','/cooking/ingredients/brown-rice-cooked/','/cooking/ingredients/maple-syrup/','/cooking/ingredients/olive-oil/','/cooking/ingredients/cornstarch/','/cooking/ingredients/pumpkin-puree/','/cooking/ingredients/walnuts-chopped/','/cooking/guides/measuring-flour/','/cooking/batch-converter/']);
+// Source-grounded editorial decisions for the independent Grams-to-Cups site.
+// These do NOT alter features: weak SEO targets remain usable but are excluded from indexing.
+const editorialDecisionSource=JSON.parse(fs.readFileSync(path.join(root,'research/seo-21-editorial-decisions.json'),'utf8'));
+if(editorialDecisionSource.decisions.length!==21||new Set(editorialDecisionSource.decisions.map(x=>x.url)).size!==21)throw Error('All 21 editorial URL decisions must be complete and unique.');
+for(const row of editorialDecisionSource.decisions){
+ if(!['approved-index','functional-noindex'].includes(row.decision)||!row.rationale?.trim())throw Error('Missing editorial release disposition for '+row.url);
+ if(row.decision==='functional-noindex')noIndexCandidatePaths.add(row.url);
+}
+
 const flourNumbers=[100,125,150,200,250,300,400,500],sugarNumbers=[100,200];
 const tools=[
 ['grams-to-cups','Grams to Cups','g','cup',100,'ingredient'],
