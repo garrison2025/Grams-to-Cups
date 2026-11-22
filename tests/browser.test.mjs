@@ -149,6 +149,12 @@ try{
    assert.ok(overflow<=1,route+' '+width+'px horizontal overflow '+overflow);
    assert.ok(await mobile.locator('h1').first().isVisible(),route+' '+width+'px heading is visible');
    assert.equal(mobileErrors.length,0,route+' '+width+'px JS exceptions: '+mobileErrors.join(','));
+   if(width===320&&route==='/'){
+    for(const selector of ['[data-nav-toggle]','[data-swap]','[data-amount-preset]','[data-ingredient-preset]']){
+     const rect=await mobile.locator(selector).first().boundingBox();
+     assert.ok(rect&&rect.width>=44&&rect.height>=44,selector+' must offer at least a 44×44px mobile touch target');
+    }
+   }
   }
  }
  await mobile.setViewportSize({width:375,height:812});
