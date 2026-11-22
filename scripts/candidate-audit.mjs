@@ -148,6 +148,10 @@ for(const page of manifest.pages){
   feature,bucket,check]);
 }
 assert.equal(indexGapReview.length-1,21,'Expected 21 source-evidence review cases: check changes before approving index policy');
+// This public-source-only line makes the 21 review cases traceable without downloading private CI artifacts.
+console.log('SEO_PENDING_21_START');
+for(const row of indexGapReview.slice(1))console.log(JSON.stringify({url:row[0],role:row[1],planId:row[2],keyword:row[3],volume:row[4],kd:row[5],screenshot:row[7],feature:row[9],bucket:row[10]}));
+console.log('SEO_PENDING_21_END');
 
 const unexpected=manifest.pages.filter(p=>!candidates.some(c=>c.url===p.url)).map(p=>p.url).sort();
 assert.deepEqual(unexpected,['/','/about/','/contact/','/cooking/batch-converter/','/privacy/'].sort(),
