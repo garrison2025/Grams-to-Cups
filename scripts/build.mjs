@@ -154,7 +154,7 @@ function home(){
  '<span class="kicker">EXPLORE THE DIFFERENCE</span><h2>Same weight.<br><em>Different volume.</em></h2>'+
  '<p>Flour and sugar occupy different amounts of space at the same weight. Change the amount below to see how their cup equivalents compare.</p>'+
  '<div class="compare-controls"><label for="compare-weight">Weight to compare</label>'+
- '<div class="compare-slider-row"><input id="compare-weight" data-compare-input type="range" min="10" max="500" step="10" value="100" aria-describedby="compare-help">'+
+ '<div class="compare-slider-row"><input id="compare-weight" data-compare-input type="range" min="10" max="500" step="10" value="100" aria-describedby="compare-help" aria-valuetext="100 grams">'+
  '<output for="compare-weight" data-compare-grams aria-live="polite">100 g</output></div>'+
  '<div class="compare-presets" role="group" aria-label="Suggested weights">'+
  [50,100,200,250].map(n=>'<button type="button" class="compare-preset" data-compare-preset="'+n+'" aria-pressed="'+String(n===100)+'">'+n+' g</button>').join('')+
