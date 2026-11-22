@@ -152,16 +152,72 @@ try{
   'wide-screen table does not show an unnecessary mobile swipe instruction');
  await page.locator('[data-chart-filter]').fill('brown sugar');
  assert.equal((await page.locator('[data-chart-count]').innerText()).trim(),'1 of 24 ingredients shown','chart filters ingredient rows');
+ await page.locator('[data-chart-standard]').selectOption('metric');
+ await page.locator('[data-chart-custom]').fill('1/3');
+ assert.match(await page.locator('[data-chart-table] thead').innerText(),/1\/3 metric cup/,
+  'metric third column uses editable fractional cup amount');
+ assert.match(await page.locator('[data-chart-context]').innerText(),/Metric|metric cup/i,
+  'visible chart caption identifies actual cup unit and context');
+ const sugarRow=page.locator('[data-chart-food-id="brown-sugar-packed"]');
+ assert.equal((await sugarRow.locator('td').nth(2).innerText()).trim(),
+  (await sugarRow.locator('td').nth(2).innerText()).trim(),
+  'browser can query the active custom column');
+ const sugarThird=(await sugarRow.locator('td').nth(2).innerText()).trim();
+ assert.match(sugarThird,/\d.*g/,'custom metric column contains calculated gram weights');
+ await page.locator('[data-chart-custom]').fill('0');
+ assert.ok(await page.locator('[data-chart-error]').isVisible(),'invalid custom quantity explains why export is disabled');
+ assert.ok(await page.locator('[data-chart-download]').isDisabled(),'cannot export stale values when input is invalid');
+ assert.ok(await page.locator('[data-chart-print]').isDisabled(),'cannot print stale values when input is invalid');
+ await page.locator('[data-chart-custom]').fill('1.5');
+ assert.ok(await page.locator('[data-chart-error]').isHidden(),'valid correction restores chart');
+ assert.match(await page.locator('[data-chart-table] thead').innerText(),/1\.5 metric cup/);
+
  const visibleRows=await page.locator('[data-chart-table] tbody tr:visible').count();
  assert.equal(visibleRows,1,'chart only shows matching rows');
  const download=page.waitForEvent('download');
  await page.locator('[data-chart-download]').click();
  const exportFile=await download;
  assert.equal(exportFile.suggestedFilename(),'cooking-conversion-chart.csv','filtered chart downloads CSV');
+ const downloadedChart=fs.readFileSync(await exportFile.path(),'utf8');
+ assert.ok(downloadedChart.includes('1.5 metric cup'),'CSV must export selected custom cup standard, not stale US header');
+ assert.ok(downloadedChart.includes((await page.locator('[data-chart-food-id="brown-sugar-packed"] td').nth(2).innerText()).trim()),
+  'CSV row weights exactly match the visible filtered chart');
  await page.locator('[data-chart-filter]').fill('zzz never an ingredient');
  assert.ok(await page.locator('[data-chart-empty]').isVisible(),'empty search feedback is visible');
  assert.equal(errors.length,0,'no desktop runtime errors after charts');
-
+ await page.locator('[data-chart-filter]').fill('water');
+ await page.locator('[data-chart-custom]').fill('1');
+ assert.equal((await page.locator('[data-chart-food-id="water"] td').nth(2).innerText()).trim(),
+  '239.841 g','metric cup water retains original 227 g / US cup recipe basis');
+ await page.locator('[data-chart-water-mode]').selectOption('capacity');
+ assert.equal((await page.locator('[data-chart-food-id="water"] td').nth(2).innerText()).trim(),
+  '250 g','physical capacity mode applies about 1 g/mL to metric cup');
+ assert.match(await page.locator('[data-chart-food-id="water"] td').nth(3).innerText(),/Physical capacity/);
+ assert.match(await page.locator('[data-chart-context]').innerText(),/NOT the published recipe weight/i);
+ for(const route of ['/cooking/charts/flour/','/cooking/charts/sugar/']){
+  await page.goto(origin+route,{waitUntil:'networkidle'});
+  assert.ok(await page.locator('[data-chart-standard]').isVisible(),'all focused charts share cup standard control');
+  await page.locator('[data-chart-standard]').selectOption('metric');
+  await page.locator('[data-chart-custom]').fill('2');
+  assert.match(await page.locator('[data-chart-table] thead').innerText(),/2 metric cup/);
+  assert.ok(await page.locator('[data-chart-water-mode]').count()===0,
+   'water option appears only in charts containing water');
+ }
+ await page.goto(origin+'/cooking/ingredients/water/',{waitUntil:'networkidle'});
+ assert.ok(await page.locator('[data-water-explanation]').isVisible(),'water reference and capacity methods are visibly compared');
+ assert.equal(await page.locator('[data-water-mode]').inputValue(),'recipe');
+ const sourceResult=await page.locator('[data-result]').innerText();
+ await page.locator('[data-water-mode]').selectOption('capacity');
+ const capacityResult=await page.locator('[data-result]').innerText();
+ assert.notEqual(capacityResult,sourceResult,'water capacity option changes actual mass-to-volume result');
+ assert.ok(await page.locator('[data-source-capacity]').isVisible(),'physical water estimate must not claim recipe data citation');
+ assert.ok(await page.locator('[data-source-ingredient]').isHidden(),'recipe chart source hidden while capacity mode is active');
+ await page.locator('[data-copy]').click();
+ assert.match(await page.evaluate(()=>window.__copiedConversion),/Physical-capacity water estimate/i,
+  'copied water conversion explicitly includes its physical-capacity basis');
+ await page.locator('[data-share]').click();
+ assert.match(await page.evaluate(()=>window.__copiedConversion),/waterMode=capacity/,
+  'shared water URL preserves source/capacity selection');
  await page.goto(origin+'/cooking/ingredients/all-purpose-flour/',{waitUntil:'networkidle'});
  assert.ok(await page.getByRole('heading',{name:'All-purpose flour: cups to grams'}).isVisible(),'ingredient reverse lookup is visible');
  const reverseChart=page.locator('table').nth(1);
@@ -261,7 +317,12 @@ try{
  assert.ok(scaled.includes('2 1/4 cups milk'),'recipe displays exact mixed kitchen fraction');
  assert.ok(scaled.includes('3/4 tsp salt'),'recipe displays Unicode fraction');
  assert.ok(scaled.includes('pinch of salt  [check manually]'),'unknown serving units stay visible for review');
- assert.ok(scaled.includes('2-3 eggs  [check manually]'),'ranges are not partially scaled into unsafe recipe quantities');
+ assert.ok(scaled.includes('3–4 1/2 eggs'),'both endpoints of a clear recipe interval scale together');
+ await page.locator('[data-recipe-lines]').fill('1 ¹⁄₂ cups flour\n1½–3 cups milk\n1 ¹⁄2 cups broken');
+ const sup=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(sup.includes('2 1/4 cups flour'),'superscript/subscript fraction must scale as 1.5, not 1');
+ assert.ok(sup.includes('2 1/4–4 1/2 cups milk'),'range with mixed fraction scales both ends');
+ assert.ok(sup.includes('1 ¹⁄2 cups broken  [check manually]'),'ambiguous partial superscript fraction warns rather than guessing');
  await page.locator('[data-recipe-lines]').fill('1 cup milk + 2 tbsp cream');
  const compound=(await page.locator('[data-recipe-output]').innerText()).trim();
  assert.ok(compound.includes('1 cup milk + 2 tbsp cream  [check manually]'),'compound quantities must not be only partially scaled');
