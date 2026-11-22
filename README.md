@@ -9,10 +9,12 @@ A complete, browser-local, source-backed cooking conversion website. **One imple
 - **14 Cooking tools:** grams ↔ cups, grams ↔ tablespoons, cups ↔ tablespoons, mL ↔ US tablespoons, US tablespoons ↔ mL, US cups ↔ US fluid ounces, US fluid ounces ↔ US cups, half-measurement fraction calculator, recipe scaler and the multiline ingredient batch converter. The main converter also supports teaspoons, mass ounces, kilograms and milliliters via unit selection.
 - **24 documented ingredients**, each including original measurement, quantity, state, method, source URL, review date and limitation. The data are recipe-chart estimates, **not physical density constants**.
 - **21 numerical comparison pages**, **24 ingredient-specific pages**, **10 ingredient+number pages**, 3 printable chart pages, 3 measuring guides, source methodology and cooking hub; **77 Cooking routes**, plus independent homepage and About/Privacy/Contact (81 static HTML pages).
-- Free calculator with regular and Unicode kitchen fractions (½, 1½, ¾), US and metric cup standards, swap/reset/copy/share/print, URL-state sharing, ingredient search, recipe serving scaling and safe CSV export.
+- Free calculator with regular and Unicode kitchen fractions (½, 1½, ¾), **exact common kitchen fraction arithmetic** (for example 1/3 + 1/4 = 7/12) in the existing half-measurement tool, US and metric cup standards, swap/reset/copy/share/print, URL-state sharing, ingredient search, serving scaling with safe common count nouns and CSV export.
 - **Batch ingredient conversion**: paste up to 100 ingredient lines; convert to grams or cups using exact food identifiers; unrecognized ingredients or states are preserved and flagged for manual review, never assigned a guessed density. Copy or export a CSV with review warnings. The batch tool is functional but noindex until separate SEO value is proven.
 - Pre-rendered answers, tables, metadata, breadcrumbs and internal links; true 404 page, sitemap only for approved production, per-page canonical and index review.
 - Responsive original styling, visible keyboard focus, accessible field labels, reduced-motion support, privacy-first client JS. No fake testimonials, review stars or preapproved AdSense claims.
+
+Browser tests check fraction addition, subtraction, multiplication and division, unitless count-ingredient scaling (e.g. `1 large egg` → `2 large eggs`), graceful invalid-input handling and a useful pre-rendered fraction example without JavaScript. The static build audit rejects noniterable `querySelector` loops so a new widget cannot accidentally interrupt later page initialization.
 
 ## Get started
 
