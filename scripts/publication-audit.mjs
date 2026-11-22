@@ -35,6 +35,9 @@ if(production){
  const fixture=process.env.CI==='true'&&process.env.SITE_URL_FIXTURE_APPROVED_FOR_CI==='true'&&hostname==='example.com';
  assert.ok(fixture||!/^(?:example\.com|localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(hostname)&&!/\.(?:example|test|invalid|localhost)$/.test(hostname),'Placeholder host must not be published');
 }else assert.ok(!fs.existsSync(path.join(dist,'sitemap.xml')),'Preview has a sitemap');
+const contact=get('/contact/');
+assert.match(contact,/<!--email_off--><a href="mailto:contact@gramstocupscalculator\.com">contact@gramstocupscalculator\.com<\/a><!--\/email_off-->/,'Contact email must stay usable without scripts');
+assert.ok(get('/cooking/sources-and-methods/').includes('href="/contact/"'),'Methodology must link to corrections');
 const headers=read('_headers');
 assert.match(headers,/X-Content-Type-Options:\s*nosniff/);
 assert.match(headers,/Referrer-Policy:\s*strict-origin-when-cross-origin/);
@@ -61,6 +64,7 @@ for(const page of pages){
  const structured=tag(html,/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi);
  const schemaNodes=structured.map(x=>JSON.parse(x[1]));
  const structuredTypes=new Set(schemaNodes.map(x=>x['@type']));
+ const methods=page.url==='/cooking/sources-and-methods/';
  const sourceRoute=page.url==='/'||
   /^\/cooking\/(?:grams-to-cups|cups-to-grams|grams-to-tablespoons|tablespoons-to-grams)\/$/.test(page.url)||
   /^\/cooking\/grams-to-cups\/\d+-grams-to-cups\/$/.test(page.url)||
@@ -117,10 +121,17 @@ for(const page of pages){
    assert.equal(website['@id'],manifest.origin+'/#website');
    assert.equal(website.url,manifest.origin+'/');
   }
-  assert.equal(!!webPage.citation,sourceRoute,'Source citation markup must agree with visible source-linked answer '+page.url);
+  assert.equal(!!webPage.citation,sourceRoute||methods,'Source citation markup must agree with visible source-linked answer '+page.url);
   if(sourceRoute){
    assert.equal(webPage.citation,'https://www.kingarthurbaking.com/learn/ingredient-weight-chart');
    assert.ok(html.includes('href="'+webPage.citation+'"'),'GEO citation must be readable by real visitors '+page.url);
+  }
+  if(methods){
+   assert.deepEqual(webPage.citation,[
+    'https://www.kingarthurbaking.com/learn/ingredient-weight-chart',
+    'https://nvlpubs.nist.gov/nistpubs/Legacy/LC/nbslettercircular1098.pdf'
+   ]);
+   for(const citation of webPage.citation)assert.ok(html.includes('href="'+citation+'"'));
   }
   for(const item of schemaNodes)
    assert.ok(!['Recipe','Review','AggregateRating','FAQPage','HowTo'].includes(item['@type']),
@@ -133,6 +144,7 @@ for(const page of pages){
     for(const [i,li] of data.itemListElement.entries()){
      assert.equal(li.position,i+1,'Incorrect breadcrumb ordinal '+page.url);
      assert.ok(li.item.startsWith(manifest.origin+'/'),'Broken breadcrumb hostname '+page.url);
+     assert.notEqual(li.item,manifest.origin+'/cooking/grams-to-cups/','Breadcrumb points to legacy noindex calculator '+page.url);
     }
    }
   }

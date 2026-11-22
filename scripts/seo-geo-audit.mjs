@@ -43,6 +43,7 @@ for(const page of manifest.pages){
   unit=html.includes('100 grams of spoon-and-leveled all-purpose flour is about')&&html.includes(' US cups.');
   excerpt=strip(html.match(/<section class="section section-answer">([\s\S]*?)<\/section>/)?.[1]||'');
   state=html.includes('spoon-and-leveled');
+  assert.ok(html.includes('divide the grams by the ingredient’s grams per US cup'),'Homepage must show the conversion formula');
   assert.ok(sourceVisible,'Homepage answer must show a usable published reference');
  }else if(combo){
   type='ingredientWeight';
@@ -50,7 +51,8 @@ for(const page of manifest.pages){
   assert.ok(food,'Unknown ingredient in combo '+url);
   const n=Number(combo[2]),answer=formatAmount(convertQuantity(n,'g','cup',{ingredient:food}),3);
   direct=html.includes(n+' grams of '+food.name+' ≈ '+answer+' US cups');
-  unit=html.includes(answer+' US cups');
+  const metric=formatAmount(convertQuantity(n,'g','cup',{ingredient:food,standard:'metric'}),3);
+  unit=html.includes(answer+' US cups')&&html.includes('<strong>'+metric+' metric cups</strong>');
   state=html.includes(food.state)&&html.includes(food.method);
   excerpt=strip(html.match(/<div class="seo-answer">([\s\S]*?)<\/div>/)?.[1]||'');
   assert.ok(sourceVisible,'Ingredient+number answer must link the published source: '+url);
@@ -59,7 +61,8 @@ for(const page of manifest.pages){
   const n=Number(numeric[1]),flour=foodById.get('all-purpose-flour');
   const answer=formatAmount(convertQuantity(n,'g','cup',{ingredient:flour}),3);
   direct=html.includes(formatAmount(n,3)+' grams of All-purpose flour ≈ '+answer+' US cups');
-  unit=html.includes(answer+' US cups');
+  const metric=formatAmount(convertQuantity(n,'g','cup',{ingredient:flour,standard:'metric'}),3);
+  unit=html.includes(answer+' US cups')&&html.includes('<strong>'+metric+' metric cups</strong>');
   state=html.includes(flour.state)&&html.includes(flour.method);
   excerpt=strip(html.match(/<div class="seo-answer">([\s\S]*?)<\/div>/)?.[1]||'');
   assert.ok(sourceVisible,'Numeric answer must show its mass-to-volume source: '+url);
