@@ -4,41 +4,41 @@ This repository was created as a standalone website at the owner's direction. It
 
 ## Connect Cloudflare Pages
 
-1. Workers & Pages → Create application → Pages → Connect to Git → select \`garrison2025/Grams-to-Cups\`.
-2. Production branch \`main\`; Framework preset **None**; Build command \`npm run build\`; Output directory \`dist\`; Node runtime **22+**.
+1. Workers & Pages → Create application → Pages → Connect to Git → select `garrison2025/Grams-to-Cups`.
+2. Production branch `main`; Framework preset **None**; Build command `npm run build`; Output directory `dist`; Node runtime **22+**.
 3. Deploy once with indexing disabled. Page functions, navigation, source citations, recipe scaling, search, mobile layout and 404 must be checked at the actual preview URL.
-4. Choose the actual stable public hostname (your verified custom domain or stable project.pages.dev). Set \`SITE_URL=https://YOUR-EXACT-HOST\` in Cloudflare Pages production **build-time environment variables** (no trailing slash or path). Do not use a transient hash deployment URL. Use the hostname that resolves live content.
-5. Verify all canonical destination URLs resolve at that hostname. Verify 404, robots.txt, no console errors, static assets, reference claims, accessible mobile calculation, ingredient search and the output from \`npm run build\`.
-6. Only after all checks, set \`PUBLIC_INDEX_APPROVED=true\` for the production environment and redeploy \`main\`. Cloudflare injects \`CF_PAGES_BRANCH\`; don't set it manually in dashboard.
-7. Confirm production \`/sitemap.xml\` exists, URLs use \`SITE_URL\`, all index-eligible pages carry canonical/index, and excluded candidates remain noindex. Submit sitemap to Google Search Console only when the site is verified.
+4. Choose the actual stable public hostname (your verified custom domain or stable project.pages.dev). Set `SITE_URL=https://YOUR-EXACT-HOST` in Cloudflare Pages production **build-time environment variables** (no trailing slash or path). Do not use a transient hash deployment URL. Use the hostname that resolves live content.
+5. Verify all canonical destination URLs resolve at that hostname. Verify 404, robots.txt, no console errors, static assets, reference claims, accessible mobile calculation, ingredient search and the output from `npm run build`.
+6. Only after all checks, set `PUBLIC_INDEX_APPROVED=true` for the production environment and redeploy `main`. Cloudflare injects `CF_PAGES_BRANCH`; don't set it manually in dashboard.
+7. Confirm production `/sitemap.xml` exists, URLs use `SITE_URL`, all index-eligible pages carry canonical/index, and excluded candidates remain noindex. Submit sitemap to Google Search Console only when the site is verified.
 8. There are 81 generated HTML pages total: 77 Cooking routes and 4 site/core/legal routes. The 15 research-limited candidates still function but are excluded from sitemap.
 
 Cloudflare previews should remain noindex. This is intentional, not a reason to enable indexing before QA.
 
 ## Quality gates in CI
 
-\`npm run build\` automatically:
+`npm run build` automatically:
 
 - Runs 12 Node tests: original reference weights, 24 ingredient data contracts, mass/volume distinction, cup definitions, numeric round trips, fractions, recipe scaling and CSV injection safety.
 - Generates 81 static HTML pages, local conversion assets, a real 404 and index-aware robots/sitemap.
 - Checks route count, unique title and H1, body text, canonical/noindex, key asset existence, internal links, batch workbench presence and 21/24/10 page-family counts.
-- The GitHub workflow tests both preview and production publication configurations. Its \`https://example.com\` value is synthetic **only for CI**, never the site's production domain.
+- The GitHub workflow tests both preview and production publication configurations. Its `https://example.com` value is synthetic **only for CI**, never the site's production domain.
 
 Any failing gate means the release is not complete. Do not disable audits to produce a green build.
 
 ## Source/reference changes
 
-1. Find the ingredient in \`src/ingredients.json\`.
-2. Review the original published source at \`sourceUrl\`, confirm amount/unit/grams, method and state. For King Arthur the original reference can be \`1 cup\`, \`1/2 cup\`, \`1/4 cup\`, or \`1 tablespoon\`: keep the **original pair**, never overwrite it with an assumed gram-per-cup.
+1. Find the ingredient in `src/ingredients.json`.
+2. Review the original published source at `sourceUrl`, confirm amount/unit/grams, method and state. For King Arthur the original reference can be `1 cup`, `1/2 cup`, `1/4 cup`, or `1 tablespoon`: keep the **original pair**, never overwrite it with an assumed gram-per-cup.
 3. Change the original measurement and review date, write an updated note as needed.
-4. Add regression coverage in \`tests/site.test.mjs\` and run \`npm run build\`; inspect the ingredient page and source info.
+4. Add regression coverage in `tests/site.test.mjs` and run `npm run build`; inspect the ingredient page and source info.
 5. Deploy after proof, not as a content publishing schedule.
 
-For example, a published chart's \`water 1 cup = 227 g\` should remain labeled as a *recipe-reference weight*, not a physical-density claim.
+For example, a published chart's `water 1 cup = 227 g` should remain labeled as a *recipe-reference weight*, not a physical-density claim.
 
 ## Search and page quality
 
-The \`research/semrush-us-2300-sample.csv\` file retains supplied source observations with provenance. It is **partial** Semrush US export evidence, not all three domains' ranking keywords. Tentative URL suggestions are not automatic permission to create more SEO URLs. One search intent should have one best landing page.
+The `research/semrush-us-2300-sample.csv` file retains supplied source observations with provenance. It is **partial** Semrush US export evidence, not all three domains' ranking keywords. Tentative URL suggestions are not automatic permission to create more SEO URLs. One search intent should have one best landing page.
 
 The final site can calculate any positive input amount, but does not create a separate indexed URL for every imaginable number. Do not force noindex candidates into the sitemap merely to boost page count.
 
@@ -61,8 +61,8 @@ The recipe scaler offers **exact common kitchen fractions** by default, or decim
 
 ## Main keyword ownership and SEO audit artifact
 
-The homepage \`/\` is the only eligible landing page for the core \`grams to cups\` query. \`/cooking/grams-to-cups/\` remains usable, but \`noindex\` and internal card/paragraph links resolve to \`/\` to avoid competing primary SEO targets. Production index candidates: **66** out of 81 functional routes.
+The homepage `/` is the only eligible landing page for the core `grams to cups` query. `/cooking/grams-to-cups/` remains usable, but `noindex` and internal card/paragraph links resolve to `/` to avoid competing primary SEO targets. Production index candidates: **66** out of 81 functional routes.
 
-The build also runs \`scripts/keyword-audit.mjs\`, validating all 2,300 supplied competitor ranking records and producing per-keyword/per-page classification files. Download them from the successful GitHub **Site build and tests** run → **Artifacts** → \`grams-to-cups-seo-review\`. The report output is excluded from \`dist/\` and from Git.
+The build also runs `scripts/keyword-audit.mjs`, validating all 2,300 supplied competitor ranking records and producing per-keyword/per-page classification files. Download them from the successful GitHub **Site build and tests** run → **Artifacts** → `grams-to-cups-seo-review`. The report output is excluded from `dist/` and from Git.
 
 The source remains a **partial** competitor export. Mapping is algorithmic and requires editorial review before a URL is treated as a verified ranking opportunity.
