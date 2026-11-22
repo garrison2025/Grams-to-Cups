@@ -67,6 +67,14 @@ for(let i=0;i<routes.length;i++){
   labSpeedIndexMs:Math.round(rawResult.audits['speed-index']?.numericValue||0),
   failingPerformanceAudits:failedAudits('performance'),
   failingAccessibilityAudits:failedAudits('accessibility'),
+  contrastNodes:(rawResult.audits['color-contrast']?.details?.items||[]).slice(0,10).map(x=>({
+   snippet:x.node?.snippet||null,selector:x.node?.selector||null,
+   label:x.node?.nodeLabel||null,reason:x.explanation||null
+  })),
+  topLongTasks:(rawResult.audits['long-tasks']?.details?.items||[]).slice(0,6).map(x=>({
+   duration:x.duration||null,startTime:x.startTime||null,
+   url:x.url||null
+  })),
   lighthouseVersion:rawResult.lighthouseVersion,
   reportFile:path.relative(root,file),
   statusCode:rawResult.audits['http-status-code']?.displayValue||null
