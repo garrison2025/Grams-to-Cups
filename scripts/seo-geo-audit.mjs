@@ -43,6 +43,7 @@ for(const page of manifest.pages){
   unit=html.includes('100 grams of spoon-and-leveled all-purpose flour is about')&&html.includes(' US cups.');
   excerpt=strip(html.match(/<section class="section section-answer">([\s\S]*?)<\/section>/)?.[1]||'');
   state=html.includes('spoon-and-leveled');
+  assert.ok(html.includes('divide the grams by the ingredient’s grams per US cup'),'Homepage must show the conversion formula');
   assert.ok(sourceVisible,'Homepage answer must show a usable published reference');
   assert.ok(html.includes('The same mass does not correspond to one universal cup amount.'),
    'Homepage must not imply a universal weight-to-volume ratio');

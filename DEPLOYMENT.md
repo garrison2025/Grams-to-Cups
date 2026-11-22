@@ -1,10 +1,10 @@
 # One-time launch and maintenance runbook
 
-This repository was created as a standalone website at the owner's direction. It does **not** write to the unrelated Convert-Units repository and does not assume a purchased custom domain.
+This repository was created as a standalone website at the owner's direction. It does **not** write to the unrelated Convert-Units repository and deploys to `https://gramstocupscalculator.com`.
 
 ## Independent-site final decision (supersedes the older integration plan)
 
-Repository: `garrison2025/Grams-to-Cups`. **No public production hostname has been confirmed.** This is a standalone website; the previous Convert-Units repository and its production domain are **not** a deployment target. The builder explicitly refuses that project's legacy hostname or any subdomain of it, including if a test CI flag is set. Never write another project's domain as this site's canonical host.
+Repository: `garrison2025/Grams-to-Cups`. **Production origin:** `https://gramstocupscalculator.com`. **Contact:** `contact@gramstocupscalculator.com`. This is a standalone website; the previous Convert-Units repository and its production domain are **not** a deployment target. The builder explicitly refuses that project's legacy hostname or any subdomain of it, including if a test CI flag is set. Never write another project's domain as this site's canonical host.
 
 **Final source-limited SEO publication policy:** 81 functional URLs, 62 index-eligible, 19 noindex; the original 76 candidate routes have 58 eligible and 18 noindex entries. The 21 originally pending editorial cases were individually decided in `research/seo-21-editorial-decisions.json`. Three remain functional but are noindex: `/cooking/tablespoons-to-grams/` (plan KD31), `/cooking/ingredients/almond-flour/` (specific toasted state does not support broad search phrasing), and `/cooking/ingredients/water/` (plan KD47). All other reviewed cases have distinct user value and available competitor-page or navigational evidence; no ranking outcome is guaranteed.
 
@@ -15,9 +15,9 @@ Repository: `garrison2025/Grams-to-Cups`. **No public production hostname has be
 1. Workers & Pages → Create application → Pages → Connect to Git → select `garrison2025/Grams-to-Cups`.
 2. Production branch `main`; Framework preset **None**; Build command `npm run build`; Output directory `dist`; Node runtime **22+**.
 3. Deploy once with indexing disabled. Page functions, navigation, source citations, recipe scaling, search, mobile layout and 404 must be checked at the actual preview URL.
-4. Choose the actual stable public hostname (your verified custom domain or stable project.pages.dev). Set `SITE_URL=https://YOUR-EXACT-HOST` in Cloudflare Pages production **build-time environment variables** (no trailing slash or path). Do not use a transient hash deployment URL. Use the hostname that resolves live content.
+4. The main-branch build uses `https://gramstocupscalculator.com` by default. If `SITE_URL` is set explicitly in Cloudflare Pages production, set it to the same origin (without a path).
 5. Verify all canonical destination URLs resolve at that hostname. Verify 404, robots.txt, no console errors, static assets, reference claims, accessible mobile calculation, ingredient search and the output from `npm run build`.
-6. Only after all checks, set `PUBLIC_INDEX_APPROVED=true` for the production environment and redeploy `main`. Cloudflare injects `CF_PAGES_BRANCH`; don't set it manually in dashboard.
+6. Main-branch builds publish the approved URLs by default. Set `PUBLIC_INDEX_APPROVED=false` in the Pages production environment and rebuild if an emergency requires temporary noindex. Cloudflare supplies `CF_PAGES_BRANCH`.
 7. Confirm production `/sitemap.xml` exists, URLs use `SITE_URL`, all index-eligible pages carry canonical/index, and excluded candidates remain noindex. Submit sitemap to Google Search Console only when the site is verified.
 8. There are 81 generated HTML pages total: 77 Cooking routes and 4 site/core/legal routes. The 19 final noindex routes still function but are excluded from sitemap.
 
@@ -25,16 +25,16 @@ Cloudflare previews should remain noindex. This is intentional, not a reason to 
 
 ## Mandatory publication safety and exact-host live check
 
-- Before approving indexing, configure the real `SITE_URL`. If `PUBLIC_INDEX_APPROVED=true` on `main` but the URL is missing, invalid or a placeholder, the build **fails closed**, rather than publishing incorrect canonical URLs. The CI-only `example.com` simulation is not an accepted real production host.
+- The builder only accepts `https://gramstocupscalculator.com` for production canonical URLs. The GitHub CI fixture is scoped to the test environment. The Pages alias has a host-scoped noindex header.
 - `scripts/publication-audit.mjs` checks all 81 rendered pages (one H1, unique titles/descriptions, expected robots, exactly matching canonical/OG/JSON-LD, first-party CSS/JS), plus preview response-header policy and the exact 62-entry sitemap in approved simulation.
 - For the deployed site, use **GitHub → Actions → Live Cloudflare Pages release verification → Run workflow**. Enter the exact final HTTPS origin; select `false` while testing a noindex preview, and `true` only after production indexing is approved. This checks real HTTP responses for selected key pages, missing URLs, first-party assets, `_headers`, `robots.txt` and the sitemap.
 - On Windows PowerShell, the equivalent one-shot command is:
   ```powershell
-  $env:LIVE_SITE_URL="https://YOUR-REAL-HOST"
-  $env:LIVE_EXPECT_INDEX="false"
+  $env:LIVE_SITE_URL="https://gramstocupscalculator.com"
+  $env:LIVE_EXPECT_INDEX="true"
   npm run smoke:live
   ```
-  Change to `true` only when the production approval step is complete. Never use a placeholder as an actual hostname.
+  Set `false` when testing a branch preview.
 - A successful GitHub **build** is not proof of Cloudflare deployment, Google indexing, Lighthouse performance or AdSense approval. A green live-smoke check only proves the tested URLs and headers at the time of execution; Google Search Console and performance still require separate verification.
 - `src/seo-evidence.mjs` prevents empty/missing Semrush KD from being interpreted as KD0 and safely quotes third-party CSV text to neutralize spreadsheet formula injection. Source `research/semrush-us-2300-sample.csv` remains unchanged.
 
@@ -46,7 +46,7 @@ The recipe scaler must correctly handle 1 ¹⁄₂ cups, 1½ cups, 1–2 cups an
 
 Water is a special explicitly labeled choice: the documented recipe chart uses 227 g / US cup; a separate approximate physical-capacity mode uses about 1 g / mL. The latter may vary with temperature and **must not be described as the chart's published grams-per-cup reference**. Verify the mode in the result, copied text, shareable link, printed water page and all-food chart/CSV. Other food densities must remain tied to their documented state and published references.
 
-The latest code remains in the same open PR. Complete the prelaunch Node/Chromium/Lighthouse and production-domain HTTP/SEO checks before approving `main` publication or any Google indexing.
+Run the Node, Chromium, Lighthouse and production HTTP checks for releases that affect rendering or indexing.
 
 ## Mobile Lighthouse release acceptance
 

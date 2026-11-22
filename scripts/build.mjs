@@ -28,13 +28,15 @@ const reservedHost=hostname==='localhost'||hostname==='127.0.0.1'||hostname==='0
 if(releaseRequested&&!origin)throw new Error('Production publication requested but SITE_URL is missing or invalid. Set the exact stable HTTPS host.');
 const approvedCiFixture=process.env.CI==='true'&&process.env.SITE_URL_FIXTURE_APPROVED_FOR_CI==='true'&&hostname==='example.com';
 if(releaseRequested&&reservedHost&&!approvedCiFixture)throw new Error('Production SITE_URL cannot be a placeholder or local/test domain. Set your verified public hostname.');
-if(releaseRequested&&hostname!=='gramstocupscalculator.com'&&!approvedCiFixture)
+if(releaseRequested&&origin!==productionOrigin&&!approvedCiFixture)
  throw new Error('Production must publish with canonical https://gramstocupscalculator.com (or the explicit approved CI fixture).');
 const publicIndex=releaseRequested&&!!origin;
 const pages=[],e=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
 const primaryUrl=url=>url==='/cooking/grams-to-cups/'?'/':url;
 const f=n=>formatAmount(n,3),link=(url,label,cls='')=>'<a href="'+e(primaryUrl(url))+'"'+(cls?' class="'+e(cls)+'"':'')+'>'+e(label)+'</a>';
 const source='https://www.kingarthurbaking.com/learn/ingredient-weight-chart';
+const volumeSource='https://nvlpubs.nist.gov/nistpubs/Legacy/LC/nbslettercircular1098.pdf';
+const contactEmail='contact@gramstocupscalculator.com';
 const numberValues=[25,30,50,60,75,80,100,125,150,180,200,225,250,300,350,400,450,500,600,750,1000];
 // Same search intent as the homepage: keep the tool usable but direct internal SEO links to /.
 const noIndexCandidatePaths=new Set(['/cooking/grams-to-cups/','/cooking/grams-to-cups/1000-grams-to-cups/','/cooking/cups-to-fluid-ounces/','/cooking/fluid-ounces-to-cups/','/cooking/recipe-scaler/','/cooking/ingredients/whole-wheat-flour/','/cooking/ingredients/coconut-flour/','/cooking/ingredients/gluten-free-flour/','/cooking/ingredients/brown-rice-cooked/','/cooking/ingredients/maple-syrup/','/cooking/ingredients/olive-oil/','/cooking/ingredients/cornstarch/','/cooking/ingredients/pumpkin-puree/','/cooking/ingredients/walnuts-chopped/','/cooking/guides/measuring-flour/','/cooking/batch-converter/']);
@@ -78,7 +80,8 @@ function doc(spec){
  const eligible=index&&!noIndexCandidatePaths.has(url);
  const permitted=publicIndex&&eligible;
  const pageTitle=title+' | Grams & Cups';
- const crumbs=[{name:'Home',item:origin+'/'},...bread.map(x=>({name:x[0],item:origin+(x[1]||url)}))];
+ const crumbs=[{name:'Home',item:origin+'/'},...bread.filter(x=>!x[1]||primaryUrl(x[1])!=='/')
+  .map(x=>({name:x[0],item:origin+(x[1]||url)}))];
  // The visible source-linked answer is the basis of the citation. Avoid false
  // Recipe, FAQ rich-result, Review or organization claims for a calculator.
  const sourceReferenced=url==='/'||
@@ -91,6 +94,7 @@ function doc(spec){
   name:pageTitle,url:canonical,description,inLanguage:'en',
   isPartOf:{'@id':websiteId}};
  if(kind==='WebApplication')webpage.mainEntity={'@id':appId};
+ if(url==='/cooking/sources-and-methods/')webpage.citation=[source,volumeSource];
  if(sourceReferenced){
   webpage.citation=source;
   webpage.about={'@type':'Thing',name:title};
@@ -108,6 +112,7 @@ function doc(spec){
  const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f8f7f2">'+
  '<meta name="description" content="'+e(description)+'"><meta name="robots" content="'+(permitted?'index,follow':'noindex,follow')+'">'+
  (permitted?'<link rel="canonical" href="'+e(canonical)+'">':'')+'<title>'+e(pageTitle)+'</title>'+
+ (permitted&&url==='/'&&origin===productionOrigin?'<meta name="google-site-verification" content="5U3A9UOS0g5EKSXt9Bc7JcdGziKzL10f2XXB8kPFldk">':'')+
  '<meta property="og:type" content="website"><meta property="og:site_name" content="Grams &amp; Cups"><meta property="og:locale" content="en_US">'+
  '<meta property="og:title" content="'+e(pageTitle)+'"><meta property="og:description" content="'+e(description)+'">'+
  '<meta name="twitter:card" content="summary"><meta name="twitter:title" content="'+e(pageTitle)+'"><meta name="twitter:description" content="'+e(description)+'">'+
@@ -283,10 +288,11 @@ function home(){
  '</div></div></section>';
  const hero='<div class="container hero"><div class="hero-copy">'+
  '<h1 class="hero-heading">Grams to <em>cups.</em></h1>'+
- '<p class="lede">Choose an ingredient to convert by weight and see how to measure it.</p>'+
+ '<p class="lede">Convert grams to US or metric cups for '+data.length+' ingredients, from all-purpose flour to sugar and butter.</p>'+
  '</div>'+converterForm({})+'</div>';
  const homeAnswer='<section class="section section-answer"><div class="container"><div class="panel"><h2>How many cups is 100 grams?</h2>'+
  '<p><strong>100 grams of spoon-and-leveled all-purpose flour is about '+e(flour100)+' US cups.</strong> The referenced flour measure is 120 g per US cup. By comparison, 100 g of granulated sugar is about '+e(sugar100)+' US cups using its 198 g per US cup reference. The same mass does not correspond to one universal cup amount.</p>'+
+ '<p><strong>To convert grams to US cups, divide the grams by the ingredient’s grams per US cup.</strong> For example, 100 ÷ 120 ≈ '+e(flour100)+' US cups of all-purpose flour.</p>'+
  '<p>Choose the correct ingredient and food state above, and select US (236.588 mL) or metric (250 mL) cups. Values are scaled from the '+link(source,'published ingredient weight chart')+'; for precise baking, use the gram weight stated in the recipe. '+link('/cooking/sources-and-methods/','Read our calculation method')+'. For step-by-step examples, open '+link('/cooking/ingredients/all-purpose-flour/100-grams-to-cups/','100 g all-purpose flour to cups')+' or '+link('/cooking/ingredients/granulated-sugar/100-grams-to-cups/','100 g granulated sugar to cups')+'.</p></div></div></section>';
  const body=hero+homeAnswer+strip+
  section('Explore by ingredient','Flour, sugar, butter and more — choose the exact food before converting by volume.',grid(ingredientList.slice(0,8),4),true)+
@@ -302,7 +308,7 @@ function home(){
  ['/cooking/','All cooking tools','Browse our full collection of practical converters']
  ]))+
  section('Start with a familiar number','Look up ingredient-by-ingredient conversions without treating every food as flour.',grid(numberList.filter((_,i)=>[2,6,8,10,12,13].includes(i))),true);
- doc({url:'/',title:'Grams to Cups Converter — Accurate Ingredient-Based Cooking Measurements',description:'Convert grams to cups and cups to grams with source-backed ingredient weights, instant live answers, recipe scaler and printable kitchen charts.',body,kind:'WebApplication'});
+ doc({url:'/',title:'Grams to Cups Calculator',description:'Convert grams to US or metric cups for '+data.length+' ingredients, including flour, sugar and butter. Get measuring fractions and see the source for each weight.',body,kind:'WebApplication'});
 }
 
 function hub(){
@@ -317,6 +323,8 @@ function toolPage(t){
  const [slug,title,from,to,amount,type]=t,ingredient='all-purpose-flour';
  const needsIngredient=type==='ingredient';
  const value=convertQuantity(amount,from,to,{ingredient:byId.get(ingredient)});
+ const example=f(amount)+' '+unitDescription(from)+' ≈ '+f(value)+' '+unitDescription(to);
+ const metaDescription=example+(needsIngredient?' for spooned-and-leveled all-purpose flour. Select an ingredient to convert using its published weight.':' using US customary units. Use the calculator to convert your own cooking measurements.');
  const description=needsIngredient?'Mass-to-volume results change with food and measuring method. Select flour, sugar, butter or another referenced ingredient.':'These are fixed US kitchen-volume relationships. The ingredient selector matters only when you mix mass and volume units.';
  const body=intro(title+' Converter',description)+
  '<section class="section"><div class="container content-grid"><div>'+converterForm({amount,from,to,heading:title})+
@@ -325,7 +333,7 @@ function toolPage(t){
  '<div class="inline-note">A mass ounce (oz) and a US fluid ounce (fl oz) are different quantities. This tool keeps their units distinct.</div></div></div>'+
  '<aside class="panel side-panel"><h3>Reference values</h3><p>1 US cup = '+e(f(US_CUP_ML))+' mL<br>1 metric cup = '+METRIC_CUP_ML+' mL<br>1 US tbsp = '+e(f(US_TBSP_ML))+' mL<br>1 US cup = 8 US fl oz</p><p>'+link('/cooking/sources-and-methods/','See methods and sources')+'</p></aside></div></section>'+
  section('Related converters','Switch direction or browse a related kitchen measurement.',grid(hubList.filter(x=>x[0]!=='/cooking/'+slug+'/').slice(0,6)),true);
- doc({url:'/cooking/'+slug+'/',title:title+' — Free Cooking Calculator',description:'Convert '+title.toLowerCase()+' with clear US or metric units, documented food weights when needed and a free interactive calculator.',body,bread:[['Cooking','/cooking/'],[title,null]],kind:'WebApplication'});
+ doc({url:'/cooking/'+slug+'/',title:slug==='grams-to-cups'?'Grams to Cups — Legacy Converter':title+' Calculator',description:metaDescription,body,bread:[['Cooking','/cooking/'],[title,null]],kind:'WebApplication'});
 }
 function measureReferenceDifference(plan){
  if(!plan)return 'No practical combination; use a kitchen scale';
@@ -371,7 +379,7 @@ function numberPage(n){
  (flourNumbers.includes(n)?link('/cooking/ingredients/all-purpose-flour/'+n+'-grams-to-cups/',n+' g flour','chip'):'')+
  (sugarNumbers.includes(n)?link('/cooking/ingredients/granulated-sugar/'+n+'-grams-to-cups/',n+' g sugar','chip'):'')+'</div>':'')+
  '</aside></div></section>';
- doc({url:'/cooking/grams-to-cups/'+n+'-grams-to-cups/',title:n+' Grams to Cups — '+data.length+' Ingredient Comparison',description:'See '+n+' grams in US cups across 27 ingredient states, including flour, sugar and butter, using documented weights and a free interactive converter.',body,bread:[['Cooking','/cooking/'],['Grams to cups','/cooking/grams-to-cups/'],[n+' grams',null]],kind:'WebApplication'});
+ doc({url:'/cooking/grams-to-cups/'+n+'-grams-to-cups/',title:n+' Grams to Cups for Flour, Sugar & More',description:n+' g of all-purpose flour is about '+f(answer.cups)+' US cups. Compare sugar, butter and '+(data.length-3)+' other ingredients, with US and metric cup options.',body,bread:[['Cooking','/cooking/'],['Grams to cups','/cooking/grams-to-cups/'],[n+' grams',null]],kind:'WebApplication'});
 }
 function ingredientPage(i){
  const preview=convertQuantity(100,'g','cup',{ingredient:i});
@@ -402,7 +410,7 @@ function ingredientPage(i){
  '<p class="source-chip">Original published entry: <strong>'+e(i.sourceEntry)+'</strong> · '+link(i.sourceUrl,i.sourceName)+' · reference checked '+e(i.reviewedAt)+'. These cooking reference weights are approximate.</p></div></div>'+
  '<aside class="panel side-panel"><h3>Measurement context</h3><p><b>Food state:</b> '+e(i.state)+'</p><p><b>Method:</b> '+e(i.method)+'</p><p>'+e(i.note)+'</p><div class="inline-note">For repeatable baking, follow the weight written in your recipe and use a scale if available.</div>'+link('/cooking/sources-and-methods/','About the data')+'</aside></div></section>'+
  section('Related ingredients','Compare volume with foods that have different weights per cup.',grid(ingredientList.filter(x=>x[0]!=='/cooking/ingredients/'+i.id+'/').slice(0,6)),true);
- doc({url:'/cooking/ingredients/'+i.id+'/',title:i.name+' Grams to Cups & Weight Chart',description:'Convert '+i.name.toLowerCase()+' between grams and US or metric cups using a cited weight chart, measuring notes and practical quantities.',body,bread:[['Cooking','/cooking/'],[i.name,null]],kind:'WebApplication'});
+ doc({url:'/cooking/ingredients/'+i.id+'/',title:i.name+' Grams to Cups & Weight Chart',description:'One US cup of '+i.name.toLowerCase()+' weighs about '+f(convertQuantity(1,'cup','g',{ingredient:i}))+' g. Convert grams and US or metric cups with a cited weight chart.',body,bread:[['Cooking','/cooking/'],[i.name,null]],kind:'WebApplication'});
 }
 function ingredientNumberPage(i,n){
  const result=answerFor(n,i.id),cups=result.cups;
@@ -414,7 +422,7 @@ function ingredientNumberPage(i,n){
  table(['Cup measure','Approximate weight','Difference from '+n+' g'],fractions.map(c=>{const g=convertQuantity(c,'cup','g',{ingredient:i});return [f(c)+' US cup',f(g)+' g',f(Math.abs(g-n))+' g '+(g>=n?'over':'under')]}))+
  '<p>'+e(i.note)+' Source: '+link(i.sourceUrl,i.sourceName)+'.</p></div></div><aside class="panel side-panel"><h3>More about '+e(i.name)+'</h3>'+
  link('/cooking/ingredients/'+i.id+'/','Ingredient reference')+link('/cooking/grams-to-cups/'+n+'-grams-to-cups/','Compare '+n+' g across foods')+link('/cooking/guides/measuring-flour/','Measuring technique')+'</aside></div></section>';
- doc({url:'/cooking/ingredients/'+i.id+'/'+n+'-grams-to-cups/',title:n+' Grams '+i.name+' to Cups — Measured Reference',description:'Convert '+n+' g of '+i.name.toLowerCase()+' to cups using the documented measuring method, compare cup fractions and check the source.',body,bread:[['Cooking','/cooking/'],[i.name,'/cooking/ingredients/'+i.id+'/'],[n+' grams',null]],kind:'WebApplication'});
+ doc({url:'/cooking/ingredients/'+i.id+'/'+n+'-grams-to-cups/',title:n+' Grams of '+i.name+' to Cups',description:n+' g of '+i.name.toLowerCase()+' is about '+f(cups)+' US cups. See the metric cup equivalent, measuring method and closest common cup portions.',body,bread:[['Cooking','/cooking/'],[i.name,'/cooking/ingredients/'+i.id+'/'],[n+' grams',null]],kind:'WebApplication'});
 }
 function chartPage(type){
  const chosen=type==='flour'?data.filter(i=>/flour/.test(i.id)):type==='sugar'?data.filter(i=>/sugar/.test(i.id)):data;
@@ -532,20 +540,21 @@ function halfPage(){
 function methodology(){
  const body=intro('Sources, Methods and Measurement Limitations','We make our recipe references transparent. Mass-to-volume estimates require a defined food, state, measuring method and cup standard.')+
  '<section class="section"><div class="container content-grid"><div><div class="panel"><h2>Primary reference</h2><p>'+link(source,'King Arthur Baking Ingredient Weight Chart')+' provides the published ingredient measurement pairs used in our '+data.length+'-item reference set. We store the original number of grams and the original volume per ingredient, and compute other quantities from those values.</p>'+
- '<h2>How cups are calculated</h2><p>When a source gives a weight per cup, grams-to-cups is grams divided by that weight. For a half-cup or tablespoon source, we first convert its original volume to US milliliters and calculate a per-volume reference ratio.</p>'+
- '<p><strong>US customary cup:</strong> '+US_CUP_ML+' mL. <strong>Metric cup:</strong> '+METRIC_CUP_ML+' mL. <strong>US tablespoon:</strong> '+US_TBSP_ML+' mL. Metric cup baking weights are proportional estimates from US recipe references, not separate experimental measurements.</p>'+
+ '<h2>How to convert grams to cups</h2><ol><li>Find the published weight for the specific ingredient and how it was measured.</li><li>Express that weight per US cup. Double a half-cup weight, or multiply a tablespoon weight by 16.</li><li>For US cups, divide the grams by the resulting grams per cup. For metric cups, multiply the US cup result by '+f(US_CUP_ML)+' ÷ '+METRIC_CUP_ML+'.</li></ol>'+
+ '<p><strong>Example:</strong> '+e(byId.get('all-purpose-flour').referenceGrams)+' g of spoon-and-leveled all-purpose flour is 1 US cup, or about '+f(US_CUP_ML/METRIC_CUP_ML)+' metric cups. To convert cups back to grams, multiply by the grams per cup for the chosen cup standard.</p>'+
+ '<p><strong>US customary cup:</strong> '+US_CUP_ML+' mL. <strong>Metric cup:</strong> '+METRIC_CUP_ML+' mL. <strong>US tablespoon:</strong> '+US_TBSP_ML+' mL. Metric cup baking weights are scaled from US recipe references. For the US customary cup, see the volume conversion table in '+link(volumeSource,'NIST Letter Circular 1098')+'.</p>'+
  '<h2>Important limitations</h2><p>Recipe chart weights are not necessarily physical density at a specified temperature. For example, the cited chart assigns 227 g per cup to water while a physical 236.588 mL cup of water weighs about 236.6 g near ordinary room conditions. We explicitly label the former as a recipe-reference value.</p>'+
  '<p>Packed brown sugar, unsifted confectioners sugar, and uncooked rice are distinct states. We do not apply one state’s weight to another. For repeatability, use the weight printed in the original recipe and prefer a scale.</p>'+
  '<h2>How to verify a quoted conversion</h2><p>A complete cooking answer needs the ingredient, food state, cup standard, source weight, and measurement method. For example, 100 g of spooned-and-leveled all-purpose flour is about '+e(f(convertQuantity(100,'g','cup',{ingredient:byId.get('all-purpose-flour')})))+' US cups: 100 g divided by 120 g per US cup. The same 100 g is about '+e(f(convertQuantity(100,'g','cup',{ingredient:byId.get('all-purpose-flour'),standard:'metric'})))+' metric cups using a 250 mL metric cup. The source is '+link(source,'King Arthur Baking’s Ingredient Weight Chart')+', not an independent measurement made by this website.</p>'+
  '<p>We report the date on which our reference entries were checked, not a claim that the publisher updated its chart on that date. Rounded display values are estimates. Do not cite a result without its food state or infer that sugar, rice, oil, or water shares flour’s grams-per-cup value. '+link('/contact/','Report a questionable value')+'.</p>'+
- '<h2>Source entries used by this website</h2><p>The table below reproduces the identifying entry names and original measurement pairs used for each ingredient. These are the specific published references, not universal averages across brands or food states.</p>'+ table(['Our ingredient','Original chart entry','Original weight / volume','Measurement condition'],data.map(i=>[i.name,i.sourceEntry,f(i.referenceGrams)+' g / '+f(i.referenceAmount)+' '+(i.referenceUnit==='tablespoon'?'US tablespoon':'US cup'),i.method]))+ '<p class="source-chip">Source checked '+e(data[0].reviewedAt)+': '+link(source,'King Arthur Baking Ingredient Weight Chart')+'. Review the original source when applying measurements to another brand or recipe.</p>'+ '<h2>Corrections and privacy</h2><p>All calculations are local in the browser. We do not collect the recipe lines typed into the scaler. If a reference changes, the source and review date in the data file must be updated with a matching test.</p></div></div>'+
+ '<h2>Source entries used by this website</h2><p>The table below reproduces the identifying entry names and original measurement pairs used for each ingredient. These are the specific published references, not universal averages across brands or food states.</p>'+ table(['Our ingredient','Original chart entry','Original weight / volume','Measurement condition'],data.map(i=>[i.name,i.sourceEntry,f(i.referenceGrams)+' g / '+f(i.referenceAmount)+' '+(i.referenceUnit==='tablespoon'?'US tablespoon':'US cup'),i.method]))+ '<p class="source-chip">Source checked '+e(data[0].reviewedAt)+': '+link(source,'King Arthur Baking Ingredient Weight Chart')+'. Review the original source when applying measurements to another brand or recipe.</p>'+ '<h2>Corrections and privacy</h2><p>All calculations are local in the browser. We do not collect the recipe lines typed into the scaler. If an ingredient weight looks wrong, '+link('/contact/','send a correction')+' with the food, quantity, cup standard and a published source if available.</p></div></div>'+
  '<aside class="panel side-panel"><h3>Browse referenced foods</h3>'+data.slice(0,9).map(i=>link('/cooking/ingredients/'+i.id+'/',i.name)).join('')+'</aside></div></section>';
  doc({url:'/cooking/sources-and-methods/',title:'Ingredient Weight Sources and Conversion Methodology',description:'Learn how grams to cups estimates use cited ingredient weights, US and metric cup sizes, measurement states and clear uncertainty notes.',body,bread:[['Cooking','/cooking/'],['Sources and methods',null]]});
 }
 function infoPage(slug,title,bodyText){
  const body=intro(title,bodyText)+
  '<section class="section"><div class="container"><div class="panel"><h2>Helpful information</h2><p>'+e(bodyText)+'</p><p>Our calculators use cited ingredient weights, local JavaScript calculations and no account system. The source measurements and conversion methodology are disclosed on '+link('/cooking/sources-and-methods/','the methodology page')+'.</p>'+
- (slug==='contact'?'<p>Email: <a href="mailto:contact@gramstocupscalculator.com">contact@gramstocupscalculator.com</a>. To report a measurement correction, include the ingredient, the original quantity, what you expected, and the source reference if available.</p><p>Or use the public issue tracker: '+link('https://github.com/garrison2025/Grams-to-Cups/issues','Grams-to-Cups GitHub issues')+'. Do not post personal or private information in public issues.</p>':'')+
+ (slug==='contact'?'<p>Email <!--email_off-->'+link('mailto:'+contactEmail,contactEmail)+'<!--/email_off--> with the ingredient, quantity and selected cup standard. Include the result you expected and a published reference if you have one.</p><p>For a public bug report, use '+link('https://github.com/garrison2025/Grams-to-Cups/issues','Grams-to-Cups GitHub issues')+'. Keep private details in email.</p>':'')+
  (slug==='privacy'?'<p>The conversion inputs and recipe scaler remain in the browser. We do not add analytics, advertising scripts, trackers, logins or cloud storage in this release. A future advertising integration would require updating this policy and any legally required consent controls before it is enabled.</p>':'')+'</div></div></section>';
  doc({url:'/'+slug+'/',title,description:bodyText.slice(0,155),body,bread:[[title,null]]});
 }
@@ -561,7 +570,7 @@ for(const guide of ['measuring-flour','cup-sizes','measuring-odd-cups'])guidePag
 methodology();
 infoPage('about','About Grams & Cups','Grams & Cups is a free, independent kitchen measurement reference that helps home bakers use grams, cups and spoon measurements more carefully.');
 infoPage('privacy','Privacy Policy','We aim to minimize data collection. The calculator and recipe scaler are local-first browser tools; there is no account, analytics platform or ad network in the current code.');
-infoPage('contact','Contact and Corrections','Contact Grams & Cups at contact@gramstocupscalculator.com to report ingredient-weight corrections, calculation questions or broken conversions.');
+infoPage('contact','Contact and Corrections','Ask a question about a conversion, report a bug, or suggest a correction to a published ingredient weight.');
 writeFile('404.html','<!doctype html><html lang="en"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page not found | Grams & Cups</title><link rel="stylesheet" href="/assets/styles.css"><main class="container section"><h1>Page not found</h1><p>That page does not exist. Try the conversion tools or the ingredient directory.</p>'+link('/cooking/','Browse cooking tools','btn btn-primary')+'</main></html>');
 writeFile('favicon.svg','<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#122e27"/><path d="M18 20h28l-4 26H22z" fill="none" stroke="#eaf2ad" stroke-width="4" stroke-linejoin="round"/><path d="M21 29h22M24 38h16" stroke="#f8f7f2" stroke-width="3" stroke-linecap="round"/></svg>');
 for(const [src,dst] of [['public/styles.css','assets/styles.css'],['public/app.js','assets/app.js'],['src/core.mjs','assets/core.mjs'],['src/ingredients.json','assets/ingredients.json']]){const out=path.join(dist,dst);fs.mkdirSync(path.dirname(out),{recursive:true});fs.copyFileSync(path.join(root,src),out);}

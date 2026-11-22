@@ -19,7 +19,7 @@ A complete, browser-local, source-backed cooking conversion website. **One imple
 - **Recipe scaler:** standard Unicode fractions (e.g. `½`, `1½`) plus superscript/subscript recipes (e.g. `1 ¹⁄₂`) are normalized before parsing. A plain quantity or two-ended interval such as `1–2 cups milk` or `1½–3 cups flour` scales the **entire interval**, not only the first number. Unexpected glyphs, multiple quantities separated by commas/semicolons (including `1 cup milk, 2 eggs`), cooking times/temperatures (including `15 minutes`, `350°F`), descending/ambiguous ranges, malformed decimals and complex expressions are preserved verbatim and marked `[check manually]`; they never silently produce a partial scaled value. Safe preparation notes like `1 cup flour, sifted` and a single `2 eggs` still scale normally.
 - **Three printable charts:** the all-ingredient, flour and sugar chart pages share selectable **US cups (236.588 mL)** and **metric cups (250 mL)**, a validated custom portion (including fractions like `1/3`), and static default values for visitors without JavaScript. The chart recalculates a single visible table; the current selected rows, headers and grams are the **same data** exported to CSV and printed. Invalid quantities disable both actions until corrected. Mobile tables remain keyboard scrollable.
 - **Water:** the cited King Arthur recipe table's `227 g / US cup` entry is kept unmodified and explicitly named **recipe reference**. A separate `capacity` choice computes water at **approximately 1 g/mL**, meaning `236.588 g` per US cup and `250 g` per metric cup at that approximation; this is not a second King Arthur weight and varies with temperature. The water ingredient page, live result, copy/share and the all-food chart/CSV explicitly show which mode is in use. No physical-density mode is offered for other ingredients.
-- **Release safety:** after these changes, source audits, Chromium workflow and mobile Lighthouse are still required. The independent site's real production hostname is not yet confirmed, so this does not authorize public indexing or deployment.
+- **Release safety:** after these changes, source audits, Chromium workflow and mobile Lighthouse are still required. The production origin is `https://gramstocupscalculator.com`; local and branch-preview builds remain noindex.
 
 ## Mobile reading and ingredient card design
 
@@ -49,15 +49,15 @@ GitHub Actions runs both a safe preview build and a simulated approved productio
 
 ## Independent site identity — final architecture
 
-This is **only** `garrison2025/Grams-to-Cups`, an independent website, not a page set in the older Convert-Units project. The **actual public domain has not been confirmed**. The builder refuses to publish with a different project's former domain, including subdomains, even if CI is enabled. Never infer production `SITE_URL` from the archived plan or from a temporary preview host. The canonical search-intent URL for the independent site is `/`.
+This is **only** `garrison2025/Grams-to-Cups`, an independent website, not a page set in the older Convert-Units project. The site publishes at **`https://gramstocupscalculator.com`**. The builder refuses to publish with a different project's former domain, including subdomains, even if CI is enabled. Never infer production `SITE_URL` from the archived plan or from a temporary preview host. The canonical search-intent URL for the independent site is `/`.
 
 The 21 formerly unresolved SEO decisions have now been completed on the basis of the supplied partial Semrush exports, specific ingredient source states, observed competitor pages, and useful distinct functions. The final index policy is **62 eligible pages, 19 useful noindex pages**. This is a publishing decision, not a claim of Google indexation or growth. See [research/seo-21-editorial-decisions.json](research/seo-21-editorial-decisions.json).
 
 ## One-time public release verification
 
 - `npm run build` now includes a strict **publication audit** checking 81 individual pages, metadata, canonical, JSON-LD, robots, privacy headers, the exact 62-entry production sitemap, and unexpected third-party JS/CSS.
-- A missing `SITE_URL`, or a placeholder hostname such as `example.com`, blocks an explicitly approved production build. `example.com` is permitted **only inside GitHub CI simulation** with the explicitly scoped `SITE_URL_FIXTURE_APPROVED_FOR_CI=true` test flag; `CI=true` by itself does not bypass the production-domain safeguard. **Never set this fixture flag on Cloudflare Pages.**
-- After the real site is deployed, open **GitHub → Actions → Live Cloudflare Pages release verification → Run workflow**. Supply the exact public HTTPS origin and choose whether it is supposed to be indexed. The native Node smoke test checks the live site, not merely the static generator. It has **not** been run for a real host because no deployed URL has been confirmed in this repository.
+- The `main` branch defaults to `https://gramstocupscalculator.com`. An invalid or mismatched production `SITE_URL` blocks an indexable build. `example.com` is permitted **only inside GitHub CI simulation** with the explicitly scoped `SITE_URL_FIXTURE_APPROVED_FOR_CI=true` test flag; `CI=true` by itself does not bypass the production-domain safeguard. **Never set this fixture flag on Cloudflare Pages.**
+- After the real site is deployed, open **GitHub → Actions → Live Cloudflare Pages release verification → Run workflow**. Supply the exact public HTTPS origin and choose whether it is supposed to be indexed. The native Node smoke test checks the live site, not merely the static generator.
 - Alternatively run `npm run smoke:live` with `LIVE_SITE_URL` and `LIVE_EXPECT_INDEX` environment variables. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Lighthouse mobile lab quality gate
@@ -78,10 +78,10 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for exact production settings and QA gates.
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 | Node | 22 or later (20 minimum) |
-| `SITE_URL` | **Verified stable public origin**, e.g. your actual `https://your-domain.example`, without a path |
-| `PUBLIC_INDEX_APPROVED` | Set to `true` **only after** all content and domain checks pass |
+| `SITE_URL` | `https://gramstocupscalculator.com` (default on `main`) |
+| `PUBLIC_INDEX_APPROVED` | Main publishes by default. Set `false` to temporarily disable indexing on the next deployment. |
 
-**Canonical safeguards:** Local and Cloudflare preview builds have `noindex`, with no sitemap. The main branch stays `noindex` until both `SITE_URL` is valid and `PUBLIC_INDEX_APPROVED=true`. The builder will **never infer canonical from CF_PAGES_URL**, which can represent a transient deployment. Do not enable the index gate before the real public hostname is confirmed.
+**Canonical safeguards:** Local and Cloudflare preview builds have `noindex`, with no sitemap. The main branch publishes the approved index set to the exact production origin. Cloudflare’s `CF_PAGES_URL` can represent a transient deployment and is never used as canonical.
 
 ## Search SEO and generative-answer readiness (SEO/GEO)
 
