@@ -101,47 +101,70 @@ export function suggestKitchenMeasures(targetCups,{standard='us',allowSpoons=tru
   {label:'1 US tsp',ml:US_TSP_ML},
   {label:'1/2 US tsp',ml:US_TSP_ML/2}
  );
- // Keep the search constant time even for 10+ cups: optimize the residual.
+ // Most recipes need only a small residual after complete cup fills.
+ // Bounded volume DP merges equivalent fills, rather than enumerating every
+ // 8-measure combination and blocking mobile main-thread interaction.
  const whole=Math.max(0,Math.floor(target)-1);
  const remainingMl=targetMl-whole*mlPerCup;
- let best=null;
- const counts=new Array(parts.length).fill(0);
  const gramsPerCup=ingredient?convertQuantity(1,'cup','g',{ingredient,standard,waterMode}):null;
  const errorTolerance=gramsPerCup===null?.25:Math.min(.25,gramsPerCup*.002);
- function score(){
-  const ml=counts.reduce((sum,c,i)=>sum+c*parts[i].ml,0);
-  const errorMl=Math.abs(ml-remainingMl);
-  const errorGrams=gramsPerCup===null?null:errorMl/mlPerCup*gramsPerCup;
-  const error=errorGrams===null?errorMl:errorGrams;
-  const pours=whole+counts.reduce((a,b)=>a+b,0);
-  if(!pours)return;
-  const steps=counts.map((c,i)=>c?{label:parts[i].label,count:c}:null).filter(Boolean);
-  if(whole){if(steps[0]?.label==='1 cup')steps[0].count+=whole;else steps.unshift({label:'1 cup',count:whole});}
-  const spoons=steps.filter(x=>x.label.includes('tbsp')||x.label.includes('tsp')).reduce((n,x)=>n+x.count,0);
-  // Less than 0.25 gram is operationally indistinguishable from exact
-  // for these cited recipe-chart estimates. Then prefer fewer pours.
-  const grade=[error<=errorTolerance?0:error, pours,spoons,error];
-  if(!best||grade.some((v,i)=>v<best.grade[i]&&grade.slice(0,i).every((p,j)=>p===best.grade[j]))){
-   best={grade,steps,ml:ml+whole*mlPerCup,errorMl};
+ let states=new Map([[0,{ml:0,pours:0,spoons:0,counts:[]}]]);
+ for(let i=0;i<parts.length;i++){
+  const next=new Map();
+  for(const previous of states.values()){
+   const max=Math.max(0,Math.min(i===0?2:3,6-previous.pours,
+    Math.floor((remainingMl-previous.ml)/parts[i].ml)+1));
+   for(let count=0;count<=max;count++){
+    const ml=previous.ml+count*parts[i].ml;
+    // 1e-6 mL quantization merges only physically indistinguishable totals;
+    // results and differences always use the original unrounded mL values.
+    const key=Math.round(ml*1e6);
+    const pours=previous.pours+count;
+    const spoons=previous.spoons+(i>=5?count:0);
+    const existing=next.get(key);
+    if(!existing||pours<existing.pours||
+     (pours===existing.pours&&spoons<existing.spoons)){
+     next.set(key,{ml,pours,spoons,counts:[...previous.counts,count]});
+    }
+   }
+  }
+  states=next;
+ }
+ let best=null;
+ for(const candidate of states.values()){
+  if(!candidate.pours)continue;
+  const errorMl=Math.abs(candidate.ml-remainingMl);
+  const error=gramsPerCup===null?errorMl:errorMl/mlPerCup*gramsPerCup;
+  // Round only for fair tie-breaking (e.g. two +/-5g cup-only
+  // alternatives); exact signed error is retained in the result.
+  const roundedError=Math.round(error*1e7)/1e7;
+  const score=[roundedError<=errorTolerance?0:roundedError,
+   whole+candidate.pours,candidate.spoons,roundedError,
+   candidate.ml>remainingMl?1:0];
+  if(!best||score.some((v,i)=>v<best.score[i]&&
+   score.slice(0,i).every((x,j)=>x===best.score[j]))){
+   best={candidate,score};
   }
  }
- function walk(i,used){
-  if(i===parts.length){score();return;}
-  const max=Math.min(i===0?2:3,6-used,Math.floor(remainingMl/parts[i].ml)+1);
-  for(let count=0;count<=Math.max(0,max);count++){counts[i]=count;walk(i+1,used+count);}
-  counts[i]=0;
+ if(!best)return null;
+ const ml=best.candidate.ml+whole*mlPerCup;
+ const errorMl=Math.abs(ml-targetMl);
+ if(errorMl>Math.max(targetMl*.12,1))return null;
+ const steps=best.candidate.counts.map((count,i)=>
+  count?{label:parts[i].label,count}:null).filter(Boolean);
+ if(whole){
+  if(steps[0]?.label==='1 cup')steps[0].count+=whole;
+  else steps.unshift({label:'1 cup',count:whole});
  }
- walk(0,0);
- if(!best||best.errorMl>Math.max(targetMl*.12,1))return null;
- const diffMl=best.ml-targetMl;
- const diffGrams=gramsPerCup===null?null:diffMl/mlPerCup*gramsPerCup;
+ const differenceMl=ml-targetMl;
+ const differenceGrams=gramsPerCup===null?null:differenceMl/mlPerCup*gramsPerCup;
  return {
-  steps:best.steps,
-  instruction:best.steps.map(p=>(p.count===1?'':p.count+' × ')+p.label).join(' + '),
-  equivalentCups:best.ml/mlPerCup,
-  differenceMl:diffMl,differenceGrams:diffGrams,
-  percentError:100*diffMl/targetMl,
-  approximate:Math.abs(diffGrams===null?diffMl:diffGrams)>errorTolerance,
+  steps,
+  instruction:steps.map(p=>(p.count===1?'':p.count+' × ')+p.label).join(' + '),
+  equivalentCups:ml/mlPerCup,
+  differenceMl,differenceGrams,
+  percentError:100*differenceMl/targetMl,
+  approximate:Math.abs(differenceGrams===null?differenceMl:differenceGrams)>errorTolerance,
   standard
  };
 }

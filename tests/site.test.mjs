@@ -457,6 +457,7 @@ test('each cup suggestion retains its own signed gram error, including less accu
  }
  const onlyCups=suggestKitchenMeasures(50/120,{ingredient:flour,allowSpoons:false});
  assert.ok(Math.abs(onlyCups.differenceGrams)-5<1e-8,'50g cup-only suggestion misses by 5g');
+ assert.ok(onlyCups.differenceGrams<0,'tie-breaker should prefer 45g under-measure over 55g over-measure');
  assert.ok(Math.abs(onlyCups.percentError)<11&&Math.abs(onlyCups.percentError)>9,'50g cup-only option is about 10% off');
  const threeHundred=suggestKitchenMeasures(300/120,{ingredient:flour});
  assert.ok(Math.abs(threeHundred.differenceGrams)<1e-8,'300g flour must not recommend 240g as the primary method');
