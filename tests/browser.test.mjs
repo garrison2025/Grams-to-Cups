@@ -330,6 +330,17 @@ try{
  await page.locator('[data-recipe-lines]').fill('1 cup milk + 2 tbsp cream');
  const compound=(await page.locator('[data-recipe-output]').innerText()).trim();
  assert.ok(compound.includes('1 cup milk + 2 tbsp cream  [check manually]'),'compound quantities must not be only partially scaled');
+ await page.locator('[data-recipe-lines]').fill(
+  '1 cup milk, 2 eggs\n1 cup milk; 2 eggs\n15 minutes\n350°F\n180°C\n2 eggs\n1 cup flour, sifted'
+ );
+ const guarded=(await page.locator('[data-recipe-output]').innerText()).trim();
+ for(const unchanged of ['1 cup milk, 2 eggs','1 cup milk; 2 eggs','15 minutes','350°F','180°C']){
+  assert.ok(guarded.includes(unchanged+'  [check manually]'),
+   'ambiguous ingredient or cooking instruction must stay unchanged and visibly request review: '+unchanged);
+ }
+ assert.ok(guarded.includes('3 eggs'),'single countable ingredients still scale');
+ assert.ok(guarded.includes('1 1/2 cups flour, sifted'),
+  'a harmless preparation note without a second quantity remains valid');
  await page.locator('[data-recipe-lines]').fill('1,000 g flour\n1,5 cups milk');
  const groupedScaled=(await page.locator('[data-recipe-output]').innerText()).trim();
  assert.ok(groupedScaled.includes('1,500 g flour'),'valid grouped recipe quantity scales correctly');
