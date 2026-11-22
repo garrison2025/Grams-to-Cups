@@ -99,7 +99,7 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
  if(rows.length>100)throw new Error('Limit the recipe to 100 lines.');
  const output=rows.map(raw=>{
   if(!raw.trim())return {original:raw,scaled:'',ok:true};
-  const m=normalizeFractionInput(raw).match(/^\s*((?:\d+\s+)?\d+\/\d+|\d+\s?[¼½¾⅓⅔⅛⅜⅝⅞]|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
+  const m=normalizeFractionInput(raw).match(/^\s*((?:\d+\s+)?\d+\/\d+|\d+\s?[¼½¾⅓⅔⅛⅜⅝⅞]|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|(?:(?:US|metric)\s+)?cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
   if(!m)return {original:raw,scaled:raw,ok:false};
   // A range or multi-quantity ingredient line cannot safely scale just the first number.
   // Example: "1 cup milk + 2 tbsp cream" must not become "2 cups milk + 2 tbsp cream".
@@ -111,8 +111,8 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
   try{const scaled=parseAmount(m[1])*factor;if(!Number.isFinite(scaled)||scaled>1e9)throw Error();
   // Scale unit wording as well: 1 cup becomes 2 cups, 2 cups becomes 1 cup.
   const originalUnit=m[2]||'';
-  const unitStem=/^(cups?|tablespoons?|teaspoons?|grams?|ounces?|milliliters?)$/i.test(originalUnit)
-   ?originalUnit.toLowerCase().replace(/s$/,''):null;
+  const unitStem=/^((?:(?:US|metric)\s+)?cups?|tablespoons?|teaspoons?|grams?|ounces?|milliliters?)$/i.test(originalUnit)
+   ?originalUnit.replace(/s$/i,''):null;
   const displayUnit=unitStem?(scaled<=1?unitStem:unitStem+'s'):originalUnit;
   const rest=originalUnit?(m[3]||''):scaledCountableNoun(m[3]||'',scaled);
   const suffix=originalUnit?' '+displayUnit+rest:rest.trim()?' '+rest.trimStart():'';
@@ -198,12 +198,12 @@ export function calculateKitchenFractions(first,operation,second){
 const UNIT_ALIASES=Object.freeze({
  g:'g',gram:'g',grams:'g',kg:'kg',kilogram:'kg',kilograms:'kg',
  oz:'oz',ounce:'oz',ounces:'oz',
- cup:'cup',cups:'cup',tbsp:'tbsp',tablespoon:'tbsp',tablespoons:'tbsp',
+ cup:'cup',cups:'cup','us cup':'cup','us cups':'cup','metric cup':'cup','metric cups':'cup',tbsp:'tbsp',tablespoon:'tbsp',tablespoons:'tbsp',
  tsp:'tsp',teaspoon:'tsp',teaspoons:'tsp',
  ml:'ml',milliliter:'ml',milliliters:'ml',millilitre:'ml',millilitres:'ml',
  'fl oz':'fl-oz','fluid ounce':'fl-oz','fluid ounces':'fl-oz'
 });
-const BATCH_LINE=/^\s*(\d+\s+\d+\/\d+|\d+\s*[¼½¾⅓⅔⅛⅜⅝⅞]|\d+\/\d+|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+)\s*(fluid ounces?|fl\.?\s*oz|millilit(?:er|re)s?|kilograms?|tablespoons?|teaspoons?|ounces?|grams?|cups?|tbsp|tsp|ml|kg|oz|g)\b\s+(.+?)\s*$/i;
+const BATCH_LINE=/^\s*(\d+\s+\d+\/\d+|\d+\s*[¼½¾⅓⅔⅛⅜⅝⅞]|\d+\/\d+|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+)\s*(fluid ounces?|fl\.?\s*oz|millilit(?:er|re)s?|kilograms?|tablespoons?|teaspoons?|ounces?|grams?|(?:US\s+|metric\s+)?cups?|tbsp|tsp|ml|kg|oz|g)\b\s+(.+?)\s*$/i;
 const normalizedName=s=>String(s).toLowerCase().replace(/[-_]+/g,' ').replace(/[’']/g,'').replace(/\s+/g,' ').trim();
 function resolveIngredient(name,ingredients){
  const normalized=normalizedName(name);
@@ -225,17 +225,22 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
   const match=normalizeFractionInput(original).match(BATCH_LINE);
   if(!match)return {index,original,status:'review',output:original,reason:'Use amount + unit + a specific ingredient (e.g., 200 g all-purpose flour).',ingredient:''};
   const [,rawAmount,rawUnit,foodName]=match;
-  const unit=UNIT_ALIASES[rawUnit.toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim()];
+  const cleanedUnit=rawUnit.toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
+  const unit=UNIT_ALIASES[cleanedUnit];
+  // An explicit input cup standard takes precedence over the global result standard.
+  const sourceStandard=cleanedUnit.startsWith('us cup')?'us':cleanedUnit.startsWith('metric cup')?'metric':standard;
   if(!unit)return {index,original,status:'review',output:original,reason:'Unsupported measurement unit.',ingredient:''};
   const food=resolveIngredient(foodName,ingredients);
   if(!food)return {index,original,status:'review',output:original,reason:'Ingredient not matched unambiguously. Use the exact ingredient name listed on the site.',ingredient:foodName.trim()};
   try{
    const amount=parseAmount(rawAmount);
-   const result=convertQuantity(amount,unit,target,{ingredient:food,standard});
+   const result=unit==='cup'&&target==='cup'&&sourceStandard!==standard
+    ?convertQuantity(convertQuantity(amount,'cup','ml',{standard:sourceStandard}),'ml','cup',{standard})
+    :convertQuantity(amount,unit,target,{ingredient:food,standard:unit==='cup'?sourceStandard:standard});
    const quantityUnit=target==='cup'?(standard==='metric'?'metric':'US')+' cup'+(result<=1+1e-10?'':'s'):'g';
    const originalUnit=food.referenceUnit==='cup'?'US cup':food.referenceUnit==='tablespoon'?'US tablespoon':'US teaspoon';
    return {index,original,status:'converted',output:formatKitchenAmount(result,{fractions:fractions&&target==='cup'})+' '+quantityUnit+' '+food.name,
-     amount,result,from:unit,to:target,ingredient:food.name,ingredientId:food.id,reason:'Reference: '+food.referenceGrams+' g / '+food.referenceAmount+' '+originalUnit};
+     amount,result,from:unit,to:target,sourceStandard:unit==='cup'?sourceStandard:null,ingredient:food.name,ingredientId:food.id,reason:'Reference: '+food.referenceGrams+' g / '+food.referenceAmount+' '+originalUnit};
   }catch(error){
    return {index,original,status:'review',output:original,reason:error.message,ingredient:food.name};
   }
