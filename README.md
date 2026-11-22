@@ -6,10 +6,11 @@ A complete, browser-local, source-backed cooking conversion website. **One imple
 
 ## Finished functional scope
 
-- **13 Cooking tools:** grams ↔ cups, grams ↔ tablespoons, cups ↔ tablespoons, mL ↔ US tablespoons, US tablespoons ↔ mL, US cups ↔ US fluid ounces, US fluid ounces ↔ US cups, half-measurement fraction calculator and recipe scaler. The main converter also supports teaspoons, mass ounces, kilograms and milliliters via unit selection.
+- **14 Cooking tools:** grams ↔ cups, grams ↔ tablespoons, cups ↔ tablespoons, mL ↔ US tablespoons, US tablespoons ↔ mL, US cups ↔ US fluid ounces, US fluid ounces ↔ US cups, half-measurement fraction calculator, recipe scaler and the multiline ingredient batch converter. The main converter also supports teaspoons, mass ounces, kilograms and milliliters via unit selection.
 - **24 documented ingredients**, each including original measurement, quantity, state, method, source URL, review date and limitation. The data are recipe-chart estimates, **not physical density constants**.
-- **21 numerical comparison pages**, **24 ingredient-specific pages**, **10 ingredient+number pages**, 3 printable chart pages, 3 measuring guides, source methodology and cooking hub; **76 Cooking routes**, plus independent homepage and About/Privacy/Contact (80 static HTML pages).
-- Free calculator with mixed-number fraction input, US and metric cup standards, swap/reset/copy/share/print, URL-state sharing, ingredient search, recipe serving scaling and safe CSV export.
+- **21 numerical comparison pages**, **24 ingredient-specific pages**, **10 ingredient+number pages**, 3 printable chart pages, 3 measuring guides, source methodology and cooking hub; **77 Cooking routes**, plus independent homepage and About/Privacy/Contact (81 static HTML pages).
+- Free calculator with regular and Unicode kitchen fractions (½, 1½, ¾), US and metric cup standards, swap/reset/copy/share/print, URL-state sharing, ingredient search, recipe serving scaling and safe CSV export.
+- **Batch ingredient conversion**: paste up to 100 ingredient lines; convert to grams or cups using exact food identifiers; unrecognized ingredients or states are preserved and flagged for manual review, never assigned a guessed density. Copy or export a CSV with review warnings. The batch tool is functional but noindex until separate SEO value is proven.
 - Pre-rendered answers, tables, metadata, breadcrumbs and internal links; true 404 page, sitemap only for approved production, per-page canonical and index review.
 - Responsive original styling, visible keyboard focus, accessible field labels, reduced-motion support, privacy-first client JS. No fake testimonials, review stars or preapproved AdSense claims.
 
@@ -50,7 +51,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for exact production settings and QA gates.
 
 The full supplied (not full-domain) Semrush material is preserved at [research/semrush-us-2300-sample.csv](research/semrush-us-2300-sample.csv): 1,000 keyword rows from `gramstocupsconverter.cc`, 700 from `gramstocup.com`, 600 from `gramstocups.io`. These are third-party organic ranking estimates, not Search Console traffic or evidence of ad revenue. `site_target_suggestion` is explicitly heuristic and must never be interpreted as an observed ranking of this site.
 
-**Publication policy:** All 76 Cooking routes are functional; 13 have `noindex` by default because the supplied partial keyword and page evidence does not directly establish an independent SEO target. That is **not a feature omission**: users can still navigate, calculate, print and share those tools/pages. Main production sitemap holds **67 approved page candidates including home/legal pages**, rather than dumping every possible numeric URL into Google.
+**Publication policy:** All 77 Cooking routes are functional; 14 have `noindex` by default because the supplied partial keyword and page evidence does not directly establish an independent SEO target. That is **not a feature omission**: users can still navigate, calculate, print and share those tools/pages. Main production sitemap holds **67 approved page candidates including home/legal pages**, rather than dumping every possible numeric URL into Google.
 
 Avoid cloning third-party prose. Original calculation tools and source-backed explanatory content are the product.
 
@@ -87,7 +88,8 @@ public/app.js                Browser calculator and recipe interaction
 public/styles.css            Responsive + print styles
 scripts/build.mjs            Generate complete static site, robots, sitemap
 scripts/audit.mjs            Page/link/meta/index gate audit
-tests/site.test.mjs          Calculation/data/roundtrip regression tests
+tests/site.test.mjs          Reference, Unicode fractions, batch safety and regression tests
+ tests/browser.test.mjs       Chromium desktop/mobile functional audit (CI-only Playwright)
 research/semrush-us-2300-sample.csv  User-provided partial Semrush exports
 .github/workflows/ci.yml     Preview + production test builds
 dist/                        Generated output (not committed)
