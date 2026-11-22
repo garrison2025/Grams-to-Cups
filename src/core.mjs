@@ -68,7 +68,7 @@ export function convertQuantity(amount,from,to,{ingredient=null,standard='us'}={
 export function unitDescription(code,standard='us'){
  return ({g:'grams',kg:'kilograms',oz:'mass ounces',cup:standard==='metric'?'metric cups (250 mL)':'US cups (236.588 mL)',tbsp:'US tablespoons',tsp:'US teaspoons',ml:'milliliters','fl-oz':'US fluid ounces'})[code]||code;
 }
-export function scaleRecipe(text,originalServings,newServings){
+export function scaleRecipe(text,originalServings,newServings,{fractions=false}={}){
  const source=parseAmount(originalServings),dest=parseAmount(newServings);
  const factor=dest/source;if(factor>1000||factor<0.001)throw new Error('Scaling factor must be between 0.001 and 1,000.');
  const rows=String(text??'').split(/\r?\n/);
@@ -78,7 +78,7 @@ export function scaleRecipe(text,originalServings,newServings){
   const m=normalizeFractionInput(raw).match(/^\s*((?:\d+\s+)?\d+\/\d+|\d+\s?[¼½¾⅓⅔⅛⅜⅝⅞]|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:\d+(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
   if(!m)return {original:raw,scaled:raw,ok:false};
   try{const scaled=parseAmount(m[1])*factor;if(!Number.isFinite(scaled)||scaled>1e9)throw Error();
-  return {original:raw,scaled:formatAmount(scaled,4)+' '+(m[2]||'')+(m[3]||''),ok:true};
+  return {original:raw,scaled:(fractions?formatKitchenAmount(scaled):formatAmount(scaled,4))+' '+(m[2]||'')+(m[3]||''),ok:true};
   }catch{return {original:raw,scaled:raw,ok:false};}
  });
  return {rows:output,factor,unparsed:output.filter(r=>!r.ok).length};
