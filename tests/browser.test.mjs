@@ -44,6 +44,11 @@ try{
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'99','half cup sugar grams');
  await page.locator('[data-reset]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.833','reset returns default reference');
+ await page.locator('[data-amount]').fill('1,000');
+ assert.equal((await page.locator('[data-result]').innerText()).trim(),'8.333','US grouped input remains a valid quantity');
+ await page.locator('[data-amount]').fill('1,5');
+ assert.equal((await page.locator('[data-result]').innerText()).trim(),'—','malformed thousand grouping is rejected');
+ await page.locator('[data-reset]').click();
  await page.locator('[data-amount]').fill('1/4');
  assert.ok((await page.locator('[data-result]').innerText()).trim()!=='—','fractions compute');
  await page.locator('[data-amount]').fill('nonsense');
@@ -111,6 +116,9 @@ try{
  assert.equal((await page.locator('[data-batch-results] .batch-review-row').count()),1);
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 cup All-purpose flour'),'exact flour conversion');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 cup Granulated white sugar'),'fraction-friendly results');
+ await page.locator('[data-batch-lines]').fill('1,000 g all-purpose flour');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('8.333 cups All-purpose flour'),'batch supports US thousands separators');
+ await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
  const batchDownload=page.waitForEvent('download');
  await page.locator('[data-batch-csv]').click();
  assert.equal((await batchDownload).suggestedFilename(),'batch-ingredient-conversions.csv');
@@ -130,6 +138,10 @@ try{
  await page.locator('[data-recipe-lines]').fill('1 cup milk + 2 tbsp cream');
  const compound=(await page.locator('[data-recipe-output]').innerText()).trim();
  assert.ok(compound.includes('1 cup milk + 2 tbsp cream  [check manually]'),'compound quantities must not be only partially scaled');
+ await page.locator('[data-recipe-lines]').fill('1,000 g flour\n1,5 cups milk');
+ const groupedScaled=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(groupedScaled.includes('1,500 g flour'),'valid grouped recipe quantity scales correctly');
+ assert.ok(groupedScaled.includes('1,5 cups milk  [check manually]'),'invalid grouping is preserved for review');
  assert.equal(errors.length,0,'no desktop runtime errors after batch conversion and recipe scaling');
  await page.locator('[data-recipe-lines]').fill('1 cup milk\n2 cups water');
  await page.locator('[data-old-servings]').fill('2');
