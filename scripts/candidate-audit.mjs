@@ -15,6 +15,10 @@ const baseline=JSON.parse(read('research/seo-76-candidate-baseline.json'));
 const manifest=JSON.parse(read('dist/site-manifest.json'));
 const index=new Map(manifest.pages.map(p=>[p.url,p]));
 const candidates=baseline.candidates;
+const editorial=JSON.parse(read('research/seo-21-editorial-decisions.json'));
+const editorialByUrl=new Map(editorial.decisions.map(x=>[x.url,x]));
+assert.equal(editorial.decisions.length,21,'All 21 original SEO gaps must have completed source-limited editorial decisions');
+assert.equal(editorialByUrl.size,21,'No duplicate editorial URL');
 
 function parseCSV(source){
  const text=source.replace(/^\ufeff/,'');
@@ -55,7 +59,7 @@ const output=[[
  'plan_competitor_count','route_exists','eligible_for_production_index','canonical_target_if_published',
  'partial_sample_keyword_rows_mapped','secondary_exact_ingredient_intent_rows',
  'source_sample_ranking_evidence','source_screenshot_page_evidence','source_release_condition',
- 'evidence_class','editorial_decision'
+ 'evidence_class','editorial_decision','editorial_rationale'
 ]];
 const count={candidateCount:76,indexCandidates:0,noindexSupport:0,
  primarySampleMapped:0,secondaryOnlyMapped:0,planOnlyEstimate:0,withoutKeywordObservation:0};
@@ -91,8 +95,9 @@ for(const item of candidates){
  }else if(item.url==='/cooking/grams-to-cups/1000-grams-to-cups/'){
   assert.equal(eligible,false,'KD37 1000g must not auto-index');
   decision='functional_page_noindex_unqualified_numeric_keyword';
- }else if(!eligible)decision='functional_support_page_noindex';
- else decision='candidate_for_index_pending_editorial_review_not_verified_ranking';
+ }else if(editorialByUrl.has(item.url))decision=editorialByUrl.get(item.url).decision;
+ else if(!eligible)decision='functional_support_page_noindex';
+ else decision='candidate_for_index_with_existing_keyword_evidence_not_guaranteed_ranking';
  if(eligible)count.indexCandidates++;else count.noindexSupport++;
  if(mapped>0)count.primarySampleMapped++;
  else if(secondary>0)count.secondaryOnlyMapped++;
@@ -101,7 +106,7 @@ for(const item of candidates){
  output.push([item.id,item.family,item.url,item.primaryKeyword,item.primaryUSVolume??'',
   item.primaryKD??'',item.observedCompetitorCount,'yes',eligible?'yes':'no',canonical,
   mapped,secondary,item.sampleRankingEvidence,item.screenshotPageEvidence,
-  item.sourceDisposition,evidenceClass,decision]);
+  item.sourceDisposition,evidenceClass,decision,editorialByUrl.get(item.url)?.rationale||'']);
  // Even when a candidate is usable but noindex, never turn a simulated
  // Semrush primary keyword volume into permission to index or redirect.
  assert.equal(primaryRoute,item.url==='/cooking/grams-to-cups/'?'/':item.url);
@@ -113,14 +118,17 @@ for(const item of candidates){
 const trustPages=new Set(['/','/cooking/','/cooking/sources-and-methods/','/about/','/privacy/','/contact/']);
 const reviewHeader=['url','role','plan_id','primary_keyword','source_primary_volume','source_primary_kd',
  'source_ranking_evidence','source_competitor_page_screenshot','index_candidate',
- 'independent_page_feature','review_bucket','editorial_next_check'];
+ 'independent_page_feature','review_bucket','editorial_next_check','final_index_decision','editorial_rationale'];
 const indexGapReview=[reviewHeader];
 const reviewBuckets={};
 for(const page of manifest.pages){
- if(!page.indexCandidate)continue;
+ if(!editorialByUrl.has(page.url))continue;
  const report=evidenceByUrl.get(page.url);
  assert.ok(report,'Missing page evidence for '+page.url);
- if(Number(report[mappedIx])!==0||Number(report[secondaryIx])!==0)continue;
+ assert.equal(Number(report[mappedIx]),0,'Editorial URL gained new mapped intent; re-review: '+page.url);
+ assert.equal(Number(report[secondaryIx]),0,'Editorial URL gained new secondary intent; re-review: '+page.url);
+ const editorialCase=editorialByUrl.get(page.url);
+ assert.equal(page.indexCandidate,editorialCase.decision==='approved-index','Site index policy does not match completed editorial decision: '+page.url);
  const candidate=candidates.find(c=>c.url===page.url);
  const isTrust=trustPages.has(page.url);
  const screenshot=candidate?.screenshotPageEvidence||'';
@@ -145,9 +153,11 @@ for(const page of manifest.pages){
  indexGapReview.push([page.url,role,candidate?.id||'',candidate?.primaryKeyword||'',
   candidate?.primaryUSVolume??'',candidate?.primaryKD??'',
   candidate?.sampleRankingEvidence||'',screenshot,page.indexCandidate?'yes':'no',
-  feature,bucket,check]);
+  feature,bucket,check,editorialCase.decision,editorialCase.rationale]);
 }
-assert.equal(indexGapReview.length-1,21,'Expected 21 source-evidence review cases: check changes before approving index policy');
+assert.equal(indexGapReview.length-1,21,'All 21 original review cases must have final dispositions');
+assert.equal(editorial.decisions.filter(x=>x.decision==='approved-index').length,18,'18 source-limited index approvals expected');
+assert.equal(editorial.decisions.filter(x=>x.decision==='functional-noindex').length,3,'3 conservative noindex decisions expected');
 // This public-source-only line makes the 21 review cases traceable without downloading private CI artifacts.
 console.log('SEO_PENDING_21_START');
 for(const row of indexGapReview.slice(1))console.log(JSON.stringify({url:row[0],role:row[1],planId:row[2],keyword:row[3],volume:row[4],kd:row[5],screenshot:row[7],feature:row[9],bucket:row[10]}));
@@ -162,8 +172,28 @@ fs.mkdirSync(reportPath,{recursive:true});
 fs.writeFileSync(path.join(reportPath,'seo-76-candidate-decisions.csv'),'\ufeff'+output.map(r=>r.map(csvSafeCell).join(',')).join('\r\n')+'\r\n');
 fs.writeFileSync(path.join(reportPath,'seo-21-index-review.csv'),'\ufeff'+indexGapReview.map(r=>r.map(csvSafeCell).join(',')).join('\r\n')+'\r\n');
 fs.writeFileSync(path.join(reportPath,'seo-21-index-review-summary.json'),JSON.stringify({
- candidateCount:indexGapReview.length-1,reviewBuckets,
- note:'Neither a missing keyword mapping nor source screenshot absence proves zero demand. These are publication-editorial checklists, not confirmed search rankings or evidence of successful indexing.'
+ candidateCount:indexGapReview.length-1,reviewBuckets,editoriallyApproved:18,editoriallyNoindex:3,
+ note:'The 21 original evidence gaps now have source-limited final publication dispositions; this does not prove Google indexing, traffic, or SEO success.'
+},null,2)+'\n');
+const finalStatuses=candidates.map(c=>{
+ const indexed=!!index.get(c.url).indexCandidate;
+ return {id:c.id,url:c.url,primaryKeyword:c.primaryKeyword,
+  status:indexed?'approved-index':'functional-noindex',
+  planPrimaryUSVolume:c.primaryUSVolume,planKD:c.primaryKD,
+  sourceDisposition:c.sourceDisposition,
+  directSampleKeywordRows:Number(evidenceByUrl.get(c.url)[mappedIx]),
+  secondaryFoodIntentRows:Number(evidenceByUrl.get(c.url)[secondaryIx]),
+  editorialBasis:editorialByUrl.get(c.url)?.basis||null,
+  editorialRationale:editorialByUrl.get(c.url)?.rationale||null,
+  note:'Publication eligibility only; not proof of Google indexing or traffic.'};
+});
+assert.equal(finalStatuses.filter(x=>x.status==='approved-index').length,58);
+assert.equal(finalStatuses.filter(x=>x.status==='functional-noindex').length,18);
+fs.writeFileSync(path.join(reportPath,'seo-76-final-publication-status.json'),JSON.stringify({
+ repository:'garrison2025/Grams-to-Cups',productionDomain:'unconfirmed',
+ totalPlannedRoutes:76,indexCandidatesFromPlan:58,functionalNoindexFromPlan:18,
+ extraPages:['/','/about/','/privacy/','/contact/','/cooking/batch-converter/'],
+ statuses:finalStatuses
 },null,2)+'\n');
 fs.writeFileSync(path.join(reportPath,'seo-76-candidate-summary.json'),JSON.stringify({
  source:baseline.source,partialSampleNotFullDomainCoverage:true,
@@ -172,7 +202,7 @@ fs.writeFileSync(path.join(reportPath,'seo-76-candidate-summary.json'),JSON.stri
 },null,2)+'\n');
 console.log('Appendix A reconciliation passed:',count.candidateCount,'planned routes,',count.indexCandidates,
  'index candidates,',count.noindexSupport,'noindex support routes,',unexpected.length,'additional routes.');
-console.log('21 unresolved index-candidate editorial review buckets:',JSON.stringify(reviewBuckets));
+console.log('21 resolved source-limited editorial review buckets:',JSON.stringify(reviewBuckets));
 console.log('Evidence classes:',JSON.stringify({primarySampleMapped:count.primarySampleMapped,
  secondaryOnlyMapped:count.secondaryOnlyMapped,planOnlyEstimate:count.planOnlyEstimate,
  withoutKeywordObservation:count.withoutKeywordObservation}));
