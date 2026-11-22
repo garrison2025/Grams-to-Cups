@@ -12,6 +12,8 @@ const base=(process.env.SITE_URL||'').trim().replace(/\/+$/,'');
 const origin=/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(base)?base:'';
 const releaseRequested=process.env.CF_PAGES_BRANCH==='main'&&process.env.PUBLIC_INDEX_APPROVED==='true';
 const hostname=origin?new URL(origin).hostname.toLowerCase():'';
+if(hostname==='convertunits.cc'||hostname.endsWith('.convertunits.cc'))
+ throw new Error('Grams-to-Cups is an independent website: do not use the other project domain for SITE_URL.');
 const reservedHost=hostname==='localhost'||hostname==='127.0.0.1'||hostname==='0.0.0.0'||hostname==='example.com'||hostname.endsWith('.example')||hostname.endsWith('.invalid')||hostname.endsWith('.test')||hostname.endsWith('.localhost');
 if(releaseRequested&&!origin)throw new Error('Production publication requested but SITE_URL is missing or invalid. Set the exact stable HTTPS host.');
 const approvedCiFixture=process.env.CI==='true'&&process.env.SITE_URL_FIXTURE_APPROVED_FOR_CI==='true'&&hostname==='example.com';
