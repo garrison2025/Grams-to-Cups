@@ -33,6 +33,14 @@ try{
  assert.ok(await page.getByRole('heading',{name:/Grams to cups.*without the guesswork/i}).isVisible(),'hero should show editorial heading');
  await page.locator('[data-result]').waitFor();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.833','default flour reference');
+ assert.equal((await page.locator('.result-amount .result-unit').innerText()).trim(),'US cups',
+  'result has a clearly labeled unit');
+ assert.equal(await page.locator('.result-amount .result-unit').evaluate(el=>getComputedStyle(el).borderTopWidth),
+  '1px','result unit has a readable capsule instead of unstyled text');
+ assert.ok((await page.locator('.tile[data-food-group="flour"]').count())>0,'flour cards have a visible family');
+ assert.ok((await page.locator('.tile[data-food-group="sugar"]').count())>0,'sugar cards use a distinct family');
+ assert.equal((await page.locator('.tile[data-food-group="flour"] .tile-kind').first().innerText()).trim(),
+  'FLOUR','food category is conveyed with text rather than color alone');
  // Real keyboard typing, not only programmatic .fill(), must update the result.
  await page.locator('[data-amount]').focus();
  await page.keyboard.press('ControlOrMeta+A');
@@ -138,6 +146,10 @@ try{
  assert.ok(await page.locator('[data-density-field]').first().isVisible(),'show ingredient when switching to mass-volume');
  assert.ok(await page.locator('[data-source-ingredient]').isVisible(),'show source reference only for ingredient-dependent quantities');
  await page.goto(origin+'/cooking/charts/',{waitUntil:'networkidle'});
+ assert.equal(await page.locator('[data-chart-table] .table-scroll').getAttribute('tabindex'),'0',
+  'scrollable table can receive keyboard focus');
+ assert.ok(await page.locator('[data-chart-table] .table-scroll-hint').isHidden(),
+  'wide-screen table does not show an unnecessary mobile swipe instruction');
  await page.locator('[data-chart-filter]').fill('brown sugar');
  assert.equal((await page.locator('[data-chart-count]').innerText()).trim(),'1 of 24 ingredients shown','chart filters ingredient rows');
  const visibleRows=await page.locator('[data-chart-table] tbody tr:visible').count();
@@ -289,6 +301,9 @@ try{
  await staticPage.goto(origin+'/',{waitUntil:'domcontentloaded'});
  assert.ok(await staticPage.locator('[data-meter-wrap]').isVisible(),'static home calculator shows useful cup progress');
  assert.match(await staticPage.locator('[data-meter-label]').innerText(),/83% of one US cup/,'static progress reflects the actual cup estimate');
+ await staticPage.goto(origin+'/cooking/ingredients/all-purpose-flour/',{waitUntil:'domcontentloaded'});
+ assert.ok(await staticPage.locator('.table-scroll-hint').first().isVisible(),
+  'static no-JavaScript table still explains how mobile visitors see all columns');
  await staticPage.goto(origin+'/cooking/half-a-measurement/',{waitUntil:'domcontentloaded'});
  assert.equal((await staticPage.locator('[data-fraction-result]').innerText()).trim(),'3/4',
   'a useful 1/2 + 1/4 example is pre-rendered without JavaScript');
@@ -328,6 +343,18 @@ try{
   assert.ok(overflow<=1,route+' mobile overflow '+overflow);
   assert.ok(await mobile.locator('h1').first().isVisible(),route+' mobile heading hidden');
   assert.equal(mobileErrors.length,0,route+' browser errors: '+mobileErrors.join(','));
+  if(route==='/cooking/charts/'){
+   const tableRegion=mobile.locator('[data-chart-table] .table-scroll');
+   const dims=await tableRegion.evaluate(el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}));
+   assert.ok(dims.scrollWidth>dims.clientWidth,'chart contains real extra columns on mobile');
+   assert.ok(await mobile.locator('[data-chart-table] .table-scroll-hint').isVisible(),
+    'mobile table explains horizontal swipe');
+   await tableRegion.focus();
+   await mobile.keyboard.press('ArrowRight');
+   await mobile.waitForFunction(()=>document.querySelector('[data-chart-table] .table-scroll')?.scrollLeft>0);
+   assert.ok(await tableRegion.evaluate(el=>el.scrollLeft>0),
+    'keyboard input scrolls accessible chart horizontally');
+  }
   if(route==='/'){
    const amountBounds=await mobile.locator('[data-amount]').boundingBox();
    assert.ok(amountBounds&&amountBounds.y<650,
