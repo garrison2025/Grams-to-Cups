@@ -67,10 +67,38 @@ function doc(spec){
  const permitted=publicIndex&&eligible;
  const pageTitle=title+' | Grams & Cups';
  const crumbs=[{name:'Home',item:origin+'/'},...bread.map(x=>({name:x[0],item:origin+(x[1]||url)}))];
- const schema=permitted?jsonld({'@context':'https://schema.org','@type':'WebPage',name:pageTitle,url:canonical,description,inLanguage:'en',isPartOf:{'@type':'WebSite',name:'Grams & Cups',url:origin+'/'}})+(bread.length?jsonld({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:crumbs.map((x,i)=>({'@type':'ListItem',position:i+1,name:x.name,item:x.item}))}):'')+(kind==='WebApplication'?jsonld({'@context':'https://schema.org','@type':'WebApplication',name:title,url:canonical,applicationCategory:'UtilitiesApplication',operatingSystem:'Any modern web browser',offers:{'@type':'Offer',price:'0',priceCurrency:'USD'}}):''):'';
+ // The visible source-linked answer is the basis of the citation. Avoid false
+ // Recipe, FAQ rich-result, Review or organization claims for a calculator.
+ const sourceReferenced=url==='/'||/^\/cooking\/grams-to-cups\/\d+-grams-to-cups\/$/.test(url)||
+  /^\/cooking\/ingredients\/[^/]+\/$/.test(url)||
+  /^\/cooking\/ingredients\/[^/]+\/\d+-grams-to-cups\/$/.test(url)||
+  /^\/cooking\/charts\//.test(url);
+ const websiteId=origin+'/#website',pageId=canonical+'#webpage',appId=canonical+'#calculator';
+ const webpage={'@context':'https://schema.org','@type':'WebPage','@id':pageId,
+  name:pageTitle,url:canonical,description,inLanguage:'en',
+  isPartOf:{'@id':websiteId}};
+ if(kind==='WebApplication')webpage.mainEntity={'@id':appId};
+ if(sourceReferenced){
+  webpage.citation=source;
+  webpage.about={'@type':'Thing',name:'Ingredient-specific cooking weight and volume conversion'};
+ }
+ const schema=permitted?
+  (url==='/'?jsonld({'@context':'https://schema.org','@type':'WebSite','@id':websiteId,name:'Grams & Cups',url:origin+'/',inLanguage:'en'}):'')+
+  jsonld(webpage)+
+  (bread.length?jsonld({'@context':'https://schema.org','@type':'BreadcrumbList','@id':canonical+'#breadcrumbs',
+   itemListElement:crumbs.map((x,i)=>({'@type':'ListItem',position:i+1,name:x.name,item:x.item}))}):'')+
+  (kind==='WebApplication'?jsonld({'@context':'https://schema.org','@type':'WebApplication','@id':appId,
+   name:title,url:canonical,description,applicationCategory:'UtilitiesApplication',
+   operatingSystem:'Any modern web browser',isAccessibleForFree:true,
+   offers:{'@type':'Offer',price:'0',priceCurrency:'USD'}}):''):'';
+
  const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f8f7f2">'+
  '<meta name="description" content="'+e(description)+'"><meta name="robots" content="'+(permitted?'index,follow':'noindex,follow')+'">'+
- (permitted?'<link rel="canonical" href="'+e(canonical)+'">':'')+'<title>'+e(pageTitle)+'</title><meta property="og:type" content="website"><meta property="og:title" content="'+e(pageTitle)+'"><meta property="og:description" content="'+e(description)+'">'+(permitted?'<meta property="og:url" content="'+e(canonical)+'">':'')+
+ (permitted?'<link rel="canonical" href="'+e(canonical)+'">':'')+'<title>'+e(pageTitle)+'</title>'+
+ '<meta property="og:type" content="website"><meta property="og:site_name" content="Grams &amp; Cups"><meta property="og:locale" content="en_US">'+
+ '<meta property="og:title" content="'+e(pageTitle)+'"><meta property="og:description" content="'+e(description)+'">'+
+ '<meta name="twitter:card" content="summary"><meta name="twitter:title" content="'+e(pageTitle)+'"><meta name="twitter:description" content="'+e(description)+'">'+
+ (permitted?'<meta property="og:url" content="'+e(canonical)+'">':'')+
  '<link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/assets/styles.css">'+schema+
  '<script type="module" src="/assets/app.js" defer></script></head><body>'+nav()+'<main id="main">'+
  (url==='/'?'':'<div class="container">'+breadHtml(bread)+'</div>')+body+'</main>'+footer()+'</body></html>';
