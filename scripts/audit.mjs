@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
+import {csvSafeCell} from '../src/seo-evidence.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),dist=path.join(root,'dist');
 const manifest=JSON.parse(fs.readFileSync(path.join(dist,'site-manifest.json'),'utf8'));
 const pages=manifest.pages;
@@ -76,6 +77,14 @@ for(const page of ingredientNumberPages){
  assert.ok(links.get('/cooking/grams-to-cups/'+grams+'-grams-to-cups/')?.has(page.url),
   'Numeric landing must link to matching ingredient/weight page: '+page.url);
 }
+// Keep an inspectable crawl-path report private to the CI artifact.
+const graphReport=[['url','production_index_candidate','inbound_page_links','click_depth_from_home','intentionally_unlinked'],
+ ...pages.map(p=>[p.url,p.indexCandidate?'yes':'no',inbound.get(p.url)||0,depth.get(p.url)??'',
+  intentionallyUnlinked.has(p.url)?'yes':'no'])];
+const reportDir=path.join(root,'reports');
+fs.mkdirSync(reportDir,{recursive:true});
+fs.writeFileSync(path.join(reportDir,'seo-link-graph.csv'),'\ufeff'+graphReport.map(row=>row.map(csvSafeCell).join(',')).join('\r\n')+'\r\n');
+assert.equal(depth.size,80,'Expected 80 crawlable URLs and one deliberate noindex duplicate-intent route');
 console.log('Internal link graph passed:',depth.size,'reachable pages,',ingredientNumberPages.length,
  'specific ingredient/weight pages cross-linked, max click depth',Math.max(...depth.values()));
 
