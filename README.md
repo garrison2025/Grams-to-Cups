@@ -98,7 +98,7 @@ Avoid cloning third-party prose. Original calculation tools and source-backed ex
 
 ## Data model and accuracy
 
-`src/ingredients.json` contains 24 ingredient **recipe-reference** entries from the [King Arthur Baking Ingredient Weight Chart](https://www.kingarthurbaking.com/learn/ingredient-weight-chart) (reviewed 2026-11-22). It is not one universal grams↔cups factor. All entries now include the exact original chart item label (`sourceEntry`), displayed on ingredient pages and the methods table, and a separate verified measurement lock at `research/ingredient-reference-lock.json`. The full suite has 15 dependency-free tests, including missing-KD interpretation and CSV formula-injection protection.
+`src/ingredients.json` contains 24 ingredient **recipe-reference** entries from the [King Arthur Baking Ingredient Weight Chart](https://www.kingarthurbaking.com/learn/ingredient-weight-chart) (reviewed 2026-11-22). It is not one universal grams↔cups factor. All entries now include the exact original chart item label (`sourceEntry`), displayed on ingredient pages and the methods table, and a separate verified measurement lock at `research/ingredient-reference-lock.json`. The dependency-free unit suite covers source-locked ingredients, conversion precision, parsing, recipe scaling, keyword evidence and CSV formula-injection protection.
 
 Examples:
 - All-purpose flour: 120 g per US cup (spoon/level).
