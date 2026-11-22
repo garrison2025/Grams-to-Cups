@@ -199,7 +199,6 @@ for(const form of $$('[data-calc]')){
 for(const form of $$('[data-recipe]')){
  const out=$('[data-recipe-output]',form),error=$('[data-recipe-error]',form);
  let latest=null;
- const ingredientOverrides=Object.create(null);
  const compute=()=>{
   try{latest=scaleRecipe($('[data-recipe-lines]',form).value,$('[data-old-servings]',form).value,$('[data-new-servings]',form).value,{fractions:!!$('[data-recipe-fraction]',form)?.checked});
   out.textContent=latest.rows.map(r=>r.scaled+(r.ok?'':'  [check manually]')).join('\n');
@@ -225,6 +224,7 @@ for(const form of $$('[data-batch]')){
        tbody=$('[data-batch-results]',form),summary=$('[data-batch-summary]',form),
        error=$('[data-batch-error]',form);
  let latest=null;
+ const ingredientOverrides=Object.create(null);
  const compute=()=>{
   try{
    const cupsChoice=target.querySelector('option[value="cup"]');
