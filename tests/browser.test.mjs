@@ -117,7 +117,7 @@ try{
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 cup All-purpose flour'),'exact flour conversion');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 cup Granulated white sugar'),'fraction-friendly results');
  await page.locator('[data-batch-lines]').fill('1,000 g all-purpose flour');
- assert.ok((await page.locator('[data-batch-results]').innerText()).includes('8.3333 cups All-purpose flour'),'batch supports US thousands separators');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('8 1/3 cups All-purpose flour'),'batch supports US thousands separators');
  await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
  const batchDownload=page.waitForEvent('download');
  await page.locator('[data-batch-csv]').click();
