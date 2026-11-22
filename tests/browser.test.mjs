@@ -49,6 +49,11 @@ try{
  await page.locator('[data-amount]').fill('nonsense');
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'—','bad values must not look valid');
  assert.ok(await page.locator('[data-error]').isVisible(),'invalid quantity shows clear error');
+ await page.locator('[data-amount]').fill('0.000000001');
+ const tinyValue=(await page.locator('[data-result]').innerText()).trim();
+ assert.notEqual(tinyValue,'0','tiny positive weight must not render as zero cups');
+ assert.match(tinyValue,/[1-9]/,'tiny quantity is meaningfully visible');
+ assert.match(await page.locator('[data-meter-label]').innerText(),/Less than 1%/,'sub-1% cup fill is not falsely labelled zero');
  await page.locator('[data-reset]').click();
  await page.locator('[data-compare-preset="250"]').click();
  assert.equal((await page.locator('[data-compare-grams]').innerText()).trim(),'250 g','comparison preset changes grams');
@@ -123,10 +128,30 @@ try{
  assert.ok(scaled.includes('pinch of salt  [check manually]'),'unknown serving units stay visible for review');
  assert.ok(scaled.includes('2-3 eggs  [check manually]'),'ranges are not partially scaled into unsafe recipe quantities');
  assert.equal(errors.length,0,'no desktop runtime errors after batch conversion and recipe scaling');
+ await page.locator('[data-recipe-lines]').fill('1 cup milk\n2 cups water');
+ await page.locator('[data-old-servings]').fill('2');
+ await page.locator('[data-new-servings]').fill('4');
+ const units=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(units.includes('2 cups milk'),'recipe multiplier pluralizes singular unit');
+ assert.ok(units.includes('4 cups water'),'recipe multiplier preserves plural unit');
 
  const mobile=await browser.newPage({viewport:{width:375,height:812},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  const mobileErrors=[];
  mobile.on('pageerror',err=>mobileErrors.push(err.message));
+ // Four required breakpoint classes: 320px, 375px, 768px and desktop 1440px.
+ // 375px is verified below with interactions; 1440px is verified by the desktop page above.
+ for(const width of [320,768]){
+  await mobile.setViewportSize({width,height:width===320?720:1024});
+  for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/',
+   '/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/','/cooking/batch-converter/','/cooking/recipe-scaler/']){
+   await mobile.goto(origin+route,{waitUntil:'networkidle'});
+   const overflow=await mobile.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+   assert.ok(overflow<=1,route+' '+width+'px horizontal overflow '+overflow);
+   assert.ok(await mobile.locator('h1').first().isVisible(),route+' '+width+'px heading is visible');
+   assert.equal(mobileErrors.length,0,route+' '+width+'px JS exceptions: '+mobileErrors.join(','));
+  }
+ }
+ await mobile.setViewportSize({width:375,height:812});
  for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/','/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/','/cooking/batch-converter/','/cooking/recipe-scaler/']){
   await mobile.goto(origin+route,{waitUntil:'networkidle'});
   const overflow=await mobile.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
