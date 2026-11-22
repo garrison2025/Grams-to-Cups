@@ -108,12 +108,37 @@ function doc(spec){
  pages.push({url,title,description,kind,indexCandidate:eligible,wordCount:body.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().split(' ').length});
 }
 function section(title,intro,contents,alt=false){return '<section class="section'+(alt?' section-alt':'')+'"><div class="container"><div class="section-head"><h2>'+e(title)+'</h2><p>'+e(intro)+'</p></div>'+contents+'</div></section>';}
+function ingredientCardType(url){
+ const match=url.match(/^\\/cooking\\/ingredients\\/([^/]+)\\/$/);
+ if(!match)return null;
+ const id=match[1];
+ if(!byId.has(id))return null;
+ if(id.includes('flour'))return ['flour','Flour','F'];
+ if(id.includes('sugar'))return ['sugar','Sugar','S'];
+ if(['butter','milk-fresh','sour-cream','cream-cheese'].includes(id))return ['dairy','Dairy','D'];
+ if(id.includes('rice')||id.includes('oats'))return ['grains','Grains','G'];
+ if(id.includes('oil'))return ['oils','Oils','O'];
+ if(id.includes('honey')||id.includes('syrup'))return ['sweeteners','Sweeteners','S'];
+ return ['other','Other','·'];
+}
 function grid(items,cols=3){
- return '<div class="cards'+(cols===4?' four':'')+'">'+items.map(([url,title,desc],i)=>
- '<a class="tile" href="'+e(primaryUrl(url))+'"><span class="tile-index" aria-hidden="true">'+String(i+1).padStart(2,'0')+'</span><b>'+e(title)+'</b><p>'+e(desc)+'</p><span class="arrow" aria-hidden="true">↗</span></a>').join('')+'</div>';
+ return '<div class="cards'+(cols===4?' four':'')+'">'+items.map(([url,title,desc],i)=>{
+ const category=ingredientCardType(url);
+ const top=category?
+  '<span class="tile-leading"><span class="tile-index" aria-hidden="true">'+e(category[2])+'</span><span class="tile-kind">'+e(category[1])+'</span></span>':
+  '<span class="tile-index" aria-hidden="true">'+String(i+1).padStart(2,'0')+'</span>';
+ return '<a class="tile"'+(category?' data-food-group="'+e(category[0])+'"':'')+
+  ' href="'+e(primaryUrl(url))+'">'+top+'<b>'+e(title)+'</b><p>'+e(desc)+
+  '</p><span class="arrow" aria-hidden="true">↗</span></a>';
+ }).join('')+'</div>';
 }
 
-function table(headers,rows){return '<div class="table-scroll"><table><thead><tr>'+headers.map(x=>'<th scope="col">'+e(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+e(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
+function table(headers,rows){
+ return '<div class="table-shell"><div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable cooking conversion table"><table><thead><tr>'+
+ headers.map(x=>'<th scope="col">'+e(x)+'</th>').join('')+'</tr></thead><tbody>'+
+ rows.map(r=>'<tr>'+r.map((x,i)=>i===0?'<th scope="row">'+e(x)+'</th>':'<td>'+e(x)+'</td>').join('')+'</tr>').join('')+
+ '</tbody></table></div><p class="table-scroll-hint">↔ Swipe sideways to view the other columns</p></div>';
+}
 function unitSelect(label,which,selected){
  const options=units.map(u=>'<option value="'+u+'"'+(selected===u?' selected':'')+'>'+e(unitDescription(u))+'</option>').join('');
  return '<div class="field"><label for="'+which+'">'+e(label)+'</label><select id="'+which+'" data-'+which+'>'+options+'</select></div>';
