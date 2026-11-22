@@ -108,4 +108,6 @@ fs.writeFileSync(path.join(out,'seo-page-evidence.csv'),'\ufeff'+quotedRows(page
 fs.writeFileSync(path.join(out,'seo-summary.json'),JSON.stringify({...stats,mappedPageCount:grouped.size,pagesMissingMapping:pageReport.slice(1).filter(x=>x[1]==='yes'&&Number(x[2])===0).length},null,2)+'\n');
 console.log('SEO evidence audit passed:',stats.records,'source keyword observations,',stats.uniqueTerms,'distinct phrases,',stats.indexCandidates,'index candidates.');
 console.log('Keyword review decisions:',JSON.stringify(stats.decisions));
+const uncovered=pageReport.slice(1).filter(x=>x[1]==='yes'&&Number(x[2])===0).map(x=>x[0]);
+console.log('Index candidates without mapping evidence in submitted export:',uncovered.length,JSON.stringify(uncovered.slice(0,30)));
 console.log('Reports written to reports/ (not included in the public site build).');
