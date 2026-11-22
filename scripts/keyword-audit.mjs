@@ -190,4 +190,6 @@ console.log('Numerical keyword evidence:',numericReport.length-1,'validated page
 const uncovered=pageReport.slice(1).filter(x=>x[1]==='yes'&&Number(x[2])===0).map(x=>x[0]);
 console.log('Index candidates without mapping evidence in submitted export:',uncovered.length,JSON.stringify(uncovered.slice(0,30)));
 console.log('Secondary ingredient intent evidence: '+secondaryFoodCount+' food pages with observed matching unit queries; editorial verification still required.');
+const additionalObserved=pageReport.slice(1).filter(row=>row[1]==='yes'&&Number(row[2])===0&&Number(row[11])>0);
+console.log('Previously unmapped index candidates with secondary exact food evidence:',additionalObserved.length,JSON.stringify(additionalObserved.map(row=>({url:row[0],rows:row[11],lowKd:row[13]}))));
 console.log('Reports written to reports/ (not included in the public site build).');
