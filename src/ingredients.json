@@ -1,0 +1,465 @@
+[
+  {
+    "id": "all-purpose-flour",
+    "name": "All-purpose flour",
+    "aliases": [
+      "plain flour",
+      "AP flour"
+    ],
+    "state": "dry flour",
+    "method": "spoon and level",
+    "referenceGrams": 120,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "A spooned-and-leveled reference; scooping can compact flour."
+  },
+  {
+    "id": "whole-wheat-flour",
+    "name": "Whole wheat flour",
+    "aliases": [
+      "wholemeal flour"
+    ],
+    "state": "whole grain flour",
+    "method": "spoon and level",
+    "referenceGrams": 113,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Whole wheat is not interchangeable by volume with all-purpose flour."
+  },
+  {
+    "id": "almond-flour",
+    "name": "Toasted almond flour",
+    "aliases": [
+      "toasted almond flour"
+    ],
+    "state": "toasted nut flour",
+    "method": "lightly filled cup",
+    "referenceGrams": 96,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "This chart entry is for toasted almond flour, not every almond meal."
+  },
+  {
+    "id": "coconut-flour",
+    "name": "Coconut flour",
+    "aliases": [
+      "coconut flour"
+    ],
+    "state": "dry flour",
+    "method": "level cup",
+    "referenceGrams": 128,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Coconut flour absorbs liquid differently from wheat flour."
+  },
+  {
+    "id": "gluten-free-flour",
+    "name": "Gluten-free all-purpose flour",
+    "aliases": [
+      "gluten free flour"
+    ],
+    "state": "dry gluten-free flour",
+    "method": "level cup",
+    "referenceGrams": 156,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Blend composition affects weight; use the recipe's stated reference."
+  },
+  {
+    "id": "granulated-sugar",
+    "name": "Granulated white sugar",
+    "aliases": [
+      "white sugar",
+      "sugar"
+    ],
+    "state": "granulated sugar",
+    "method": "level cup",
+    "referenceGrams": 198,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Different sugar crystal sizes may change the reference."
+  },
+  {
+    "id": "brown-sugar-packed",
+    "name": "Brown sugar, packed",
+    "aliases": [
+      "packed brown sugar",
+      "brown sugar"
+    ],
+    "state": "packed brown sugar",
+    "method": "firmly packed cup",
+    "referenceGrams": 213,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Do not apply this packed reference to loose brown sugar."
+  },
+  {
+    "id": "powdered-sugar-unsifted",
+    "name": "Confectioners’ sugar, unsifted",
+    "aliases": [
+      "powdered sugar",
+      "icing sugar"
+    ],
+    "state": "unsifted powder",
+    "method": "level cup",
+    "referenceGrams": 113,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Sifting changes apparent volume; this value is for unsifted sugar."
+  },
+  {
+    "id": "butter",
+    "name": "Butter",
+    "aliases": [
+      "unsalted butter"
+    ],
+    "state": "butter",
+    "method": "solid butter measured in sticks",
+    "referenceGrams": 113,
+    "referenceAmount": 0.5,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "The source lists 113 g per 1/2 US cup (8 tablespoons)."
+  },
+  {
+    "id": "milk-fresh",
+    "name": "Milk, fresh",
+    "aliases": [
+      "milk"
+    ],
+    "state": "fresh milk",
+    "method": "recipe volume reference",
+    "referenceGrams": 227,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "This is a baking-chart weight, not a laboratory density constant."
+  },
+  {
+    "id": "water",
+    "name": "Water (recipe chart reference)",
+    "aliases": [
+      "water"
+    ],
+    "state": "water",
+    "method": "recipe volume reference",
+    "referenceGrams": 227,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "This recipe-chart value differs from physical 1 g/mL water estimates. Use mL for physical volume."
+  },
+  {
+    "id": "long-grain-rice-dry",
+    "name": "Long-grain white rice, dry",
+    "aliases": [
+      "uncooked rice",
+      "dry rice"
+    ],
+    "state": "uncooked rice",
+    "method": "level dry cup",
+    "referenceGrams": 99,
+    "referenceAmount": 0.5,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Dry rice only; cooked rice has a different volume per gram."
+  },
+  {
+    "id": "brown-rice-cooked",
+    "name": "Brown rice, cooked",
+    "aliases": [
+      "cooked rice"
+    ],
+    "state": "cooked brown rice",
+    "method": "filled cup",
+    "referenceGrams": 170,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Do not apply to uncooked rice."
+  },
+  {
+    "id": "rolled-oats",
+    "name": "Oats, old-fashioned or quick-cooking",
+    "aliases": [
+      "rolled oats",
+      "oatmeal"
+    ],
+    "state": "dry oats",
+    "method": "level cup",
+    "referenceGrams": 89,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Not the separate King Arthur product branded rolled-oats weight (113 g/cup)."
+  },
+  {
+    "id": "honey",
+    "name": "Honey",
+    "aliases": [
+      "honey"
+    ],
+    "state": "honey",
+    "method": "level tablespoon",
+    "referenceGrams": 21,
+    "referenceAmount": 1,
+    "referenceUnit": "tablespoon",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "The published source measurement is 21 g per US tablespoon."
+  },
+  {
+    "id": "maple-syrup",
+    "name": "Maple syrup",
+    "aliases": [
+      "maple syrup"
+    ],
+    "state": "maple syrup",
+    "method": "liquid measured in cup",
+    "referenceGrams": 156,
+    "referenceAmount": 0.5,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Measured in the source as 156 g per half cup."
+  },
+  {
+    "id": "vegetable-oil",
+    "name": "Vegetable oil",
+    "aliases": [
+      "cooking oil"
+    ],
+    "state": "vegetable oil",
+    "method": "liquid measured in cup",
+    "referenceGrams": 198,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Recipe-chart weight; oil varies with formulation and temperature."
+  },
+  {
+    "id": "olive-oil",
+    "name": "Olive oil",
+    "aliases": [
+      "extra virgin olive oil"
+    ],
+    "state": "olive oil",
+    "method": "liquid measured in cup",
+    "referenceGrams": 50,
+    "referenceAmount": 0.25,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "The source lists 50 g per quarter cup."
+  },
+  {
+    "id": "sour-cream",
+    "name": "Sour cream",
+    "aliases": [
+      "sour cream"
+    ],
+    "state": "sour cream",
+    "method": "filled cup",
+    "referenceGrams": 227,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Do not substitute liquid cream weights."
+  },
+  {
+    "id": "cornstarch",
+    "name": "Cornstarch",
+    "aliases": [
+      "corn flour (US)",
+      "cornstarch"
+    ],
+    "state": "cornstarch",
+    "method": "level cup",
+    "referenceGrams": 28,
+    "referenceAmount": 0.25,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "The source lists 28 g per quarter cup."
+  },
+  {
+    "id": "coconut-oil",
+    "name": "Coconut oil",
+    "aliases": [
+      "coconut oil"
+    ],
+    "state": "coconut oil",
+    "method": "measured in cup",
+    "referenceGrams": 113,
+    "referenceAmount": 0.5,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Coconut oil can be solid or liquid; this is a recipe reference."
+  },
+  {
+    "id": "cream-cheese",
+    "name": "Cream cheese",
+    "aliases": [
+      "cream cheese"
+    ],
+    "state": "cream cheese",
+    "method": "filled cup",
+    "referenceGrams": 227,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "The same cup standard is assumed for extrapolation."
+  },
+  {
+    "id": "pumpkin-puree",
+    "name": "Pumpkin purée",
+    "aliases": [
+      "pumpkin puree"
+    ],
+    "state": "pumpkin purée",
+    "method": "filled cup",
+    "referenceGrams": 227,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Use for purée, not diced pumpkin."
+  },
+  {
+    "id": "walnuts-chopped",
+    "name": "Walnuts, chopped",
+    "aliases": [
+      "chopped walnuts"
+    ],
+    "state": "chopped walnuts",
+    "method": "level cup",
+    "referenceGrams": 113,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true,
+    "note": "Do not apply to whole walnut halves."
+  }
+]
