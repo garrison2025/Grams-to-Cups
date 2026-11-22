@@ -1,4 +1,4 @@
-import {convertQuantity,formatAmount,parseAmount,approximateFraction,unitDescription,scaleRecipe,csvCell,batchConvertIngredients} from './core.mjs';
+import {convertQuantity,formatAmount,parseAmount,approximateFraction,calculateKitchenFractions,unitDescription,scaleRecipe,csvCell,batchConvertIngredients} from './core.mjs';
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
 const ingredients=await fetch('/assets/ingredients.json').then(r=>r.ok?r.json():Promise.reject(new Error('Ingredient data unavailable'))).catch(()=>[]);
@@ -210,7 +210,31 @@ for(const form of $$('[data-batch]')){
  compute();
 }
 
-for(const form of $$('[data-half-form]')){
+// A complete kitchen fraction calculator, exact for common rational quantities.
+for(const form of $('[data-fraction-arithmetic]')){
+ const first=$('[data-fraction-first]',form),second=$('[data-fraction-second]',form),
+       operation=$('[data-fraction-operation]',form),result=$('[data-fraction-result]',form),
+       decimal=$('[data-fraction-decimal]',form),error=$('[data-fraction-error]',form);
+ const run=()=>{
+  try{
+   const answer=calculateKitchenFractions(first.value,operation.value,second.value);
+   setText(result,answer.fraction);
+   setText(decimal,(answer.exact?'Decimal equivalent: ':'Rounded decimal: ')+answer.decimal);
+   if(error)error.hidden=true;
+  }catch(ex){
+   setText(result,'—');
+   setText(decimal,'Enter valid positive fractions to combine.');
+   announce(error,ex.message);
+  }
+ };
+ for(const control of [first,second,operation]){
+  control.addEventListener('input',run);
+  control.addEventListener('change',run);
+ }
+ run();
+}
+
+for(const form of $('[data-half-form]')){
  const input=$('[data-half-input]',form),output=$('[data-half-result]',form),error=$('[data-half-error]',form);
  const run=()=>{try{const v=parseAmount(input.value)/2;setText(output,formatAmount(v,4)+(approximateFraction(v)?' (about '+approximateFraction(v)+')':''));if(error)error.hidden=true;}catch(e){setText(output,'—');announce(error,e.message)}};
  input.addEventListener('input',run);run();
