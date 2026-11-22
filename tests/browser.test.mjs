@@ -86,6 +86,18 @@ try{
  });
  await page.locator('[data-copy]').click();
  assert.match(await page.locator('.calc-readout [data-feedback]').innerText(),/Clipboard unavailable/,'clipboard failures are visible next to actions');
+ await page.locator('[data-amount]').fill('225');
+ await page.locator('[data-standard]').selectOption('metric');
+ await page.locator('[data-share]').click();
+ assert.ok(await page.locator('[data-share-fallback]').isVisible(),'clipboard denial shows a manually copyable link');
+ const manualShare=new URL(await page.locator('[data-share-url]').inputValue());
+ assert.equal(manualShare.searchParams.get('amount'),'225');
+ assert.equal(manualShare.searchParams.get('ingredient'),'all-purpose-flour');
+ assert.equal(manualShare.searchParams.get('standard'),'metric');
+ assert.equal(manualShare.searchParams.get('from'),'g');
+ assert.equal(manualShare.searchParams.get('to'),'cup');
+ await page.locator('[data-reset]').click();
+ assert.ok(await page.locator('[data-share-fallback]').isHidden(),'reset hides the stale link');
  await page.evaluate(()=>{
   window.__resultFeedbackAnimations=0;
   const output=document.querySelector('[data-result]');
@@ -158,11 +170,14 @@ try{
  await page.locator('[data-reset]').click();
  await page.locator('[data-compare-preset="250"]').click();
  assert.equal((await page.locator('[data-compare-grams]').innerText()).trim(),'250 g','comparison preset changes grams');
+ assert.deepEqual(await page.locator('[data-compare-weight]').allTextContents(),['250 g','250 g'],
+  'both cards show the weight used to calculate their values');
  assert.equal((await page.locator('[data-compare-flour]').innerText()).trim(),'2.083','flour comparison uses 120 g/cup');
  assert.equal((await page.locator('[data-compare-sugar]').innerText()).trim(),'1.263','sugar comparison uses 198 g/cup');
  assert.equal(await page.locator('[data-compare-preset="250"]').getAttribute('aria-pressed'),'true','comparison selected preset is accessible');
  await page.locator('[data-compare-input]').evaluate(el=>{el.value='300';el.dispatchEvent(new Event('input',{bubbles:true}))});
  assert.equal((await page.locator('[data-compare-flour]').innerText()).trim(),'2.5','range slider updates same-weight comparison');
+ assert.deepEqual(await page.locator('[data-compare-weight]').allTextContents(),['300 g','300 g']);
  assert.equal(errors.length,0,'no browser errors on desktop: '+errors.join(', '));
  const desktopOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
  assert.ok(desktopOverflow<=1,'desktop horizontal overflow '+desktopOverflow);
@@ -229,6 +244,11 @@ try{
   'CSV row weights exactly match the visible filtered chart');
  await page.locator('[data-chart-filter]').fill('zzz never an ingredient');
  assert.ok(await page.locator('[data-chart-empty]').isVisible(),'empty search feedback is visible');
+ for(const selector of ['[data-chart-download]','[data-chart-print]'])
+  assert.ok(await page.locator(selector).isDisabled(),'empty chart disables '+selector);
+ await page.locator('[data-chart-filter]').clear();
+ for(const selector of ['[data-chart-download]','[data-chart-print]'])
+  assert.ok(await page.locator(selector).isEnabled(),'clearing the filter enables '+selector);
  assert.equal(errors.length,0,'no desktop runtime errors after charts');
  await page.locator('[data-chart-filter]').fill('water');
  await page.locator('[data-chart-custom]').fill('1');
@@ -313,6 +333,7 @@ try{
  assert.match(alternateText,/Prefer a kitchen scale/,'poor volume approximations recommend weighing');
  assert.match(await page.locator('[data-measure-error]').innerText(),/Primary option/,'primary has a separately labeled error');
 
+ await page.emulateMedia({media:'screen'});
  await page.goto(origin+'/cooking/batch-converter/',{waitUntil:'networkidle'});
  assert.ok(await page.getByRole('heading',{name:/Batch Ingredient Converter/i}).isVisible(),'batch converter page renders');
  assert.ok((await page.locator('[data-batch-summary]').innerText()).includes('4 converted'),'default list identifies four supported ingredients');
@@ -325,7 +346,22 @@ try{
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'fraction-friendly results');
  await page.locator('[data-batch-lines]').fill('• 42 g unsweetened cocoa powder\n- 200 g flour');
  assert.ok((await page.locator('[data-batch-summary]').innerText()).includes('1 need review'));
- await page.locator('[data-batch-review="1"]').selectOption('bread-flour');
+ const reviewPicker=page.locator('[data-batch-review="1"]');
+ const restoredFocus=await reviewPicker.evaluate(el=>{
+  el.focus();
+  el.value='bread-flour';
+  el.dispatchEvent(new Event('change',{bubbles:true}));
+  const replacement=document.querySelector('[data-batch-review="1"]');
+  return {
+   focused:replacement===document.activeElement,
+   selected:replacement?.value,
+   display:replacement&&getComputedStyle(replacement).display,
+   active:document.activeElement?.tagName,
+   print:matchMedia('print').matches
+  };
+ });
+ assert.ok(restoredFocus.focused,'the selected row keeps keyboard focus after conversion: '+JSON.stringify(restoredFocus));
+ assert.equal(restoredFocus.selected,'bread-flour');
  assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 0 need review · 0 blank');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('Bread flour (King Arthur reference)'));
  assert.equal(await page.locator('[data-batch-review="1"]').inputValue(),'bread-flour',
@@ -414,6 +450,11 @@ try{
  await page.locator('[data-batch-clear]').click();
  assert.equal(await page.locator('[data-batch-lines]').inputValue(),'','clear action empties input');
  await page.goto(origin+'/cooking/half-a-measurement/',{waitUntil:'networkidle'});
+ await page.locator('[data-half-input]').fill('2/3');
+ await page.locator('[data-half-input]').press('Enter');
+ await page.waitForLoadState('networkidle');
+ assert.equal(await page.locator('[data-half-input]').inputValue(),'2/3','Enter keeps the half-measurement input');
+ assert.match(await page.locator('[data-half-result]').innerText(),/^0\.3333/,'Enter keeps the calculated result');
  assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'3/4',
   'fraction calculator adds 1/2 + 1/4 exactly');
  await page.locator('[data-fraction-first]').fill('1/3');

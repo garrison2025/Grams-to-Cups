@@ -251,6 +251,13 @@ test('recipe scaler cleans unitless spacing and safely changes common countable 
  assert.equal(scaleRecipe('1 tiny amount of spice',4,2,{fractions:true}).rows[0].scaled,'1/2 tiny amount of spice');
 });
 
+test('batch fluid ounces accept common punctuation and spacing',()=>{
+ const source='1 fl oz milk\n1 fl. oz milk\n1 fl.oz milk\n1 fluid ounce milk';
+ const result=batchConvertIngredients(source,{ingredients:foods,target:'g'});
+ assert.equal(result.converted,4);
+ assert.deepEqual(result.rows.map(row=>row.output),Array(4).fill('28.375 g Milk, fresh'));
+});
+
 test('batch explicit US and metric cup quantities round-trip correctly across selected standards',()=>{
  const flour=byId('all-purpose-flour');
  const source='1 US cup All-purpose flour\n1 metric cup All-purpose flour\n1 cup All-purpose flour';
