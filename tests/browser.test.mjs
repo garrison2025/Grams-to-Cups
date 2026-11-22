@@ -54,6 +54,7 @@ try{
  const desktopOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
  assert.ok(desktopOverflow<=1,'desktop horizontal overflow '+desktopOverflow);
  if(process.env.EMIT_UI_SHOTS==='1'){
+  await page.evaluate(()=>window.scrollTo(0,0));
   const img=await page.screenshot({type:'jpeg',quality:42});
   console.log('DESKTOP_SHOT_BEGIN'+img.toString('base64')+'DESKTOP_SHOT_END');
  }
@@ -72,6 +73,10 @@ try{
    assert.equal(await button.getAttribute('aria-expanded'),'true','mobile menu opens');
    await button.click();
    assert.equal(await button.getAttribute('aria-expanded'),'false','mobile menu closes');
+   assert.ok(await mobile.locator('.hero-mobile-cta').isVisible(),'mobile hero includes direct converter action');
+   await mobile.locator('.hero-mobile-cta').click();
+   assert.ok(await mobile.locator('#converter').isVisible(),'mobile jump target exists');
+   await mobile.evaluate(()=>window.scrollTo(0,0));
    if(process.env.EMIT_UI_SHOTS==='1'){
     const img=await mobile.screenshot({type:'jpeg',quality:46});
     console.log('MOBILE_SHOT_BEGIN'+img.toString('base64')+'MOBILE_SHOT_END');
