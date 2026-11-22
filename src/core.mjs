@@ -80,8 +80,12 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
   if(!raw.trim())return {original:raw,scaled:'',ok:true};
   const m=normalizeFractionInput(raw).match(/^\s*((?:\d+\s+)?\d+\/\d+|\d+\s?[¼½¾⅓⅔⅛⅜⅝⅞]|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:\d+(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
   if(!m)return {original:raw,scaled:raw,ok:false};
-  // A range like "2-3 eggs" or "1 to 2 cups" must not silently scale only its first number.
-  if(/^\s*(?:[-–—]|to\b|or\b)\s*(?:\d|\.)/i.test(m[3]||''))return {original:raw,scaled:raw,ok:false};
+  // A range or multi-quantity ingredient line cannot safely scale just the first number.
+  // Example: "1 cup milk + 2 tbsp cream" must not become "2 cups milk + 2 tbsp cream".
+  const trailing=m[3]||'';
+  if(/^\s*(?:[-–—/]|to\b|or\b)\s*(?:\d|\.)/i.test(trailing)||
+     /(?:\+|&|\band\b|\bplus\b)\s*(?:\d|\.)/i.test(trailing))
+   return {original:raw,scaled:raw,ok:false};
   try{const scaled=parseAmount(m[1])*factor;if(!Number.isFinite(scaled)||scaled>1e9)throw Error();
   // Scale unit wording as well: 1 cup becomes 2 cups, 2 cups becomes 1 cup.
   const originalUnit=m[2]||'';
