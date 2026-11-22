@@ -100,7 +100,8 @@ function doc(spec){
  '<meta property="og:title" content="'+e(pageTitle)+'"><meta property="og:description" content="'+e(description)+'">'+
  '<meta name="twitter:card" content="summary"><meta name="twitter:title" content="'+e(pageTitle)+'"><meta name="twitter:description" content="'+e(description)+'">'+
  (permitted?'<meta property="og:url" content="'+e(canonical)+'">':'')+
- '<link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/assets/styles.css">'+schema+
+ '<link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/assets/styles.css">'+
+ '<noscript><style>@media(max-width:780px){.header-inner{flex-wrap:wrap}.nav-toggle{display:none}.main-nav{display:flex;position:static;flex:1 1 100%;visibility:visible;opacity:1;pointer-events:auto;transform:none;transition:none;box-shadow:none;padding:9px 0 16px}}</style></noscript>'+schema+
  '<script type="module" src="/assets/app.js" defer></script></head><body>'+nav()+'<main id="main">'+
  (url==='/'?'':'<div class="container">'+breadHtml(bread)+'</div>')+body+'</main>'+footer()+'</body></html>';
  writeFile(fileFor(url),html);
