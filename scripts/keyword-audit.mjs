@@ -97,17 +97,40 @@ for(const page of manifest.pages){
  pageReport.push([page.url,page.indexCandidate?'yes':'no',group?.rows||0,group?.unique.size||0,group?.lowKdRows||0,group?.trafficSampleSum||0,best?.kw||'',best?.vol??'',best?.kd??'',best?.competitor||'',!page.indexCandidate?'noindex_tool_or_unverified_page':group?'has_provisional_keyword_evidence':'no_sample_mapping_do_not_infer_zero_demand']);
 }
 assert.equal(stats.records,2300);
-assert.equal(stats.indexCandidates,66,'Homepage / converter duplicate policy changed');
+assert.equal(stats.indexCandidates,65,'Publication gates for core and weak numeric intents changed');
 const targetUrl=pageReport.find(x=>x[0]==='/');
 assert.ok(targetUrl&&targetUrl[2]>0,'Core keyword must link to homepage');
 assert.ok(!index.get('/cooking/grams-to-cups/').indexCandidate,'Duplicate core converter URL must remain noindex');
+
+// Strict numerical page evidence: a separate SEO landing is justified by a real
+// observed numeric search phrase, never solely by being able to generate a URL.
+const numericReport=[['grams','target_url','observed_keyword_rows','unique_search_phrases','minimum_semrush_kd','sample_traffic_rows_sum_not_site_traffic','index_candidate','decision','strongest_sample_keyword']];
+for(const page of manifest.pages.filter(p=>/^\/cooking\/grams-to-cups\/\d+-grams-to-cups\/$/.test(p.url))){
+ const amount=Number(page.url.match(/\/(\d+)-grams-to-cups\/$/)[1]);
+ const numericPattern=new RegExp('\\b'+amount+'\\s*(?:grams?|g)\\s*(?:(?:to|in|into)\\s*)?(?:a\\s*)?cups?\\b','i');
+ const matched=records.filter(row=>numericPattern.test(val(row,'keyword')));
+ const kd=matched.map(row=>num(val(row,'semrush_kd'))).filter(x=>x!==null);
+ const minKd=kd.length?Math.min(...kd):null;
+ const traffic=matched.reduce((sum,row)=>sum+(num(val(row,'estimated_us_keyword_traffic'))||0),0);
+ const unique=new Set(matched.map(row=>val(row,'keyword').toLowerCase().trim())).size;
+ assert.ok(matched.length>0,'Numeric page has no directly observed competitor keyword: '+page.url);
+ const decision=minKd!==null&&minKd<=29?'observed_low_kd_candidate':'observed_but_not_low_kd_keep_unindexed';
+ if(decision==='observed_but_not_low_kd_keep_unindexed')assert.equal(page.indexCandidate,false,'Unverified high-KD numeric page cannot auto-index: '+page.url);
+ else assert.equal(page.indexCandidate,true,'Observed low-KD numeric route should be eligible: '+page.url);
+ const strongest=matched.slice().sort((a,b)=>(num(val(b,'estimated_us_keyword_traffic'))||0)-(num(val(a,'estimated_us_keyword_traffic'))||0))[0];
+ numericReport.push([amount,page.url,matched.length,unique,minKd??'',traffic,page.indexCandidate?'yes':'no',decision,val(strongest,'keyword')]);
+}
+assert.equal(numericReport.length,22,'Expected 21 tested numeric SEO candidates');
+
 const out=path.join(root,'reports');
 fs.mkdirSync(out,{recursive:true});
 fs.writeFileSync(path.join(out,'seo-keyword-decisions.csv'),'\ufeff'+quotedRows(detailed));
 fs.writeFileSync(path.join(out,'seo-page-evidence.csv'),'\ufeff'+quotedRows(pageReport));
+fs.writeFileSync(path.join(out,'seo-numeric-intent.csv'),'\ufeff'+quotedRows(numericReport));
 fs.writeFileSync(path.join(out,'seo-summary.json'),JSON.stringify({...stats,mappedPageCount:grouped.size,pagesMissingMapping:pageReport.slice(1).filter(x=>x[1]==='yes'&&Number(x[2])===0).length},null,2)+'\n');
 console.log('SEO evidence audit passed:',stats.records,'source keyword observations,',stats.uniqueTerms,'distinct phrases,',stats.indexCandidates,'index candidates.');
 console.log('Keyword review decisions:',JSON.stringify(stats.decisions));
+console.log('Numerical keyword evidence:',numericReport.length-1,'validated pages; low-KD eligible:',numericReport.slice(1).filter(x=>x[6]==='yes').length);
 const uncovered=pageReport.slice(1).filter(x=>x[1]==='yes'&&Number(x[2])===0).map(x=>x[0]);
 console.log('Index candidates without mapping evidence in submitted export:',uncovered.length,JSON.stringify(uncovered.slice(0,30)));
 console.log('Reports written to reports/ (not included in the public site build).');
