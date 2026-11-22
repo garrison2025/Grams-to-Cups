@@ -12,10 +12,11 @@ const base=(process.env.SITE_URL||'').trim().replace(/\/+$/,'');
 const origin=/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(base)?base:'';
 const publicIndex=!!origin&&process.env.CF_PAGES_BRANCH==='main'&&process.env.PUBLIC_INDEX_APPROVED==='true';
 const pages=[],e=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
-const f=n=>formatAmount(n,3),link=(url,label,cls='')=>'<a href="'+e(url)+'"'+(cls?' class="'+e(cls)+'"':'')+'>'+e(label)+'</a>';
+const f=n=>formatAmount(n,3),link=(url,label,cls='')=>'<a href="'+e(url==='/cooking/grams-to-cups/'?'/':url)+'"'+(cls?' class="'+e(cls)+'"':'')+'>'+e(label)+'</a>';
 const source='https://www.kingarthurbaking.com/learn/ingredient-weight-chart';
 const numberValues=[25,30,50,60,75,80,100,125,150,180,200,225,250,300,350,400,450,500,600,750,1000];
-const noIndexCandidatePaths=new Set(['/cooking/cups-to-fluid-ounces/','/cooking/fluid-ounces-to-cups/','/cooking/recipe-scaler/','/cooking/ingredients/whole-wheat-flour/','/cooking/ingredients/coconut-flour/','/cooking/ingredients/gluten-free-flour/','/cooking/ingredients/brown-rice-cooked/','/cooking/ingredients/maple-syrup/','/cooking/ingredients/olive-oil/','/cooking/ingredients/cornstarch/','/cooking/ingredients/pumpkin-puree/','/cooking/ingredients/walnuts-chopped/','/cooking/guides/measuring-flour/','/cooking/batch-converter/']);
+// Same search intent as the homepage: keep the tool usable but direct internal SEO links to /.
+const noIndexCandidatePaths=new Set(['/cooking/grams-to-cups/','/cooking/cups-to-fluid-ounces/','/cooking/fluid-ounces-to-cups/','/cooking/recipe-scaler/','/cooking/ingredients/whole-wheat-flour/','/cooking/ingredients/coconut-flour/','/cooking/ingredients/gluten-free-flour/','/cooking/ingredients/brown-rice-cooked/','/cooking/ingredients/maple-syrup/','/cooking/ingredients/olive-oil/','/cooking/ingredients/cornstarch/','/cooking/ingredients/pumpkin-puree/','/cooking/ingredients/walnuts-chopped/','/cooking/guides/measuring-flour/','/cooking/batch-converter/']);
 const flourNumbers=[100,125,150,200,250,300,400,500],sugarNumbers=[100,200];
 const tools=[
 ['grams-to-cups','Grams to Cups','g','cup',100,'ingredient'],
