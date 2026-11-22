@@ -123,9 +123,24 @@ try{
  assert.ok((await reverseChart.innerText()).includes('1/2 cup'),'reverse chart includes practical cup sizes');
  assert.ok((await reverseChart.innerText()).includes('60 g'),'flour half-cup uses cited 120g-per-cup source');
  assert.ok((await reverseChart.innerText()).includes('metric cups'),'reverse chart explains metric differences');
+ const flourSpecific=page.locator('a[href="/cooking/ingredients/all-purpose-flour/125-grams-to-cups/"]');
+ assert.ok(await flourSpecific.isVisible(),'ingredient page links to an independently useful 125g flour guide');
+ await flourSpecific.click();
+ assert.ok(await page.getByRole('heading',{name:/125 grams of all-purpose flour to cups/i}).isVisible(),
+  'ingredient+number link reaches usable specific page');
+ await page.goto(origin+'/cooking/ingredients/granulated-sugar/',{waitUntil:'networkidle'});
+ const sugarSpecific=page.locator('a[href="/cooking/ingredients/granulated-sugar/200-grams-to-cups/"]');
+ assert.ok(await sugarSpecific.isVisible(),'sugar page links to its specific 200g conversion');
+ await sugarSpecific.click();
+ assert.ok(await page.getByRole('heading',{name:/200 grams of granulated white sugar to cups/i}).isVisible(),
+  'sugar specific conversion renders');
  await page.goto(origin+'/cooking/grams-to-cups/100-grams-to-cups/',{waitUntil:'networkidle'});
  assert.ok(await page.getByRole('heading',{name:'Closest common cup measures for 100 grams'}).isVisible(),'numeric landing offers useful measuring comparisons');
  assert.ok((await page.locator('table').nth(1).innerText()).includes('Weight difference'),'numeric page warns about grams difference');
+ assert.ok(await page.locator('a[href="/cooking/ingredients/all-purpose-flour/100-grams-to-cups/"]').isVisible(),
+  'general 100g conversion has a crawlable contextual link to the 100g flour page');
+ assert.ok(await page.locator('a[href="/cooking/ingredients/granulated-sugar/100-grams-to-cups/"]').isVisible(),
+  'general 100g conversion has a crawlable contextual link to the 100g sugar page');
  assert.equal(errors.length,0,'no browser errors after expanded reference pages');
 
  await page.goto(origin+'/cooking/batch-converter/',{waitUntil:'networkidle'});
