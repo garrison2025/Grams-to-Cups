@@ -1,4 +1,4 @@
-import {convertQuantity,formatAmount,parseAmount,approximateFraction,calculateKitchenFractions,unitDescription,scaleRecipe,csvCell,batchConvertIngredients} from './core.mjs';
+import {convertQuantity,formatAmount,parseAmount,approximateFraction,suggestKitchenMeasures,calculateKitchenFractions,unitDescription,scaleRecipe,csvCell,batchConvertIngredients} from './core.mjs';
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
 const ingredients=await fetch('/assets/ingredients.json').then(r=>r.ok?r.json():Promise.reject(new Error('Ingredient data unavailable'))).catch(()=>[]);
@@ -52,6 +52,23 @@ function renderCalculator(form){
   const context=isCrossDimension
     ?(isWater&&chosenWaterMode==='capacity'?'Physical-capacity water estimate of about 1 g per mL; actual water density varies with temperature. This is not the published 227 g/US cup recipe chart method.':'Based on '+refText+' of '+ingredient?.name+'. This is an approximate recipe measurement.')
     :'These units have a defined conversion; an ingredient reference is not needed.';
+  const guide=$('[data-measure-guide]',form);
+  if(guide){
+   const primary=to==='cup'&&n>0?suggestKitchenMeasures(n,{standard,ingredient:isCrossDimension?ingredient:null,waterMode:chosenWaterMode}):null;
+   const onlyCups=primary?suggestKitchenMeasures(n,{standard,ingredient:isCrossDimension?ingredient:null,waterMode:chosenWaterMode,allowSpoons:false}):null;
+   guide.hidden=!primary;
+   if(primary){
+    setText($('[data-measure-summary]',guide),primary.instruction);
+    const alternative=$('[data-measure-alternative]',guide);
+    if(alternative){alternative.hidden=!onlyCups||onlyCups.instruction===primary.instruction;
+     if(onlyCups)setText(alternative,'Cups only: '+onlyCups.instruction);}
+    const diff=primary.differenceGrams??primary.differenceMl,unit=primary.differenceGrams===null?'mL':'g';
+    const difference=Math.abs(diff)<.01?'Difference under 0.01 '+unit:
+     formatAmount(Math.abs(diff),3)+' '+unit+(diff>0?' above':' below')+' target';
+    setText($('[data-measure-error]',guide),difference+' ('+formatAmount(Math.abs(primary.percentError),3)+'%).');
+   }
+  }
+  setText($('[data-advanced-label]',form),unitDescription(from,standard)+' → '+unitDescription(to,standard));
   setText(note,(fraction?'Approximately '+fraction+' '+shortLabel(to,standard)+'. ':'')+context);
   setText($('[data-meta-kind]',form),isCrossDimension?'Ingredient':'Conversion');
   setText($('[data-meta-ingredient]',form),isCrossDimension?ingredient?.name:'Fixed units');
@@ -74,6 +91,7 @@ function renderCalculator(form){
   setText($('[data-result-unit]',form),'');
   setText(note,'Enter a valid quantity and choose an ingredient where needed.');
   if($('[data-meter-wrap]',form))$('[data-meter-wrap]',form).hidden=true;
+  if($('[data-measure-guide]',form))$('[data-measure-guide]',form).hidden=true;
   announce(error,ex.message);
   return null;
  }
@@ -117,14 +135,24 @@ for(const form of $$('[data-calc]')){
   }
   return conversion;
  };
+ const advanced=$('[data-advanced-units]',form);
+ if(advanced&&window.matchMedia('(max-width: 520px)').matches)advanced.open=false;
+ const foodSearch=$('[data-ingredient-search]',form),foodSelect=$('[data-ingredient]',form);
+ foodSearch?.addEventListener('input',()=>{
+  const query=foodSearch.value.trim().toLowerCase();
+  const found=query?ingredients.find(food=>[food.name,...(food.aliases||[])].some(name=>name.toLowerCase()===query)):null;
+  if(found){foodSelect.value=found.id;update(true);}
+ });
  const params=new URLSearchParams(location.search);
  for(const [key,selector] of [['amount','[data-amount]'],['ingredient','[data-ingredient]'],['standard','[data-standard]'],['from','[data-from]'],['to','[data-to]'],['waterMode','[data-water-mode]']]){
   const el=$(selector,form),v=params.get(key);
   if(el&&v&&v.length<80&&(el.tagName==='INPUT'||[...el.options].some(o=>o.value===v)))el.value=v;
  }
- $$('input,select',form).forEach(el=>{
+ if(foodSearch&&foodSelect)foodSearch.value=byId.get(foodSelect.value)?.name||'';
+ $('input,select',form).forEach(el=>{
   el.addEventListener('input',()=>update(true));
   el.addEventListener('change',()=>{
+   if(el===foodSelect&&foodSearch)foodSearch.value=byId.get(foodSelect.value)?.name||'';
    const valid=update(true);
    if(el.tagName==='SELECT'&&valid)animateConversionResult(form);
   });
@@ -133,14 +161,17 @@ for(const form of $$('[data-calc]')){
   $('[data-amount]',form).value=button.dataset.amountPreset;if(update(true))animateConversionResult(form);
  }));
  $$('[data-ingredient-preset]',form).forEach(button=>button.addEventListener('click',()=>{
-  $('[data-ingredient]',form).value=button.dataset.ingredientPreset;if(update(true))animateConversionResult(form);
+  $('[data-ingredient]',form).value=button.dataset.ingredientPreset;
+  if(foodSearch)foodSearch.value=byId.get(button.dataset.ingredientPreset)?.name||'';
+  if(update(true))animateConversionResult(form);
  }));
  $('[data-swap]',form)?.addEventListener('click',()=>{
   const from=$('[data-from]',form),to=$('[data-to]',form);
   [from.value,to.value]=[to.value,from.value];if(update(true))animateConversionResult(form);animateSwap($('[data-swap]',form));
  });
  $('[data-reset]',form)?.addEventListener('click',()=>{
-  form.reset();setText($('[data-feedback]',form),'');if(update(true))animateConversionResult(form);
+  form.reset();if(foodSearch)foodSearch.value=byId.get(foodSelect?.value)?.name||'';
+  setText($('[data-feedback]',form),'');if(update(true))animateConversionResult(form);
  });
  $('[data-copy]',form)?.addEventListener('click',async()=>{
   const d=update();if(!d)return;
@@ -164,6 +195,7 @@ for(const form of $$('[data-calc]')){
 for(const form of $$('[data-recipe]')){
  const out=$('[data-recipe-output]',form),error=$('[data-recipe-error]',form);
  let latest=null;
+ const ingredientOverrides=Object.create(null);
  const compute=()=>{
   try{latest=scaleRecipe($('[data-recipe-lines]',form).value,$('[data-old-servings]',form).value,$('[data-new-servings]',form).value,{fractions:!!$('[data-recipe-fraction]',form)?.checked});
   out.textContent=latest.rows.map(r=>r.scaled+(r.ok?'':'  [check manually]')).join('\n');
@@ -193,7 +225,7 @@ for(const form of $$('[data-batch]')){
   try{
    const cupsChoice=target.querySelector('option[value="cup"]');
    if(cupsChoice)cupsChoice.textContent=standard.value==='metric'?'Metric cups':'US cups';
-   latest=batchConvertIngredients(input.value,{ingredients,target:target.value,standard:standard.value,fractions:fraction.checked});
+   latest=batchConvertIngredients(input.value,{ingredients,target:target.value,standard:standard.value,fractions:fraction.checked,ingredientOverrides});
    tbody.replaceChildren();
    for(const item of latest.rows){
     if(item.status==='blank')continue;
@@ -216,6 +248,22 @@ for(const form of $$('[data-batch]')){
       why.className='batch-row-warning';
       why.textContent=item.reason;
       result.appendChild(why);
+      const label=document.createElement('label');
+      label.className='batch-review-label';
+      label.textContent='Choose the exact ingredient (only when certain)';
+      const select=document.createElement('select');
+      select.className='batch-review-select';
+      select.dataset.batchReview=String(item.index);
+      select.setAttribute('aria-label','Select an ingredient for line '+(item.index+1));
+      select.add(new Option('Keep unchanged / choose exact food',''));
+      for(const food of ingredients)select.add(new Option(food.name,food.id));
+      select.value=ingredientOverrides[item.index]||'';
+      select.addEventListener('change',()=>{
+       if(select.value)ingredientOverrides[item.index]=select.value;
+       else delete ingredientOverrides[item.index];
+       compute();
+      });
+      result.append(label,select);
     }
     tr.append(original,result);
     tbody.appendChild(tr);
@@ -231,13 +279,14 @@ for(const form of $$('[data-batch]')){
    return null;
   }
  };
+ input.addEventListener('input',()=>{for(const key of Object.keys(ingredientOverrides))delete ingredientOverrides[key];});
  for(const control of [input,target,standard,fraction]){
   control.addEventListener('input',compute);
   control.addEventListener('change',compute);
  }
  $('[data-batch-run]',form)?.addEventListener('click',compute);
  $('[data-batch-clear]',form)?.addEventListener('click',()=>{
-  input.value='';
+  input.value='';for(const key of Object.keys(ingredientOverrides))delete ingredientOverrides[key];
   setText($('[data-batch-feedback]',form),'');
   compute();
   input.focus();
