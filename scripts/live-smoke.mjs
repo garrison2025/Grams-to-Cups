@@ -6,6 +6,7 @@
  * Does not submit Search Console, change DNS or deploy.
  */
 import assert from 'node:assert/strict';
+import {isIP} from 'node:net';
 
 const envUrl=(process.env.LIVE_SITE_URL||'').trim();
 const expected=(process.env.LIVE_EXPECT_INDEX||'').trim();
@@ -13,7 +14,7 @@ if(!['true','false'].includes(expected))throw new Error('Set LIVE_EXPECT_INDEX=t
 if(!/^https:\/\/[a-z0-9.-]+$/i.test(envUrl.replace(/\/$/,'')))throw new Error('Set LIVE_SITE_URL to the exact HTTPS hostname, without a path, query or port.');
 const origin=envUrl.replace(/\/$/,'');
 const domain=new URL(origin).hostname.toLowerCase();
-if(domain==='example.com'||domain.endsWith('.example')||domain.endsWith('.test')||domain.endsWith('.invalid')||domain==='localhost'||domain==='127.0.0.1')throw new Error('Cannot smoke-test a placeholder or local domain.');
+if(isIP(domain)||domain==='example.com'||domain.endsWith('.example')||domain.endsWith('.test')||domain.endsWith('.invalid')||domain.endsWith('.internal')||domain.endsWith('.local')||domain==='localhost')throw new Error('Cannot smoke-test an IP address, placeholder or local domain.');
 const approved=expected==='true';
 const fetchText=async pathname=>{
  const controller=new AbortController();
