@@ -17,7 +17,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "A spooned-and-leveled reference; scooping can compact flour."
+    "note": "A spooned-and-leveled reference; scooping can compact flour.",
+    "sourceEntry": "All-Purpose Flour"
   },
   {
     "id": "whole-wheat-flour",
@@ -36,7 +37,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Whole wheat is not interchangeable by volume with all-purpose flour."
+    "note": "Whole wheat is not interchangeable by volume with all-purpose flour.",
+    "sourceEntry": "Whole Wheat Flour (Premium 100%)"
   },
   {
     "id": "almond-flour",
@@ -55,7 +57,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "This chart entry is for toasted almond flour, not every almond meal."
+    "note": "This chart entry is for toasted almond flour, not every almond meal.",
+    "sourceEntry": "Toasted Almond Flour"
   },
   {
     "id": "coconut-flour",
@@ -74,7 +77,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Coconut flour absorbs liquid differently from wheat flour."
+    "note": "Coconut flour absorbs liquid differently from wheat flour.",
+    "sourceEntry": "Coconut Flour"
   },
   {
     "id": "gluten-free-flour",
@@ -93,7 +97,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Blend composition affects weight; use the recipe's stated reference."
+    "note": "Blend composition affects weight; use the recipe's stated reference.",
+    "sourceEntry": "Gluten-Free All-Purpose Flour"
   },
   {
     "id": "granulated-sugar",
@@ -114,7 +119,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Different sugar crystal sizes may change the reference."
+    "note": "Different sugar crystal sizes may change the reference.",
+    "sourceEntry": "Sugar (granulated white)"
   },
   {
     "id": "brown-sugar-packed",
@@ -133,7 +139,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Do not apply this packed reference to loose brown sugar."
+    "note": "Do not apply this packed reference to loose brown sugar.",
+    "sourceEntry": "Brown sugar (dark or light, packed)"
   },
   {
     "id": "powdered-sugar-unsifted",
@@ -153,7 +160,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Sifting changes apparent volume; this value is for unsifted sugar."
+    "note": "Sifting changes apparent volume; this value is for unsifted sugar.",
+    "sourceEntry": "Confectioners' sugar (unsifted)"
   },
   {
     "id": "butter",
@@ -172,7 +180,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "The source lists 113 g per 1/2 US cup (8 tablespoons)."
+    "note": "The source lists 113 g per 1/2 US cup (8 tablespoons).",
+    "sourceEntry": "Butter"
   },
   {
     "id": "milk-fresh",
@@ -191,7 +200,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "This is a baking-chart weight, not a laboratory density constant."
+    "note": "This is a baking-chart weight, not a laboratory density constant.",
+    "sourceEntry": "Milk (fresh)"
   },
   {
     "id": "water",
@@ -210,7 +220,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "This recipe-chart value differs from physical 1 g/mL water estimates. Use mL for physical volume."
+    "note": "This recipe-chart value differs from physical 1 g/mL water estimates. Use mL for physical volume.",
+    "sourceEntry": "Water"
   },
   {
     "id": "long-grain-rice-dry",
@@ -230,7 +241,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Dry rice only; cooked rice has a different volume per gram."
+    "note": "Dry rice only; cooked rice has a different volume per gram.",
+    "sourceEntry": "Rice (long grain, dry)"
   },
   {
     "id": "brown-rice-cooked",
@@ -249,7 +261,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Do not apply to uncooked rice."
+    "note": "Do not apply to uncooked rice.",
+    "sourceEntry": "Brown rice (cooked)"
   },
   {
     "id": "rolled-oats",
@@ -269,7 +282,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Not the separate King Arthur product branded rolled-oats weight (113 g/cup)."
+    "note": "Not the separate King Arthur product branded rolled-oats weight (113 g/cup).",
+    "sourceEntry": "Oats (old-fashioned or quick-cooking)"
   },
   {
     "id": "honey",
@@ -288,7 +302,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "The published source measurement is 21 g per US tablespoon."
+    "note": "The published source measurement is 21 g per US tablespoon.",
+    "sourceEntry": "Honey"
   },
   {
     "id": "maple-syrup",
@@ -307,7 +322,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Measured in the source as 156 g per half cup."
+    "note": "Measured in the source as 156 g per half cup.",
+    "sourceEntry": "Maple syrup"
   },
   {
     "id": "vegetable-oil",
@@ -326,7 +342,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Recipe-chart weight; oil varies with formulation and temperature."
+    "note": "Recipe-chart weight; oil varies with formulation and temperature.",
+    "sourceEntry": "Vegetable oil"
   },
   {
     "id": "olive-oil",
@@ -345,7 +362,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "The source lists 50 g per quarter cup."
+    "note": "The source lists 50 g per quarter cup.",
+    "sourceEntry": "Olive oil"
   },
   {
     "id": "sour-cream",
@@ -364,7 +382,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Do not substitute liquid cream weights."
+    "note": "Do not substitute liquid cream weights.",
+    "sourceEntry": "Sour cream"
   },
   {
     "id": "cornstarch",
@@ -384,7 +403,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "The source lists 28 g per quarter cup."
+    "note": "The source lists 28 g per quarter cup.",
+    "sourceEntry": "Cornstarch"
   },
   {
     "id": "coconut-oil",
@@ -403,7 +423,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Coconut oil can be solid or liquid; this is a recipe reference."
+    "note": "Coconut oil can be solid or liquid; this is a recipe reference.",
+    "sourceEntry": "Coconut oil"
   },
   {
     "id": "cream-cheese",
@@ -422,7 +443,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "The same cup standard is assumed for extrapolation."
+    "note": "The same cup standard is assumed for extrapolation.",
+    "sourceEntry": "Cream cheese"
   },
   {
     "id": "pumpkin-puree",
@@ -441,7 +463,8 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Use for purée, not diced pumpkin."
+    "note": "Use for purée, not diced pumpkin.",
+    "sourceEntry": "Pumpkin purée"
   },
   {
     "id": "walnuts-chopped",
@@ -460,6 +483,7 @@
     "reviewedAt": "2026-11-22",
     "referenceType": "recipe_reference",
     "approximate": true,
-    "note": "Do not apply to whole walnut halves."
+    "note": "Do not apply to whole walnut halves.",
+    "sourceEntry": "Walnuts (chopped)"
   }
 ]
