@@ -149,6 +149,57 @@ test('scaler adjusts both sides of a clear kitchen interval, preserving ambiguou
  assert.deepEqual(unsafe.rows.map(x=>x.scaled),unsafe.rows.map(x=>x.original));
 });
 
+test('scaler refuses a second quantity after commas, semicolons or explanatory text',()=>{
+ const lines=[
+  '1 cup milk, 2 eggs',
+  '1 cup milk; 2 eggs',
+  '1 cup flour, sifted, 2 eggs',
+  '1 cup milk (2 eggs)',
+  '2 eggs; 1 onion',
+  '1 cup milk, 1/2 tsp cinnamon',
+  '1 cup milk and 2 eggs',
+  '2 cups milk, 3% fat',
+  '1 cup milk; whisk thoroughly'
+ ];
+ const result=scaleRecipe(lines.join('\n'),4,6,{fractions:true});
+ assert.equal(result.unparsed,lines.length,'No multi-quantity or semicolon line may be partially marked successful');
+ for(const row of result.rows){
+  assert.equal(row.scaled,row.original,'Leave the entire ambiguous row byte-for-byte unchanged');
+  assert.equal(row.ok,false,'Flag every ambiguous row for user review');
+ }
+ const safe=scaleRecipe('1 cup flour, sifted\n2 eggs\n1–2 cups milk\n1 ¹⁄₂ cups flour',4,6,{fractions:true});
+ assert.equal(safe.unparsed,0,'Preparation notes and single-quantity lines still work');
+ assert.deepEqual(safe.rows.map(x=>x.scaled),[
+  '1 1/2 cups flour, sifted',
+  '3 eggs',
+  '1 1/2–3 cups milk',
+  '2 1/4 cups flour'
+ ]);
+});
+
+test('scaler never treats cooking times, temperatures or percent labels as ingredient amounts',()=>{
+ const lines=[
+  '15 minutes',
+  '15 min',
+  '2 hours',
+  '30 seconds',
+  '350°F',
+  '180°C',
+  '180 °C',
+  '350 F',
+  '180 degrees Celsius',
+  '350 degrees Fahrenheit',
+  '2 days to ferment',
+  '1% milk'
+ ];
+ const result=scaleRecipe(lines.join('\n'),4,6,{fractions:true});
+ assert.equal(result.unparsed,lines.length,'Every non-ingredient instruction must request review');
+ assert.deepEqual(result.rows.map(row=>row.scaled),lines);
+ assert.ok(result.rows.every(row=>!row.ok));
+ assert.deepEqual(scaleRecipe('2 eggs\n1 cup milk',4,6,{fractions:true}).rows.map(row=>row.scaled),
+  ['3 eggs','1 1/2 cups milk'],'Valid ingredient lines must still scale');
+});
+
 test('physical-capacity water and published recipe weight remain separate calculation modes',()=>{
  const water=byId('water');
  assert.equal(convertQuantity(1,'cup','g',{ingredient:water,standard:'us'}),227);
