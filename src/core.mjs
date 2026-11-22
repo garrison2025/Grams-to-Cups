@@ -403,7 +403,7 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
    reason:'Multiple quantities or ingredients on one line. Split into separate ingredient lines; no partial conversion was made.',
    ingredient:foodName.trim(),manualCorrectionAllowed:false
   };
-  const cleanedUnit=rawUnit.toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
+  const cleanedUnit=rawUnit.toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim().replace(/^fl\s*oz$/,'fl oz');
   const unit=UNIT_ALIASES[cleanedUnit];
   // An explicit input cup standard takes precedence over the global result standard.
   const sourceStandard=cleanedUnit.startsWith('us cup')?'us':cleanedUnit.startsWith('metric cup')?'metric':standard;

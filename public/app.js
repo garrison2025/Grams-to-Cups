@@ -230,6 +230,7 @@ function setupIngredientPicker(form,onChange){
 for(const form of $$('[data-calc]')){
  const live=$('[data-live-result]',form);
  const feedback=$('[data-feedback]',form);
+ const shareFallback=$('[data-share-fallback]',form),shareUrl=$('[data-share-url]',form);
  const copyButton=$('[data-copy]',form),copyLabel=$('[data-copy-label]',form);
  const swapButton=$('[data-swap]',form.closest('.conversion-card'));
  let spokenTimer=null;
@@ -241,6 +242,7 @@ for(const form of $$('[data-calc]')){
   setText(copyLabel,'Copy result');
   feedback.removeAttribute('data-error-state');
   setText(feedback,'');
+  if(shareFallback)shareFallback.hidden=true;
  }
  const update=(announceChange=false)=>{
   if(announceChange)clearCopyFeedback();
@@ -317,10 +319,24 @@ for(const form of $$('[data-calc]')){
   const d=update();if(!d)return;
   const u=new URL(location.href);u.search='';
   for(const [k,v] of [['amount',d.amount],['ingredient',d.isCrossDimension?d.ingredient?.id:null],['standard',d.standard],['from',d.from],['to',d.to],['waterMode',d.isCrossDimension&&d.ingredient?.id==='water'?d.waterMode:null]])if(v)u.searchParams.set(k,v);
+  const request=copyRequest;
+  if(navigator.share){
+   try{
+    await navigator.share({title:document.title,url:u.href});
+    return;
+   }catch(error){if(error.name==='AbortError'||request!==copyRequest)return}
+  }
   try{
-   if(navigator.share)await navigator.share({title:document.title,url:u.href});
-   else{await navigator.clipboard.writeText(u.href);setText($('[data-feedback]',form),'Shareable link copied.');}
-  }catch(ex){if(ex.name!=='AbortError')setText($('[data-feedback]',form),'Sharing unavailable. You can copy the page URL.')}
+   await navigator.clipboard.writeText(u.href);
+   if(request===copyRequest)setText(feedback,'Shareable link copied.');
+  }catch{
+   if(request!==copyRequest)return;
+   shareUrl.value=u.href;
+   shareFallback.hidden=false;
+   setText(feedback,'Copy the link below to share this conversion.');
+   shareUrl.focus();
+   shareUrl.select();
+  }
  });
  $('[data-print]',form)?.addEventListener('click',()=>window.print());
  update();
@@ -430,9 +446,11 @@ for(const form of $$('[data-batch]')){
       for(const food of ingredients)select.add(new Option(food.name,food.id));
       select.value=ingredientOverrides[item.index]||'';
       select.addEventListener('change',()=>{
+       const restoreFocus=document.activeElement===select;
        if(select.value)ingredientOverrides[item.index]=select.value;
        else delete ingredientOverrides[item.index];
        compute();
+       if(restoreFocus)$('[data-batch-review="'+item.index+'"]',tbody)?.focus({preventScroll:true});
       });
       result.append(label,select);
     }
@@ -508,6 +526,7 @@ for(const form of $$('[data-fraction-arithmetic]')){
 for(const form of $$('[data-half-form]')){
  const input=$('[data-half-input]',form),output=$('[data-half-result]',form),error=$('[data-half-error]',form);
  const run=()=>{try{const v=parseAmount(input.value)/2;setText(output,formatAmount(v,4)+(approximateFraction(v)?' (about '+approximateFraction(v)+')':''));if(error)error.hidden=true;}catch(e){setText(output,'—');announce(error,e.message)}};
+ form.addEventListener('submit',event=>{event.preventDefault();run();});
  input.addEventListener('input',run);run();
 }
 const toggle=$('[data-nav-toggle]'),nav=$('[data-nav]');
@@ -561,7 +580,9 @@ for(const root of $$('[data-compare]')){
   const flourCups=convertQuantity(grams,'g','cup',{ingredient:flour,standard:'us'});
   const sugarCups=convertQuantity(grams,'g','cup',{ingredient:sugar,standard:'us'});
   const max=Math.max(flourCups,sugarCups);
-  setText($('[data-compare-grams]',root),formatAmount(grams,0)+' g');
+  const displayedWeight=formatAmount(grams,0)+' g';
+  setText($('[data-compare-grams]',root),displayedWeight);
+  for(const label of $$('[data-compare-weight]',root))setText(label,displayedWeight);
   setText($('[data-compare-flour]',root),formatAmount(flourCups,3));
   setText($('[data-compare-sugar]',root),formatAmount(sugarCups,3));
   const flourBar=$('[data-compare-flour-bar]',root),sugarBar=$('[data-compare-sugar-bar]',root);
@@ -585,10 +606,16 @@ for(const chart of $$('[data-chart]')){
  const download=$('[data-chart-download]',chart),print=$('[data-chart-print]');
  if(!table||!search||!standard||!custom)continue;
  const rows=$$('tbody tr',table),head=$$('thead th',table);
- const setValid=valid=>{
-  if(download)download.disabled=!valid;
-  if(print)print.disabled=!valid;
+ let valid=false,visible=rows.length;
+ const updateActions=()=>{
+  const disabled=!valid||visible===0;
+  if(download)download.disabled=disabled;
+  if(print)print.disabled=disabled;
+ };
+ const setValid=value=>{
+  valid=value;
   custom.setAttribute('aria-invalid',String(!valid));
+  updateActions();
  };
  const update=()=>{
   try{
@@ -634,7 +661,7 @@ for(const chart of $$('[data-chart]')){
  };
  const filter=()=>{
   const query=search.value.trim().toLowerCase();
-  let visible=0;
+  visible=0;
   for(const row of rows){
    row.hidden=!!query&&!row.cells[0].textContent.toLowerCase().includes(query);
    if(!row.hidden)visible++;
@@ -642,6 +669,7 @@ for(const chart of $$('[data-chart]')){
   setText($('[data-chart-count]',chart),visible+' of '+rows.length+' ingredients shown');
   const empty=$('[data-chart-empty]',chart);
   if(empty)empty.hidden=visible!==0;
+  updateActions();
  };
  standard.addEventListener('change',update);
  custom.addEventListener('input',update);

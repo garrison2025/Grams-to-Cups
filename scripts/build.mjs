@@ -228,7 +228,8 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  '<div class="calc-actions"><button class="btn btn-primary" type="button" data-copy><span data-copy-label>Copy result</span></button>'+
  '<button class="btn" type="button" data-share>Share link</button><button class="btn" type="button" data-print>Print</button>'+
  '<button class="btn btn-ghost" type="button" data-reset>Reset</button></div>'+
- '<p class="calc-feedback" data-feedback role="status"></p></div>'+
+ '<p class="calc-feedback" data-feedback role="status"></p>'+
+ '<div class="field" data-share-fallback hidden><label for="converter-share-link">Copy this share link</label><input id="converter-share-link" data-share-url type="url" readonly spellcheck="false"></div></div>'+
  '<div class="calc-extras">'+
  '<div class="quick-row calc-food-presets" role="group" aria-label="Popular ingredients" data-density-field'+(crossDimension?'':' hidden')+'>'+foodButtons+'</div>'+
  '<div class="standard-line" data-water-mode-row'+(crossDimension&&ref.id==='water'?'':' hidden')+'><label for="water-mode">Water measurement method</label><select id="water-mode" data-water-mode><option value="recipe" selected>Recipe chart · 227 g per US cup</option><option value="capacity">Physical capacity · approximately 1 g/mL</option></select><small>Water density varies with temperature.</small></div>'+
@@ -279,11 +280,11 @@ function home(){
  '<div class="compare-item"><small>ALL-PURPOSE FLOUR</small><div class="compare-food-icon" aria-hidden="true">F</div>'+
  '<strong><output data-compare-flour>'+e(flour100)+'</output><span class="compare-unit">US cups</span></strong>'+
  '<div class="compare-bar-track" aria-hidden="true"><div class="compare-bar-fill" data-compare-flour-bar style="width:100%"></div></div>'+
- '<span>100 g · spoon &amp; level</span></div>'+
+ '<span><span data-compare-weight>100 g</span> · spoon &amp; level</span></div>'+
  '<div class="compare-item"><small>GRANULATED SUGAR</small><div class="compare-food-icon" aria-hidden="true">S</div>'+
  '<strong><output data-compare-sugar>'+e(sugar100)+'</output><span class="compare-unit">US cups</span></strong>'+
  '<div class="compare-bar-track" aria-hidden="true"><div class="compare-bar-fill" data-compare-sugar-bar style="width:61%"></div></div>'+
- '<span>100 g · level cup</span></div>'+
+ '<span><span data-compare-weight>100 g</span> · level cup</span></div>'+
  '<p class="compare-caption" data-compare-caption>100 g of flour needs more cup space than 100 g of granulated sugar.</p>'+
  '</div></div></section>';
  const hero='<div class="container hero"><div class="hero-copy">'+
