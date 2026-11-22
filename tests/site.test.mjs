@@ -401,3 +401,63 @@ test('batch list accepts bullets and optional notes, permits explicit ingredient
  assert.match(fixed.rows[2].reason,/User-selected/);
  assert.equal(initial.rows[4].output,'200 g all-purpose flour, sifted');
 });
+
+
+test('manual food override never permits partial conversion of a multi-ingredient row',()=>{
+ const unsafe=[
+  '1 US cup milk, 2 eggs',
+  '1 cup milk and 2 eggs',
+  '1 cup milk + 2 tbsp cream',
+  '1 cup milk plus half a teaspoon cream',
+  '1 cup milk, ½ tsp cinnamon',
+  '1 cup milk with one egg',
+  '1 cup milk; 2 eggs'
+ ];
+ for(const line of unsafe){
+  const result=batchConvertIngredients(line,{ingredients:foods,target:'g',ingredientOverrides:{0:'milk-fresh'}});
+  assert.equal(result.converted,0,line);
+  assert.equal(result.review,1,line);
+  assert.equal(result.rows[0].status,'review',line);
+  assert.equal(result.rows[0].output,line,'never drop any source text: '+line);
+  assert.equal(result.rows[0].manualCorrectionAllowed,false,line);
+  assert.match(result.rows[0].reason,/Split into separate ingredient lines/i);
+ }
+ const safe=batchConvertIngredients('1 US cup milk\n2 eggs',{ingredients:foods,target:'g'});
+ assert.equal(safe.converted,1,'explicit single-food milk row remains convertible');
+ assert.equal(safe.rows[0].output,'227 g Milk, fresh');
+ assert.equal(safe.rows[1].output,'2 eggs','unsupported countable food remains unchanged');
+});
+
+test('compact time and temperature instructions are never scaled as ingredients',()=>{
+ const original=[
+  '180℃','180 ℃','180℉','350°F','350 °F',
+  '1h','1hr','2hrs','1hour','1h30m',
+  '30min','15mins','1m','45sec','60s','2d',
+  '15 minutes','1-2 hrs','180°C','180 degrees Celsius'
+ ];
+ const scaled=scaleRecipe([...original,'2 eggs','1 cup flour'].join('\n'),2,3,{fractions:true});
+ assert.equal(scaled.unparsed,original.length,'all cooking instructions must be flagged');
+ for(let i=0;i<original.length;i++){
+  assert.equal(scaled.rows[i].scaled,original[i],'keep exact original character sequence: '+original[i]);
+  assert.equal(scaled.rows[i].ok,false,'manual review, not a valid ingredient: '+original[i]);
+ }
+ assert.equal(scaled.rows[original.length].scaled,'3 eggs');
+ assert.equal(scaled.rows[original.length+1].scaled,'1 1/2 cups flour');
+});
+
+test('each cup suggestion retains its own signed gram error, including less accurate cup-only alternatives',()=>{
+ const flour=byId('all-purpose-flour');
+ for(const grams of [50,100,200,250,300]){
+  const cups=convertQuantity(grams,'g','cup',{ingredient:flour});
+  const primary=suggestKitchenMeasures(cups,{ingredient:flour});
+  const alternative=suggestKitchenMeasures(cups,{ingredient:flour,allowSpoons:false});
+  assert.ok(primary&&alternative,'both suggestions should exist for '+grams+' g');
+  assert.ok(Math.abs((primary.equivalentCups-cups)*120-primary.differenceGrams)<1e-7);
+  assert.ok(Math.abs((alternative.equivalentCups-cups)*120-alternative.differenceGrams)<1e-7);
+ }
+ const onlyCups=suggestKitchenMeasures(50/120,{ingredient:flour,allowSpoons:false});
+ assert.ok(Math.abs(onlyCups.differenceGrams)-5<1e-8,'50g cup-only suggestion misses by 5g');
+ assert.ok(Math.abs(onlyCups.percentError)<11&&Math.abs(onlyCups.percentError)>9,'50g cup-only option is about 10% off');
+ const threeHundred=suggestKitchenMeasures(300/120,{ingredient:flour});
+ assert.ok(Math.abs(threeHundred.differenceGrams)<1e-8,'300g flour must not recommend 240g as the primary method');
+});

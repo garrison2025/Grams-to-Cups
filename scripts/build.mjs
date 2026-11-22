@@ -173,8 +173,8 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  const referenceText=f(ref.referenceGrams)+' g per '+f(ref.referenceAmount)+' '+(ref.referenceUnit==='cup'?'US cup':'US tablespoon');
  const guide=to==='cup'&&previewValue>0?suggestKitchenMeasures(previewValue,{ingredient:crossDimension?ref:null,standard:'us'}):null;
  const cupsOnly=to==='cup'&&previewValue>0?suggestKitchenMeasures(previewValue,{ingredient:crossDimension?ref:null,standard:'us',allowSpoons:false}):null;
- const guideDifference=guide?(Math.abs(guide.differenceGrams??guide.differenceMl)<.01?'Difference under 0.01 '+(guide.differenceGrams===null?'mL':'g'):
-  f(Math.abs(guide.differenceGrams??guide.differenceMl))+' '+(guide.differenceGrams===null?'mL':'g')+(guide.differenceMl>0?' above':' below')+' target')+' ('+f(Math.abs(guide.percentError))+'%).':'';
+ const guideDifference=guide?'Primary option · '+measureReferenceDifference(guide):'';
+ const cupDifference=cupsOnly?'Cups only · '+measureReferenceDifference(cupsOnly):'';
  const initialNote=crossDimension?(ref.id==='water'?'Recipe chart method: King Arthur Baking lists 227 g per US cup of water. This differs from a physical-capacity estimate of about 1 g/mL.':'Based on '+referenceText+' of '+ref.name+'. This is an approximate recipe measurement.'):
   'These units have a defined conversion; an ingredient reference is not needed.';
  const shortUnit=({cup:'US cups',g:'g',kg:'kg',oz:'oz',ml:'mL',tbsp:'tbsp',tsp:'tsp','fl-oz':'US fl oz'})[to]||to;
@@ -198,7 +198,7 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  '<div class="cup-meter-wrap" data-meter-wrap'+(showMeter?'':' hidden')+'><div class="cup-meter" aria-hidden="true"><div class="cup-meter-fill" data-meter-fill style="width:'+(showMeter?(meterPercent===0?0.5:meterPercent):0)+'%"></div></div><div class="cup-meter-label" data-meter-label>'+(showMeter?(meterPercent===0?'Less than 1%':meterPercent+'%')+' of one US cup':'')+'</div></div>'+
  '<div class="measure-guide" data-measure-guide'+(guide?'':' hidden')+'><span class="measure-guide-label">HOW TO MEASURE</span>'+
  '<strong data-measure-summary>'+e(guide?.instruction||'')+'</strong>'+
- '<p data-measure-alternative'+(!cupsOnly||cupsOnly.instruction===guide?.instruction?' hidden':'')+'>Cups only: '+e(cupsOnly?.instruction||'')+'</p>'+
+ '<p data-measure-alternative'+(!cupsOnly||cupsOnly.instruction===guide?.instruction?' hidden':'')+'>Cups only: '+e(cupsOnly?.instruction||'')+' — '+e(cupDifference)+'</p>'+
  '<p data-measure-error>'+e(guideDifference)+'</p>'+
  '<small>Use level measures and the stated food preparation; for precise baking, weigh the requested grams.</small></div>'+
  '<div class="result-meta"><span><span data-meta-kind>'+(crossDimension?'Ingredient':'Conversion')+'</span>: <b data-meta-ingredient>'+e(crossDimension?ref.name:'Fixed units')+'</b></span><span>Reference: <b data-meta-reference>'+e(crossDimension?referenceText:'Defined unit relationship')+'</b></span></div>'+
@@ -301,13 +301,21 @@ function toolPage(t){
  section('Related converters','Switch direction or browse a related kitchen measurement.',grid(hubList.filter(x=>x[0]!=='/cooking/'+slug+'/').slice(0,6)),true);
  doc({url:'/cooking/'+slug+'/',title:title+' — Free Cooking Calculator',description:'Convert '+title.toLowerCase()+' with clear US or metric units, documented food weights when needed and a free interactive calculator.',body,bread:[['Cooking','/cooking/'],[title,null]],kind:'WebApplication'});
 }
+function measureReferenceDifference(plan){
+ if(!plan)return 'No practical combination; use a kitchen scale';
+ const delta=plan.differenceGrams??plan.differenceMl;
+ const unit=plan.differenceGrams===null?'mL':'g';
+ const difference=Math.abs(delta)<.01?'Under 0.01 '+unit:
+  f(Math.abs(delta))+' '+unit+' '+(delta>0?'above':'below')+' target';
+ return difference+' ('+f(Math.abs(plan.percentError))+'% difference)'+
+  (Math.abs(plan.percentError)>=5?' · Prefer a kitchen scale':'');
+}
 function quickAnswerFor(n){
  const rows=['all-purpose-flour','granulated-sugar','butter'].map(id=>{
   const food=byId.get(id),cups=convertQuantity(n,'g','cup',{ingredient:food});
   const measure=suggestKitchenMeasures(cups,{ingredient:food});
   return [food.name,f(cups)+' US cups',measure?.instruction||'Use a kitchen scale',
-   measure?(Math.abs(measure.differenceGrams)<.01?'Under 0.01 g':
-    f(Math.abs(measure.differenceGrams))+' g '+(measure.differenceGrams>0?'over':'under')):'—'];
+   measureReferenceDifference(measure)];
  });
  return '<div class="panel quick-answer-panel"><h2>'+n+' grams to cups: quick answers</h2>'+
  '<p>Flour, sugar and butter weigh differently. These are referenced US cup estimates, not a universal weight-to-volume formula.</p>'+
@@ -317,20 +325,20 @@ function quickAnswerFor(n){
 }
 function numberPage(n){
  const answer=answerFor(n);
- const convenientCups=[[1/8,'1/8'],[1/4,'1/4'],[1/3,'1/3'],[1/2,'1/2'],[2/3,'2/3'],[3/4,'3/4'],[1,'1'],[1.5,'1 1/2'],[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6'],[8,'8']];
+ // The detailed comparison uses the same optimizer as the quick answer and
+ // live calculator. Never resurrect the old nearest-SINGLE-cup lookup.
  const examples=['all-purpose-flour','granulated-sugar','butter','long-grain-rice-dry'].map(id=>{
-   const i=byId.get(id), exactCups=convertQuantity(n,'g','cup',{ingredient:i});
-   const options=convenientCups.map(([cups,label])=>({cups,label,weight:convertQuantity(cups,'cup','g',{ingredient:i})}));
-   const closest=options.sort((a,b)=>Math.abs(a.weight-n)-Math.abs(b.weight-n))[0];
-   const difference=closest.weight-n;
-   return [i.name,f(exactCups)+' cups',closest.label+' US cup'+(closest.cups>1?'s':''),(Math.abs(difference)<0.0000001?'Exact at reference precision':f(Math.abs(difference))+' g '+(difference>0?'above':'below')+' '+n+' g')];
+  const food=byId.get(id),exactCups=convertQuantity(n,'g','cup',{ingredient:food});
+  const measure=suggestKitchenMeasures(exactCups,{ingredient:food});
+  return [food.name,f(exactCups)+' cups',
+   measure?.instruction||'Use a kitchen scale',measureReferenceDifference(measure)];
  });
  const body=intro('How Many Cups Is '+n+' Grams?','The answer depends on the ingredient. Compare common baking foods using documented weights, then choose a different cup standard in the calculator.')+
  '<section class="section"><div class="container content-grid"><div>'+answer.html+quickAnswerFor(n)+converterForm({amount:n,heading:n+' grams to cups'})+
  '<div class="panel mt-3"><h2>'+n+' grams: food-by-food comparison</h2><p>Compare the same '+n+' grams with '+data.length+' distinct ingredient weights. A cup of all-purpose flour weighs less than a cup of sugar, so the same mass takes up more space.</p>'+numberComparison(n)+
  '<p class="inline-note">Water in this comparison uses the recipe chart value of 227 g per US cup. It is not the physical-capacity estimate of about 1 g/mL. '+link('/cooking/ingredients/water/','Compare water methods')+'.</p>'+
- '<h2>Closest common cup measures for '+n+' grams</h2><p>The exact cup estimate may not match a measuring cup in your drawer. This table compares four common foods with familiar cup fractions and shows how many grams that convenient measure differs from '+n+' grams. It is not an instruction to round blindly: when the weight matters, use a scale.</p>'+ 
- table(['Ingredient','Calculated US cups','Closest common cup measure','Weight difference'],examples)+
+ '<h2>Closest common cup measures for '+n+' grams</h2><p>These practical combinations use the very same measuring algorithm as the quick answers above, not a separate single-cup rounding rule. Every estimate shows its own reference weight difference; use a scale when precision matters.</p>'+ 
+ '<div data-common-measures>'+table(['Ingredient','Calculated US cups','Practical cup combination','Weight difference'],examples)+'</div>'+
  '<p class="source-chip">All reference weights are linked to '+link(source,'the original published chart')+'. Rounded values are illustrative; results vary by ingredient state and measuring method.</p></div></div>'+
  '<aside class="panel side-panel"><h3>Other common weights</h3><div class="list-links">'+numberValues.filter(x=>x!==n).sort((a,b)=>Math.abs(a-n)-Math.abs(b-n)).slice(0,6).map(x=>link('/cooking/grams-to-cups/'+x+'-grams-to-cups/',x+' g','chip')).join('')+'</div><hr><h3>Ingredient examples</h3>'+link('/cooking/ingredients/all-purpose-flour/','Flour')+link('/cooking/ingredients/granulated-sugar/','Granulated sugar')+link('/cooking/ingredients/butter/','Butter')+
  ((flourNumbers.includes(n)||sugarNumbers.includes(n))?'<hr><h3>Specific weight guides</h3><div class="list-links">'+

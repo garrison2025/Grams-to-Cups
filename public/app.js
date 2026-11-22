@@ -64,12 +64,18 @@ function renderCalculator(form){
    if(primary){
     setText($('[data-measure-summary]',guide),primary.instruction);
     const alternative=$('[data-measure-alternative]',guide);
-    if(alternative){alternative.hidden=!onlyCups||onlyCups.instruction===primary.instruction;
-     if(onlyCups)setText(alternative,'Cups only: '+onlyCups.instruction);}
-    const diff=primary.differenceGrams??primary.differenceMl,unit=primary.differenceGrams===null?'mL':'g';
-    const difference=Math.abs(diff)<.01?'Difference under 0.01 '+unit:
-     formatAmount(Math.abs(diff),3)+' '+unit+(diff>0?' above':' below')+' target';
-    setText($('[data-measure-error]',guide),difference+' ('+formatAmount(Math.abs(primary.percentError),3)+'%).');
+    const planDifference=plan=>{
+     const diff=plan.differenceGrams??plan.differenceMl,unit=plan.differenceGrams===null?'mL':'g';
+     const difference=Math.abs(diff)<.01?'Under 0.01 '+unit:
+      formatAmount(Math.abs(diff),3)+' '+unit+(diff>0?' above':' below')+' target';
+     return difference+' ('+formatAmount(Math.abs(plan.percentError),3)+'% difference)'+
+      (Math.abs(plan.percentError)>=5?' · Prefer a kitchen scale':'');
+    };
+    if(alternative){
+     alternative.hidden=!onlyCups||onlyCups.instruction===primary.instruction;
+     if(onlyCups)setText(alternative,'Cups only: '+onlyCups.instruction+' — '+planDifference(onlyCups));
+    }
+    setText($('[data-measure-error]',guide),'Primary option · '+planDifference(primary));
    }
   }
   setText($('[data-advanced-label]',form),unitDescription(from,standard)+' → '+unitDescription(to,standard));
@@ -267,7 +273,7 @@ for(const form of $$('[data-batch]')){
        else delete ingredientOverrides[item.index];
        compute();
       });
-      result.append(label,select);
+      if(item.manualCorrectionAllowed)result.append(label,select);
     }
     tr.append(original,result);
     tbody.appendChild(tr);

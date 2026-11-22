@@ -252,6 +252,23 @@ try{
  assert.ok(await page.locator('a[href="/cooking/ingredients/granulated-sugar/100-grams-to-cups/"]').isVisible(),
   'general 100g conversion has a crawlable contextual link to the 100g sugar page');
  assert.equal(errors.length,0,'no browser errors after expanded reference pages');
+ for(const grams of [200,300]){
+  await page.goto(origin+'/cooking/grams-to-cups/'+grams+'-grams-to-cups/',{waitUntil:'networkidle'});
+  const fastRow=page.locator('.quick-answer-panel tbody tr').filter({hasText:'All-purpose flour'});
+  const detailedRow=page.locator('[data-common-measures] tbody tr').filter({hasText:'All-purpose flour'});
+  assert.equal(await detailedRow.locator('td').nth(1).innerText(),
+   await fastRow.locator('td').nth(1).innerText(),
+   grams+' g quick and detailed flour measurements must be identical');
+  assert.match(await detailedRow.innerText(),/Under 0\.01 g/,'the exact combination reports its own difference');
+  if(grams===200)assert.match(await detailedRow.innerText(),/1 cup \+ 2 × 1\/3 cup/);
+  else assert.doesNotMatch(await detailedRow.innerText(),/240 g|60 g below/);
+ }
+ await page.locator('[data-amount]').fill('50');
+ const alternateText=await page.locator('[data-measure-alternative]').innerText();
+ assert.match(alternateText,/(?:5 g|5\.0 g)/,'50g flour cup-only option discloses its own gram difference');
+ assert.match(alternateText,/10% difference/,'50g flour cup-only option discloses its own ten-percent difference');
+ assert.match(alternateText,/Prefer a kitchen scale/,'poor volume approximations recommend weighing');
+ assert.match(await page.locator('[data-measure-error]').innerText(),/Primary option/,'primary has a separately labeled error');
 
  await page.goto(origin+'/cooking/batch-converter/',{waitUntil:'networkidle'});
  assert.ok(await page.getByRole('heading',{name:/Batch Ingredient Converter/i}).isVisible(),'batch converter page renders');
@@ -268,7 +285,16 @@ try{
  await page.locator('[data-batch-review="1"]').selectOption('bread-flour');
  assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 0 need review · 0 blank');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('Bread flour (King Arthur reference)'));
+ await page.locator('[data-batch-target]').selectOption('g');
+ await page.locator('[data-batch-lines]').fill('1 US cup milk, 2 eggs\n120 g all-purpose flour');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'1 converted · 1 need review · 0 blank');
+ assert.ok((await page.locator('[data-batch-results] .batch-review-row').innerText()).includes('1 US cup milk, 2 eggs'),
+  'whole multi-quantity source row remains intact');
+ assert.equal(await page.locator('[data-batch-review="0"]').count(),0,
+  'unsafe multi-quantity row does not offer a food override');
+ assert.match(await page.locator('[data-batch-results] .batch-review-row').innerText(),/Split into separate ingredient lines/);
  await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
+ await page.locator('[data-batch-target]').selectOption('cup');
  await page.locator('[data-batch-standard]').selectOption('metric');
  assert.equal((await page.locator('[data-batch-target] option[value="cup"]').innerText()).trim(),'Metric cups',
   'target selector must not say US cups while calculating metric cups');

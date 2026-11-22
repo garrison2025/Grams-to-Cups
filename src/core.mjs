@@ -190,7 +190,7 @@ function unsafeIngredientRemainder(text){
  // Numeric food descriptions like "2% milk" are intentionally conservative:
  // leave the whole line unchanged rather than guessing.
  const secondAmount=/(?:^|[^\p{L}\p{N}])(?:\d+(?:[.,]\d+)?(?:\/\d+)?|\.\d+)(?=$|[^\p{L}\p{N}])/u;
- const spelledSecondAmount=/(?:,|，|\band\b|\bplus\b|\bwith\b)\s*(?:(?:about|roughly|approximately)\s+)?(?:one|two|three|four|five|six|seven|eight|nine|ten|half|quarter|an?|a\s+few)\b/iu;
+ const spelledSecondAmount=/(?:,|，|;|\+|&|\/|\band\b|\bplus\b|\bwith\b)\s*(?:(?:about|roughly|approximately)\s+)?(?:one|two|three|four|five|six|seven|eight|nine|ten|half|quarter|an?|a\s+few)\b/iu;
  return /;/u.test(rest)||
   secondAmount.test(rest)||
   spelledSecondAmount.test(rest)||
@@ -198,12 +198,16 @@ function unsafeIngredientRemainder(text){
   /^\s*(?:[-–—/]|to\b|or\b)\s*(?:\d|\.)/iu.test(rest)||
   /(?:\+|&|\band\b|\bplus\b)\s*(?:\d|\.)/iu.test(rest)||
   /\b\d+(?:\.\d+)?\s*(?:g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b/iu.test(rest)||
-  /[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉\u2044]/u.test(rest);
+  /[¼½¾⅓⅔⅛⅜⅝⅞⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉\u2044]/u.test(rest);
 }
 function isStandaloneCookingInstruction(remainder){
- // No unit was recognized. Temperature, cooking durations and heat settings
- // must never become scaled ingredient weights or counts.
- return /^\s*(?:°\s*[cf]\b|degrees?\b|fahrenheit\b|celsius\b|kelvin\b|minutes?\b|mins?\b|hours?\b|hrs?\b|seconds?\b|secs?\b|days?\b|weeks?\b|[cf]\b(?:\s|$)|%)/iu.test(remainder);
+ // Normalize only for classification; return the original untouched line when
+ // the content is a temperature, duration or other cooking instruction.
+ // Unicode ℃ and ℉ as well as tightly joined "1h", "30min", "1h30m"
+ // must never become ingredient quantities or change during recipe scaling.
+ const value=String(remainder).replace(/℃/gu,'°C').replace(/℉/gu,'°F')
+  .replace(/[º˚]/gu,'°').normalize('NFKC').trimStart();
+ return /^(?:°\s*[cfk]\b|degrees?\b|fahrenheit\b|celsius\b|kelvin\b|[cfk]\b|%|(?:h(?:ours?|rs?)?|m(?:in(?:ute)?s?)?|s(?:ec(?:ond)?s?)?|d(?:ays?)?|w(?:eeks?)?)(?=$|[^\p{L}]))/iu.test(value);
 }
 export function scaleRecipe(text,originalServings,newServings,{fractions=false}={}){
  const source=parseAmount(originalServings),dest=parseAmount(newServings);
@@ -357,6 +361,16 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
   const match=cleaned.match(BATCH_LINE);
   if(!match)return {index,original,status:'review',output:original,reason:'Use amount + unit + a specific ingredient (e.g., 200 g all-purpose flour).',ingredient:''};
   const [,rawAmount,rawUnit,foodName]=match;
+  // A manual ingredient choice can change WHICH food to use, never remove a
+  // second quantity. Reject the full row before looking at any user override.
+  // This prevents "1 US cup milk, 2 eggs" being marked as 227 g milk.
+  const multiIngredient=unsafeIngredientRemainder(foodName)||
+   /(?:\+|&|\band\b|\bplus\b|\bwith\b)\s*[\p{L}¼½¾⅓⅔⅛⅜⅝⅞]/iu.test(foodName);
+  if(multiIngredient)return {
+   index,original,status:'review',output:original,
+   reason:'Multiple quantities or ingredients on one line. Split into separate ingredient lines; no partial conversion was made.',
+   ingredient:foodName.trim(),manualCorrectionAllowed:false
+  };
   const cleanedUnit=rawUnit.toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
   const unit=UNIT_ALIASES[cleanedUnit];
   // An explicit input cup standard takes precedence over the global result standard.
@@ -365,7 +379,7 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
   const requested=Object.hasOwn(ingredientOverrides,index)?ingredientOverrides[index]:null;
   const chosen=requested?ingredients.find(item=>item.id===requested):null;
   const food=requested?chosen:resolveIngredient(foodName,ingredients);
-  if(!food)return {index,original,status:'review',output:original,reason:'Ingredient not matched unambiguously. Use the exact ingredient name listed on the site.',ingredient:foodName.trim()};
+  if(!food)return {index,original,status:'review',output:original,reason:'Ingredient not matched unambiguously. Use the exact ingredient name listed on the site.',ingredient:foodName.trim(),manualCorrectionAllowed:true};
   try{
    const amount=parseAmount(rawAmount);
    const result=unit==='cup'&&target==='cup'&&sourceStandard!==standard
