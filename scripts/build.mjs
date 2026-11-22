@@ -195,23 +195,37 @@ function toolPage(t){
  doc({url:'/cooking/'+slug+'/',title:title+' — Free Cooking Calculator',description:'Convert '+title.toLowerCase()+' with clear US or metric units, documented food weights when needed and a free interactive calculator.',body,bread:[['Cooking','/cooking/'],[title,null]],kind:'WebApplication'});
 }
 function numberPage(n){
- const answer=answerFor(n),fresult=f(answer.cups);
+ const answer=answerFor(n);
+ const convenientCups=[[1/8,'1/8'],[1/4,'1/4'],[1/3,'1/3'],[1/2,'1/2'],[2/3,'2/3'],[3/4,'3/4'],[1,'1'],[1.5,'1 1/2'],[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6'],[8,'8']];
+ const examples=['all-purpose-flour','granulated-sugar','butter','long-grain-rice-dry'].map(id=>{
+   const i=byId.get(id), exactCups=convertQuantity(n,'g','cup',{ingredient:i});
+   const options=convenientCups.map(([cups,label])=>({cups,label,weight:convertQuantity(cups,'cup','g',{ingredient:i})}));
+   const closest=options.sort((a,b)=>Math.abs(a.weight-n)-Math.abs(b.weight-n))[0];
+   const difference=closest.weight-n;
+   return [i.name,f(exactCups)+' cups',closest.label+' US cup'+(closest.cups===1?'':'s'),f(Math.abs(difference))+' g '+(difference>=0?'above':'below')+' '+n+' g'];
+ });
  const body=intro('How Many Cups Is '+n+' Grams?','The answer depends on the ingredient. Compare common baking foods using documented weights, then choose a different cup standard in the calculator.')+
  '<section class="section"><div class="container content-grid"><div>'+answer.html+converterForm({amount:n,heading:n+' grams to cups'})+
  '<div class="panel mt-3"><h2>'+n+' grams: food-by-food comparison</h2><p>Compare the same '+n+' grams with 24 distinct ingredient weights. A cup of all-purpose flour weighs less than a cup of sugar, so the same mass takes up more space.</p>'+numberComparison(n)+
- '<p class="source-chip">All reference weights are linked to '+link(source,'the original published chart')+'. Rounded values are illustrative.</p></div></div>'+
+ '<h2>Closest common cup measures for '+n+' grams</h2><p>The exact cup estimate may not match a measuring cup in your drawer. This table compares four common foods with familiar cup fractions and shows how many grams that convenient measure differs from '+n+' grams. It is not an instruction to round blindly: when the weight matters, use a scale.</p>'+ 
+ table(['Ingredient','Calculated US cups','Closest common cup measure','Weight difference'],examples)+
+ '<p class="source-chip">All reference weights are linked to '+link(source,'the original published chart')+'. Rounded values are illustrative; results vary by ingredient state and measuring method.</p></div></div>'+
  '<aside class="panel side-panel"><h3>Other common weights</h3><div class="list-links">'+numberValues.filter(x=>x!==n).sort((a,b)=>Math.abs(a-n)-Math.abs(b-n)).slice(0,6).map(x=>link('/cooking/grams-to-cups/'+x+'-grams-to-cups/',x+' g','chip')).join('')+'</div><hr><h3>Ingredient examples</h3>'+link('/cooking/ingredients/all-purpose-flour/','Flour')+link('/cooking/ingredients/granulated-sugar/','Granulated sugar')+link('/cooking/ingredients/butter/','Butter')+'</aside></div></section>';
  doc({url:'/cooking/grams-to-cups/'+n+'-grams-to-cups/',title:n+' Grams to Cups — 24 Ingredient Comparison',description:'See '+n+' grams in US cups for flour, sugar, butter and 21 more ingredients using documented weights, with a free interactive converter.',body,bread:[['Cooking','/cooking/'],['Grams to cups','/cooking/grams-to-cups/'],[n+' grams',null]],kind:'WebApplication'});
 }
 function ingredientPage(i){
  const preview=convertQuantity(100,'g','cup',{ingredient:i});
  const values=[25,50,75,100,125,150,200,250,300,400,500];
+ const cupFractions=[[1/8,'1/8 cup'],[1/4,'1/4 cup'],[1/3,'1/3 cup'],[1/2,'1/2 cup'],[2/3,'2/3 cup'],[3/4,'3/4 cup'],[1,'1 cup'],[1.5,'1 1/2 cups'],[2,'2 cups']];
  const body=intro(i.name+': Grams to Cups','Use the correct '+i.state+' reference. This weight belongs to the measuring method shown below; packed, sifted, dry and cooked ingredients are not interchangeable.')+
  '<section class="section"><div class="container content-grid"><div>'+
  '<div class="facts"><div class="fact"><strong>'+e(f(convertQuantity(1,'cup','g',{ingredient:i})))+' g</strong><span>per US cup</span></div><div class="fact"><strong>'+e(f(preview))+' cups</strong><span>per 100 grams</span></div><div class="fact"><strong>'+e(i.method)+'</strong><span>measurement method</span></div></div>'+
  '<div class="mt-3">'+converterForm({amount:100,ingredient:i.id,heading:i.name+' conversion'})+'</div>'+
  '<div class="panel mt-3"><h2>'+e(i.name)+' conversion chart</h2><p>These quantities are calculated from '+e(i.referenceGrams)+' g per '+e(i.referenceAmount)+' '+e(i.referenceUnit)+'. '+e(i.note)+'</p>'+
  table(['Grams','US cups','Metric cups'],values.map(n=>[n+' g',f(convertQuantity(n,'g','cup',{ingredient:i,standard:'us'})),f(convertQuantity(n,'g','cup',{ingredient:i,standard:'metric'}))]))+
+ '<h2>'+e(i.name)+': cups to grams</h2><p>For weighing a recipe rather than filling cups, use this reverse chart. The numbers assume the same food state, measuring technique, and US cup standard as the published reference. A metric cup (250 mL) uses a different quantity.</p>'+ 
+ table(['US cup amount','Approximate grams','Equivalent metric cups'],cupFractions.map(([cup,label])=>[label,f(convertQuantity(cup,'cup','g',{ingredient:i,standard:'us'}))+' g',f(convertQuantity(cup,'cup','cup',{ingredient:i,standard:'us'})*US_CUP_ML/METRIC_CUP_ML)+' metric cups']))+
+ '<div class="inline-note">These are estimates from the original reference pair, not separate laboratory weighings. For precise baking, weigh ingredients directly in grams when the recipe supplies a mass.</div>'+ 
  '<p class="source-chip">Original published entry: <strong>'+e(i.sourceEntry)+'</strong> · '+link(i.sourceUrl,i.sourceName)+' · reference checked '+e(i.reviewedAt)+'. These cooking reference weights are approximate.</p></div></div>'+
  '<aside class="panel side-panel"><h3>Measurement context</h3><p><b>Food state:</b> '+e(i.state)+'</p><p><b>Method:</b> '+e(i.method)+'</p><p>'+e(i.note)+'</p><div class="inline-note">For repeatable baking, follow the weight written in your recipe and use a scale if available.</div>'+link('/cooking/sources-and-methods/','About the data')+'</aside></div></section>'+
  section('Related ingredients','Compare volume with foods that have different weights per cup.',grid(ingredientList.filter(x=>x[0]!=='/cooking/ingredients/'+i.id+'/').slice(0,6)),true);
