@@ -69,9 +69,12 @@ function unitSelect(label,which,selected){
  const options=units.map(u=>'<option value="'+u+'"'+(selected===u?' selected':'')+'>'+e(unitDescription(u))+'</option>').join('');
  return '<div class="field"><label for="'+which+'">'+e(label)+'</label><select id="'+which+'" data-'+which+'>'+options+'</select></div>';
 }
-function ingredientSelect(selected='all-purpose-flour'){return '<div class="field full"><label for="ingredient-choice">Ingredient (needed when converting mass ↔ volume)</label><select id="ingredient-choice" data-ingredient>'+data.map(i=>'<option value="'+e(i.id)+'"'+(i.id===selected?' selected':'')+'>'+e(i.name)+'</option>').join('')+'</select><small>Different ingredients have different mass per cup. References reflect their stated measurement methods.</small></div>';}
+function ingredientSelect(selected='all-purpose-flour',hidden=false){return '<div class="field full" data-density-field'+(hidden?' hidden':'')+'><label for="ingredient-choice">Ingredient</label><select id="ingredient-choice" data-ingredient>'+data.map(i=>'<option value="'+e(i.id)+'"'+(i.id===selected?' selected':'')+'>'+e(i.name)+'</option>').join('')+'</select><small>Different ingredients have different mass per cup. References reflect their stated measurement methods.</small></div>';}
 function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flour',heading='Instant conversion'}={}){
  const ref=byId.get(ingredient)||data[0];
+ const massUnits=['g','kg','oz'];
+ const crossDimension=massUnits.includes(from)!==massUnits.includes(to);
+ const standardRelevant=from==='cup'||to==='cup';
  const quickAmounts=[50,100,200,250];
  const foodButtons=[['all-purpose-flour','Flour'],['granulated-sugar','Sugar'],['butter','Butter'],['long-grain-rice-dry','Rice']]
  .map(([id,label])=>'<button class="ingredient-chip" type="button" data-ingredient-preset="'+e(id)+'" aria-pressed="'+String(id===ingredient)+'">'+e(label)+'</button>').join('');
@@ -83,12 +86,12 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  '<form class="calc-body" data-calc novalidate><div class="form-grid">'+
  '<div class="field full"><label for="quantity">How much are you measuring?</label><input id="quantity" data-amount type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="'+e(amount)+'" aria-describedby="amount-help"><small id="amount-help">Try 1/4, 1 1/2, or 125.5.</small></div>'+
  '<div class="field full"><div class="quick-row" role="group" aria-label="Common quantities"><span class="micro-label">QUICK VALUES</span>'+amountButtons+'</div></div>'+
- ingredientSelect(ingredient)+
- '<div class="field full"><div class="quick-row" role="group" aria-label="Popular ingredients"><span class="micro-label">POPULAR</span>'+foodButtons+'</div></div>'+
+ ingredientSelect(ingredient,!crossDimension)+
+ '<div class="field full" data-density-field'+(crossDimension?'':' hidden')+'><div class="quick-row" role="group" aria-label="Popular ingredients"><span class="micro-label">POPULAR</span>'+foodButtons+'</div></div>'+
  '<div class="unit-stage">'+unitSelect('From unit','from',from)+
  '<button class="unit-switch" type="button" data-swap aria-label="Swap from and to units" title="Swap conversion direction">⇄</button>'+
  unitSelect('To unit','to',to)+'</div>'+
- '<div class="standard-line"><label for="cup-standard">Cup standard</label><select id="cup-standard" data-standard><option value="us" selected>US · 236.588 mL</option><option value="metric">Metric · 250 mL</option></select></div>'+
+ '<div class="standard-line" data-cup-standard-row'+(standardRelevant?'':' hidden')+'><label for="cup-standard">Cup standard</label><select id="cup-standard" data-standard><option value="us" selected>US · 236.588 mL</option><option value="metric">Metric · 250 mL</option></select></div>'+
  '</div>'+
  '<div class="result" role="group" aria-label="Live conversion result">'+
  '<div class="result-label">YOUR CONVERSION</div>'+
@@ -101,7 +104,9 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  '<div class="calc-actions"><button class="btn btn-primary" type="button" data-copy>↗ Copy result</button>'+
  '<button class="btn" type="button" data-share>Share link</button><button class="btn" type="button" data-print>Print</button>'+
  '<button class="btn btn-ghost" type="button" data-reset>Reset</button></div>'+
- '<p class="source-chip"><span data-feedback role="status"></span><span>Measured against '+link(source,'King Arthur Baking’s published ingredient weights')+'. Results reflect the selected ingredient and measurement method.</span></p>'+
+ '<p class="source-chip"><span data-feedback role="status"></span>'+
+ '<span data-source-ingredient'+(crossDimension?'':' hidden')+'>Ingredient-based estimate from '+link(source,'King Arthur Baking’s published weight chart')+'. Actual food preparation affects measurements.</span>'+
+ '<span data-source-fixed'+(crossDimension?' hidden':'')+'>This conversion uses defined units and does not require ingredient weights. '+link('/cooking/sources-and-methods/','View our measurement standards')+'.</span></p>'+
  '</form></div>';
 }
 
@@ -120,10 +125,27 @@ function home(){
  const sugar100=f(convertQuantity(100,'g','cup',{ingredient:sugar}));
  const popular=[100,200,250,300,500].map(n=>['/cooking/grams-to-cups/'+n+'-grams-to-cups/',n+' g to cups']);
  const strip='<div class="home-ticker"><div class="container home-ticker-inner"><b>POPULAR CONVERSIONS</b>'+popular.map(([u,l])=>link(u,l)).join('')+'</div></div>';
- const comparison='<section class="comparison-showcase"><div class="container comparison-grid"><div class="comparison-copy"><span class="kicker">A LITTLE FOOD SCIENCE</span><h2>Same weight.<br><em>Different volume.</em></h2><p>100 grams of flour and 100 grams of granulated sugar do not fill the same amount of space. That is why choosing an ingredient matters more than memorizing a universal conversion.</p>'+
- link('/cooking/sources-and-methods/','Explore our measuring method','btn')+'</div>'+
- '<div class="comparison-stack"><div class="compare-item"><small>100 GRAMS · ALL-PURPOSE FLOUR</small><strong>'+e(flour100)+'</strong><span>US cups · spoon & level</span></div>'+
- '<div class="compare-item"><small>100 GRAMS · GRANULATED SUGAR</small><strong>'+e(sugar100)+'</strong><span>US cups · level cup</span></div></div></div></section>';
+ const comparison='<section class="comparison-showcase" data-compare><div class="container comparison-grid"><div class="comparison-copy">'+
+ '<span class="kicker">EXPLORE THE DIFFERENCE</span><h2>Same weight.<br><em>Different volume.</em></h2>'+
+ '<p>Flour and sugar occupy different amounts of space at the same weight. Change the amount below to see how their cup equivalents compare.</p>'+
+ '<div class="compare-controls"><label for="compare-weight">Weight to compare</label>'+
+ '<div class="compare-slider-row"><input id="compare-weight" data-compare-input type="range" min="10" max="500" step="10" value="100" aria-describedby="compare-help">'+
+ '<output for="compare-weight" data-compare-grams aria-live="polite">100 g</output></div>'+
+ '<div class="compare-presets" role="group" aria-label="Suggested weights">'+
+ [50,100,200,250].map(n=>'<button type="button" class="compare-preset" data-compare-preset="'+n+'" aria-pressed="'+String(n===100)+'">'+n+' g</button>').join('')+
+ '</div><p class="compare-hint" id="compare-help">Both values use the same weight and US customary cups.</p></div>'+
+ link('/cooking/sources-and-methods/','See the measuring method','compare-source-link')+'</div>'+
+ '<div class="comparison-stack" aria-label="Ingredient volume comparison">'+
+ '<div class="compare-item"><small>ALL-PURPOSE FLOUR</small><div class="compare-food-icon" aria-hidden="true">F</div>'+
+ '<strong><output data-compare-flour>'+e(flour100)+'</output><span class="compare-unit">US cups</span></strong>'+
+ '<div class="compare-bar-track" aria-hidden="true"><div class="compare-bar-fill" data-compare-flour-bar style="width:100%"></div></div>'+
+ '<span>100 g · spoon &amp; level</span></div>'+
+ '<div class="compare-item"><small>GRANULATED SUGAR</small><div class="compare-food-icon" aria-hidden="true">S</div>'+
+ '<strong><output data-compare-sugar>'+e(sugar100)+'</output><span class="compare-unit">US cups</span></strong>'+
+ '<div class="compare-bar-track" aria-hidden="true"><div class="compare-bar-fill" data-compare-sugar-bar style="width:61%"></div></div>'+
+ '<span>100 g · level cup</span></div>'+
+ '<p class="compare-caption" data-compare-caption>100 g of flour needs more cup space than 100 g of granulated sugar.</p>'+
+ '</div></div></section>';
  const hero='<div class="container hero"><div class="hero-grid"><div class="hero-copy">'+
  '<span class="eyebrow">THE EVERYDAY BAKING TOOLKIT</span>'+
  '<h1 class="hero-heading">Grams to cups, <em>without the guesswork.</em></h1>'+
