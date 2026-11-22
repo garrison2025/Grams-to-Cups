@@ -77,6 +77,8 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
   if(!raw.trim())return {original:raw,scaled:'',ok:true};
   const m=normalizeFractionInput(raw).match(/^\s*((?:\d+\s+)?\d+\/\d+|\d+\s?[¼½¾⅓⅔⅛⅜⅝⅞]|[¼½¾⅓⅔⅛⅜⅝⅞]|(?:\d+(?:\.\d*)?|\.\d+))\s*(?:(g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b)?(.*)$/i);
   if(!m)return {original:raw,scaled:raw,ok:false};
+  // A range like "2-3 eggs" or "1 to 2 cups" must not silently scale only its first number.
+  if(/^\s*(?:[-–—]|to\b|or\b)\s*(?:\d|\.)/i.test(m[3]||''))return {original:raw,scaled:raw,ok:false};
   try{const scaled=parseAmount(m[1])*factor;if(!Number.isFinite(scaled)||scaled>1e9)throw Error();
   return {original:raw,scaled:(fractions?formatKitchenAmount(scaled):formatAmount(scaled,4))+' '+(m[2]||'')+(m[3]||''),ok:true};
   }catch{return {original:raw,scaled:raw,ok:false};}
