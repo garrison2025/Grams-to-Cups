@@ -31,6 +31,54 @@ for(const page of pages){
   throw Error('Broken internal link '+m[1]+' from '+page.url);
  }
 }
+// A route existing in sitemap.xml does not make it discoverable through internal
+// links. Audit the actual static <a> graph, not just route references in source.
+const links=new Map(),inbound=new Map();
+for(const page of pages){
+ const html=pageHtml(page.url);
+ const targets=new Set(
+  [...html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/gi)]
+   .map(m=>m[1])
+   .filter(url=>url.startsWith('/'))
+   .map(url=>url.split(/[?#]/)[0])
+   .filter(url=>known.has(url))
+ );
+ links.set(page.url,targets);
+ for(const target of targets){
+  if(target===page.url)continue;
+  inbound.set(target,(inbound.get(target)||0)+1);
+ }
+}
+const depth=new Map([['/',0]]),queue=['/'];
+for(const current of queue){
+ for(const target of links.get(current)||[]){
+  if(depth.has(target))continue;
+  depth.set(target,depth.get(current)+1);
+  queue.push(target);
+ }
+}
+// This legacy duplicate-intent route intentionally has no internal links and
+// remains noindex; every other generated page must have a real crawl path.
+const intentionallyUnlinked=new Set(['/cooking/grams-to-cups/']);
+for(const page of pages){
+ if(page.url==='/'||intentionallyUnlinked.has(page.url))continue;
+ assert.ok(inbound.get(page.url)>0,'Orphan page with no internal inbound link: '+page.url);
+ assert.ok(depth.has(page.url),'Page not reachable from home by internal links: '+page.url);
+ assert.ok(depth.get(page.url)<=4,'Page more than four clicks from home: '+page.url+' ('+depth.get(page.url)+')');
+}
+const ingredientNumberPages=pages.filter(page=>/^\/cooking\/ingredients\/[^/]+\/\d+-grams-to-cups\/$/.test(page.url));
+assert.equal(ingredientNumberPages.length,10,'Expected ten source-backed ingredient/weight landing pages');
+for(const page of ingredientNumberPages){
+ const match=page.url.match(/^\/cooking\/ingredients\/([^/]+)\/(\d+)-grams-to-cups\/$/);
+ const [,ingredient,grams]=match;
+ assert.ok(links.get('/cooking/ingredients/'+ingredient+'/')?.has(page.url),
+  'Ingredient landing must offer contextual link to specific weight: '+page.url);
+ assert.ok(links.get('/cooking/grams-to-cups/'+grams+'-grams-to-cups/')?.has(page.url),
+  'Numeric landing must link to matching ingredient/weight page: '+page.url);
+}
+console.log('Internal link graph passed:',depth.size,'reachable pages,',ingredientNumberPages.length,
+ 'specific ingredient/weight pages cross-linked, max click depth',Math.max(...depth.values()));
+
 const files=['assets/app.js','assets/core.mjs','assets/ingredients.json','assets/styles.css','robots.txt','404.html','favicon.svg'];
 for(const f of files)assert.ok(fs.existsSync(path.join(dist,f)),'missing '+f);
 assert.ok(manifest.publicIndex?fs.existsSync(path.join(dist,'sitemap.xml')):!fs.existsSync(path.join(dist,'sitemap.xml')));
