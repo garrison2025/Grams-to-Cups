@@ -22,10 +22,14 @@ const eligibility=pages.filter(p=>p.indexCandidate);
 const titleMap=new Map(),descriptionMap=new Map();
 const warnings=[];
 assert.equal(pages.length,81,'Expected 81 generated pages');
+assert.ok(get('/').includes('contact@gramstocupscalculator.com'),'Missing published contact identity in site footer');
+assert.match(get('/contact/'),/href="mailto:contact@gramstocupscalculator\.com"/,'Contact page must expose a working mailto link');
 assert.equal(eligibility.length,62,'Expected 62 index-approved candidates');
 if(production){
  assert.match(manifest.origin,/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i);
  const hostname=new URL(manifest.origin).hostname.toLowerCase();
+ const allowedCi=process.env.CI==='true'&&process.env.SITE_URL_FIXTURE_APPROVED_FOR_CI==='true'&&hostname==='example.com';
+ assert.ok(hostname==='gramstocupscalculator.com'||allowedCi,'Production canonical must use the verified Grams & Cups custom domain');
  assert.ok(hostname!=='convertunits.cc'&&!hostname.endsWith('.convertunits.cc'),
   'Independent Grams-to-Cups must not publish with another project\'s canonical hostname');
  const fixture=process.env.CI==='true'&&process.env.SITE_URL_FIXTURE_APPROVED_FOR_CI==='true'&&hostname==='example.com';
@@ -35,8 +39,13 @@ const headers=read('_headers');
 assert.match(headers,/X-Content-Type-Options:\s*nosniff/);
 assert.match(headers,/Referrer-Policy:\s*strict-origin-when-cross-origin/);
 assert.match(headers,/Permissions-Policy:\s*camera=\(\), microphone=\(\), geolocation=\(\)/);
-if(production)assert.doesNotMatch(headers,/X-Robots-Tag:\s*noindex/);
-else assert.match(headers,/X-Robots-Tag:\s*noindex/);
+const commonHeaderRules=headers.split('https://grams-to-cups.pages.dev/*')[0];
+if(production)assert.doesNotMatch(commonHeaderRules,/X-Robots-Tag:\s*noindex/,'Production must not set sitewide noindex');
+else assert.match(commonHeaderRules,/X-Robots-Tag:\s*noindex/,'All preview hosts must remain noindex');
+assert.match(headers,/https:\/\/grams-to-cups\.pages\.dev\/\*\s+X-Robots-Tag: noindex/,
+ 'Production build must explicitly prevent pages.dev duplicates');
+assert.match(headers,/https:\/\/:version\.grams-to-cups\.pages\.dev\/\*\s+X-Robots-Tag: noindex/,
+ 'Branch preview URLs must not be indexed');
 const robots=read('robots.txt');
 if(production)assert.ok(robots.includes('Sitemap: '+manifest.origin+'/sitemap.xml'));
 else assert.ok(!robots.includes('Sitemap:'),'No sitemap declaration in preview');
