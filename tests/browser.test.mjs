@@ -101,6 +101,20 @@ try{
  assert.ok(await page.locator('[data-density-field]').first().isHidden(),'hide ingredient controls for fixed volume conversions');
  assert.ok(await page.locator('[data-cup-standard-row]').isHidden(),'hide irrelevant cup standard when no cup involved');
  assert.ok(await page.locator('[data-source-fixed]').isVisible(),'fixed unit source messaging is visible');
+ assert.equal((await page.locator('[data-meta-ingredient]').innerText()).trim(),'Fixed units','fixed conversions do not suggest ingredient weight references');
+ await page.evaluate(()=>{
+  window.__copiedFixed='';
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__copiedFixed=value}}});
+  Object.defineProperty(navigator,'share',{configurable:true,value:undefined});
+ });
+ await page.locator('[data-copy]').click();
+ const fixedText=await page.evaluate(()=>window.__copiedFixed);
+ assert.match(fixedText,/2 US tablespoons.*milliliters/,'copy accurately describes fixed volume units');
+ assert.ok(!/all-purpose flour/i.test(fixedText),'fixed conversions must never claim to use flour density');
+ await page.locator('[data-share]').click();
+ const fixedShare=await page.evaluate(()=>window.__copiedFixed);
+ assert.ok(fixedShare.includes('from=tbsp')&&fixedShare.includes('to=ml'),'fixed-volume share link preserves direction');
+ assert.ok(!fixedShare.includes('ingredient='),'fixed-volume share link does not add irrelevant ingredient parameters');
  await page.locator('[data-from]').selectOption('g');
  assert.ok(await page.locator('[data-density-field]').first().isVisible(),'show ingredient when switching to mass-volume');
  assert.ok(await page.locator('[data-source-ingredient]').isVisible(),'show source reference only for ingredient-dependent quantities');
@@ -194,6 +208,14 @@ try{
  await staticPage.goto(origin+'/cooking/ingredients/all-purpose-flour/',{waitUntil:'domcontentloaded'});
  assert.ok(await staticPage.getByRole('heading',{name:'All-purpose flour: cups to grams'}).isVisible(),'source-based result remains readable without JavaScript');
  assert.ok((await staticPage.locator('table').nth(1).innerText()).includes('60 g'),'static half-cup conversion survives with JavaScript disabled');
+ await staticPage.goto(origin+'/cooking/tablespoons-to-ml/',{waitUntil:'domcontentloaded'});
+ assert.ok(await staticPage.locator('[data-meter-wrap]').isHidden(),'static fixed-unit page must not show a fabricated 83% cup meter');
+ assert.equal((await staticPage.locator('[data-result]').innerText()).trim(),'29.574','static fixed volume conversion is correct without JavaScript');
+ assert.equal((await staticPage.locator('[data-meta-ingredient]').innerText()).trim(),'Fixed units','static fixed-unit conversion must not claim a flour reference');
+ assert.match(await staticPage.locator('[data-result-note]').innerText(),/defined conversion/i,'static note explains fixed measurement');
+ await staticPage.goto(origin+'/',{waitUntil:'domcontentloaded'});
+ assert.ok(await staticPage.locator('[data-meter-wrap]').isVisible(),'static home calculator shows useful cup progress');
+ assert.match(await staticPage.locator('[data-meter-label]').innerText(),/83% of one US cup/,'static progress reflects the actual cup estimate');
  await staticPage.close();
 
  const mobile=await browser.newPage({viewport:{width:375,height:812},deviceScaleFactor:1,isMobile:true,hasTouch:true});
