@@ -10,7 +10,9 @@ const pages=manifest.pages;
 // throws during module initialization and silently disables later UI sections.
 const browserScript=fs.readFileSync(path.join(dist,'assets/app.js'),'utf8');
 assert.doesNotMatch(browserScript,/for\s*\(\s*(?:const|let)\s+\w+\s+of\s+\$\s*\(/,
- 'Browser initialization uses querySelector in an iterable loop; use querySelectorAll ($$)');
+ 'Browser initialization uses querySelector in an iterable loop; use querySelectorAll ($)');
+assert.doesNotMatch(browserScript,/(?<!\$)\$\([^\r\n;]*?\)\.(?:forEach|map|filter|reduce|some|every)\s*\(/,
+ 'Single-element selector used as an array; choose querySelectorAll ($) for collection methods');
 assert.equal(pages.length,81,'78 app pages plus 3 legal pages');
 assert.equal(new Set(pages.map(p=>p.url)).size,pages.length,'duplicate routes');
 assert.equal(new Set(pages.map(p=>p.title)).size,pages.length,'duplicate SEO titles');
