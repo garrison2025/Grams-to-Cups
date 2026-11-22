@@ -53,6 +53,7 @@ for(const page of pages){
  const schemaNodes=structured.map(x=>JSON.parse(x[1]));
  const structuredTypes=new Set(schemaNodes.map(x=>x['@type']));
  const sourceRoute=page.url==='/'||
+  /^\/cooking\/(?:grams-to-cups|cups-to-grams|grams-to-tablespoons|tablespoons-to-grams)\/$/.test(page.url)||
   /^\/cooking\/grams-to-cups\/\d+-grams-to-cups\/$/.test(page.url)||
   /^\/cooking\/ingredients\/[^/]+\/$/.test(page.url)||
   /^\/cooking\/ingredients\/[^/]+\/\d+-grams-to-cups\/$/.test(page.url)||
