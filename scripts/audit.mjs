@@ -19,7 +19,7 @@ for(const page of pages){
  assert.match(html,/<main id="main">/);
  assert.ok(!html.includes('undefined')&&!html.includes('NaN'),'broken values on '+page.url);
  assert.ok(page.wordCount>55,'insufficient explanatory text '+page.url);
- if(manifest.publicIndex){
+ if(manifest.publicIndex&&page.indexCandidate){
   assert.ok(html.includes('rel="canonical"'),page.url);
   assert.ok(html.includes('content="index,follow"'),page.url);
  }else{
@@ -34,6 +34,7 @@ for(const page of pages){
 const files=['assets/app.js','assets/core.mjs','assets/ingredients.json','assets/styles.css','robots.txt','404.html','favicon.svg'];
 for(const f of files)assert.ok(fs.existsSync(path.join(dist,f)),'missing '+f);
 assert.ok(manifest.publicIndex?fs.existsSync(path.join(dist,'sitemap.xml')):!fs.existsSync(path.join(dist,'sitemap.xml')));
+assert.equal(pages.filter(p=>p.indexCandidate).length,67,'expected 67 audited index candidates');
 const numberPages=pages.filter(x=>/\/grams-to-cups\/\d+-grams-to-cups\/$/.test(x.url));
 assert.equal(numberPages.length,21);
 assert.equal(pages.filter(x=>/\/ingredients\/[^/]+\/$/.test(x.url)).length,24);
