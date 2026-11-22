@@ -16,6 +16,12 @@ function renderCalculator(form){
  const standard=$('[data-standard]',form)?.value||'us';
  const ingredient=byId.get($('[data-ingredient]',form)?.value)||null;
  const isCrossDimension=(['g','kg','oz'].includes(from))!==(['g','kg','oz'].includes(to));
+ for(const field of $('[data-density-field]',form))field.hidden=!isCrossDimension;
+ const cupStandard=$('[data-cup-standard-row]',form);
+ if(cupStandard)cupStandard.hidden=!(from==='cup'||to==='cup');
+ const ingredientSource=$('[data-source-ingredient]',form),fixedSource=$('[data-source-fixed]',form);
+ if(ingredientSource)ingredientSource.hidden=!isCrossDimension;
+ if(fixedSource)fixedSource.hidden=isCrossDimension;
  const choices=$$('[data-amount-preset]',form);
  const presetValues=from==='cup'?[.25,.5,1,2]:['tbsp','tsp','fl-oz','oz'].includes(from)?[1,2,4,8]:from==='kg'?[.1,.25,.5,1]:[50,100,200,250];
  choices.forEach((b,i)=>{
@@ -141,3 +147,55 @@ for(const filter of $$('[data-directory-filter]'))filter.addEventListener('input
 });
 
 for(const button of $$('[data-chart-print]'))button.addEventListener('click',()=>window.print());
+
+
+/* Compare published ingredient weights without uploading data or fabricating a universal density. */
+for(const root of $$('[data-compare]')){
+ const slider=$('[data-compare-input]',root);
+ const flour=byId.get('all-purpose-flour'),sugar=byId.get('granulated-sugar');
+ if(!slider||!flour||!sugar)continue;
+ const update=()=>{
+  const grams=Number(slider.value);
+  const flourCups=convertQuantity(grams,'g','cup',{ingredient:flour,standard:'us'});
+  const sugarCups=convertQuantity(grams,'g','cup',{ingredient:sugar,standard:'us'});
+  const max=Math.max(flourCups,sugarCups);
+  setText($('[data-compare-grams]',root),formatAmount(grams,0)+' g');
+  setText($('[data-compare-flour]',root),formatAmount(flourCups,3));
+  setText($('[data-compare-sugar]',root),formatAmount(sugarCups,3));
+  const flourBar=$('[data-compare-flour-bar]',root),sugarBar=$('[data-compare-sugar-bar]',root);
+  if(flourBar)flourBar.style.width=(flourCups/max*100).toFixed(1)+'%';
+  if(sugarBar)sugarBar.style.width=(sugarCups/max*100).toFixed(1)+'%';
+  setText($('[data-compare-caption]',root),formatAmount(grams,0)+' g of flour uses about '+formatAmount(flourCups/sugarCups,2)+'× as many US cups as the same weight of granulated sugar.');
+  slider.setAttribute('aria-valuetext',formatAmount(grams,0)+' grams');
+  $$('[data-compare-preset]',root).forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.comparePreset)===grams)));
+ };
+ slider.addEventListener('input',update);
+ $$('[data-compare-preset]',root).forEach(button=>button.addEventListener('click',()=>{slider.value=button.dataset.comparePreset;update()}));
+ update();
+}
+/* The chart is useful as an interactive lookup as well as a printable source table. */
+for(const chart of $$('[data-chart]')){
+ const search=$('[data-chart-filter]',chart),table=$('[data-chart-table] table',chart);
+ if(!table||!search)continue;
+ const rows=$$('tbody tr',table),head=$$('thead th',table).map(th=>th.textContent.trim());
+ const update=()=>{
+  const query=search.value.trim().toLowerCase();
+  let visible=0;
+  for(const row of rows){
+   row.hidden=!!query&&!row.cells[0].textContent.toLowerCase().includes(query);
+   if(!row.hidden)visible++;
+  }
+  setText($('[data-chart-count]',chart),visible+' of '+rows.length+' ingredients shown');
+  const empty=$('[data-chart-empty]',chart);
+  if(empty)empty.hidden=visible!==0;
+ };
+ search.addEventListener('input',update);
+ $('[data-chart-download]',chart)?.addEventListener('click',()=>{
+  const included=[...rows].filter(row=>!row.hidden).map(row=>[...row.cells].map(td=>td.textContent.trim()));
+  const content=[head,...included].map(row=>row.map(csvCell).join(',')).join('\r\n');
+  const url=URL.createObjectURL(new Blob(['\ufeff'+content],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download='cooking-conversion-chart.csv';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ });
+ update();
+}
