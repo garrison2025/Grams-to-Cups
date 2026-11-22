@@ -181,6 +181,27 @@ try{
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('99 g Granulated white sugar'),'reverse conversion uses sugar reference');
  await page.locator('[data-batch-clear]').click();
  assert.equal(await page.locator('[data-batch-lines]').inputValue(),'','clear action empties input');
+ await page.goto(origin+'/cooking/half-a-measurement/',{waitUntil:'networkidle'});
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'3/4',
+  'fraction calculator adds 1/2 + 1/4 exactly');
+ await page.locator('[data-fraction-first]').fill('1/3');
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'7/12',
+  'fraction addition uses exact rational arithmetic instead of decimal approximation');
+ await page.locator('[data-fraction-operation]').selectOption('*');
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'1/12',
+  'fraction multiplication uses exact rational arithmetic');
+ await page.locator('[data-fraction-operation]').selectOption('/');
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'1 1/3',
+  'fraction division supports mixed number results');
+ await page.locator('[data-fraction-operation]').selectOption('-');
+ await page.locator('[data-fraction-second]').fill('1/2');
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'—',
+  'negative kitchen results do not appear as valid amounts');
+ assert.match(await page.locator('[data-fraction-error]').innerText(),/cannot be negative/,
+  'negative quantities provide a clear error message');
+ await page.locator('[data-fraction-first]').fill('3/4');
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'1/4',
+  'fraction calculator recovers after fixing bad values');
  await page.goto(origin+'/cooking/recipe-scaler/',{waitUntil:'networkidle'});
  await page.locator('[data-recipe-lines]').fill('1½ cups milk\n½ tsp salt\npinch of salt\n2-3 eggs');
  await page.locator('[data-old-servings]').fill('2');
@@ -220,6 +241,9 @@ try{
  await staticPage.goto(origin+'/',{waitUntil:'domcontentloaded'});
  assert.ok(await staticPage.locator('[data-meter-wrap]').isVisible(),'static home calculator shows useful cup progress');
  assert.match(await staticPage.locator('[data-meter-label]').innerText(),/83% of one US cup/,'static progress reflects the actual cup estimate');
+ await staticPage.goto(origin+'/cooking/half-a-measurement/',{waitUntil:'domcontentloaded'});
+ assert.equal((await staticPage.locator('[data-fraction-result]').innerText()).trim(),'3/4',
+  'a useful 1/2 + 1/4 example is pre-rendered without JavaScript');
  await staticPage.close();
 
  const mobile=await browser.newPage({viewport:{width:375,height:812},deviceScaleFactor:1,isMobile:true,hasTouch:true});
@@ -230,7 +254,7 @@ try{
  for(const width of [320,768]){
   await mobile.setViewportSize({width,height:width===320?720:1024});
   for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/',
-   '/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/','/cooking/batch-converter/','/cooking/recipe-scaler/']){
+   '/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/','/cooking/half-a-measurement/','/cooking/batch-converter/','/cooking/recipe-scaler/']){
    await mobile.goto(origin+route,{waitUntil:'networkidle'});
    const overflow=await mobile.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
    assert.ok(overflow<=1,route+' '+width+'px horizontal overflow '+overflow);
@@ -245,7 +269,7 @@ try{
   }
  }
  await mobile.setViewportSize({width:375,height:812});
- for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/','/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/','/cooking/batch-converter/','/cooking/recipe-scaler/']){
+ for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/','/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/','/cooking/half-a-measurement/','/cooking/batch-converter/','/cooking/recipe-scaler/']){
   await mobile.goto(origin+route,{waitUntil:'networkidle'});
   const overflow=await mobile.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
   assert.ok(overflow<=1,route+' mobile overflow '+overflow);
