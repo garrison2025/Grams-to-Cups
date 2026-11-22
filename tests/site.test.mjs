@@ -71,9 +71,12 @@ test('fraction and input validation',()=>{
  assert.equal(parseAmount('1 1/2'),1.5);
  assert.equal(parseAmount('3/4'),.75);
  assert.equal(parseAmount('0.25'),.25);
+ assert.equal(parseAmount('1,000'),1000,'Strict US thousand grouping is supported');
+ assert.equal(parseAmount('12,345.67'),12345.67);
+ assert.equal(parseAmount('1,234,567'),1234567);
  assert.equal(approximateFraction(.375),'3/8');
  assert.equal(approximateFraction(.001),'','Do not call a nonzero measure approximately zero cups');
- for(const bad of ['','-1','0','3/0','NaN','Infinity','1e309','1/2/3','1,000','a',String(10**20)]){
+ for(const bad of ['','-1','0','3/0','NaN','Infinity','1e309','1/2/3','1,5','12,34','1,23,456','a',String(10**20)]){
   assert.throws(()=>parseAmount(bad),undefined,bad);
  }
 });
@@ -86,6 +89,12 @@ test('recipe scaler preserves unknown lines and warns without guessing',()=>{
  assert.throws(()=>scaleRecipe('1 cup milk',0,2));
  const ranges=scaleRecipe('2-3 eggs\n1 to 2 cups stock\n1–2 tbsp cinnamon\n2 or 3 teaspoons salt',2,4);
  assert.equal(ranges.unparsed,4,'Ingredient ranges must request manual review');
+ const grouping=scaleRecipe('1,000 g flour\n1,234.5 ml milk\n1,5 cups water\n1.2.3 tsp salt',2,4);
+ assert.equal(grouping.rows[0].scaled,'2,000 g flour');
+ assert.equal(grouping.rows[1].scaled,'2,469 ml milk');
+ assert.equal(grouping.unparsed,2,'Malformed separators must not partially scale a number');
+ assert.equal(grouping.rows[2].scaled,'1,5 cups water');
+ assert.equal(grouping.rows[3].scaled,'1.2.3 tsp salt');
  assert.deepEqual(ranges.rows.map(r=>r.scaled),['2-3 eggs','1 to 2 cups stock','1–2 tbsp cinnamon','2 or 3 teaspoons salt']);
  const compounds=scaleRecipe('1 cup + 2 tbsp milk\n1 cup and 2 tbsp milk\n1 cup & 2 tbsp milk\n1 cup / 2 tbsp milk\n1 cup milk plus 2 tbsp cream\n2 eggs and 1 onion',2,4);
  assert.equal(compounds.unparsed,6,'Multi-quantity recipes must not only scale the first quantity');
@@ -150,6 +159,9 @@ test('batch conversion uses ingredient-specific values in both directions',()=>{
  assert.equal(cups.converted,4);
  assert.equal(cups.review,0);
  assert.equal(cups.rows[0].output,'1 cup All-purpose flour');
+ const large=batchConvertIngredients('1,000 g all-purpose flour',{ingredients:foods,target:'cup'});
+ assert.equal(large.converted,1,'Batch converter accepts correctly grouped input');
+ assert.equal(large.rows[0].output,'8.333 cups All-purpose flour');
  assert.equal(cups.rows[1].output,'1 cup Granulated white sugar');
  assert.equal(cups.rows[2].output,'1/2 cup Butter');
  assert.equal(cups.rows[3].output,'1/8 cup Honey');
