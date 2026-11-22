@@ -8,9 +8,10 @@
   },
   "scripts": {
     "test": "node --test tests/site.test.mjs",
-    "build": "npm test && npm run audit:syntax && node scripts/build.mjs && node scripts/audit.mjs",
+    "build": "npm test && npm run audit:syntax && node scripts/build.mjs && node scripts/audit.mjs && node scripts/keyword-audit.mjs",
     "check": "npm run build",
-    "audit:syntax": "node --check public/app.js && node --check src/core.mjs && node --check scripts/build.mjs && node --check scripts/audit.mjs",
-    "test:browser": "node tests/browser.test.mjs"
+    "audit:syntax": "node --check public/app.js && node --check src/core.mjs && node --check scripts/build.mjs && node --check scripts/audit.mjs && node --check scripts/keyword-audit.mjs",
+    "test:browser": "node tests/browser.test.mjs",
+    "audit:keywords": "node scripts/keyword-audit.mjs"
   }
 }
