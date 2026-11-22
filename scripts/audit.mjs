@@ -34,7 +34,7 @@ for(const page of pages){
 const files=['assets/app.js','assets/core.mjs','assets/ingredients.json','assets/styles.css','robots.txt','404.html','favicon.svg'];
 for(const f of files)assert.ok(fs.existsSync(path.join(dist,f)),'missing '+f);
 assert.ok(manifest.publicIndex?fs.existsSync(path.join(dist,'sitemap.xml')):!fs.existsSync(path.join(dist,'sitemap.xml')));
-assert.equal(pages.filter(p=>p.indexCandidate).length,66,'expected 66 audited index candidates');
+assert.equal(pages.filter(p=>p.indexCandidate).length,65,'expected 65 audited index candidates');
 const numberPages=pages.filter(x=>/\/grams-to-cups\/\d+-grams-to-cups\/$/.test(x.url));
 assert.equal(numberPages.length,21);
 assert.equal(pages.filter(x=>/\/ingredients\/[^/]+\/$/.test(x.url)).length,24);
@@ -57,6 +57,7 @@ assert.equal(pages.find(p=>p.url==='/').indexCandidate,true,'homepage is primary
 assert.equal(pages.find(p=>p.url==='/cooking/grams-to-cups/').indexCandidate,false,'duplicate core converter must not compete with homepage');
 assert.ok(!pageHtml('/').includes('href="/cooking/grams-to-cups/"'),'internal links must use the primary homepage URL');
 assert.ok(!pageHtml('/cooking/').includes('href="/cooking/grams-to-cups/"'),'tool directory must route core intent to homepage');
+assert.equal(pages.find(p=>p.url==='/cooking/grams-to-cups/1000-grams-to-cups/').indexCandidate,false,'1000g KD37 has not qualified for standalone numeric index eligibility');
 assert.ok(known.has('/cooking/batch-converter/'),'missing batch converter route');
 assert.equal(pages.find(x=>x.url==='/cooking/batch-converter/').indexCandidate,false,'batch tool stays noindex without search demand evidence');
 assert.match(pageHtml('/cooking/batch-converter/'),/data-batch-results/,'missing interactive batch results');
