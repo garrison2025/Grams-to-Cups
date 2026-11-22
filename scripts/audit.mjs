@@ -6,6 +6,11 @@ import {csvSafeCell} from '../src/seo-evidence.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),dist=path.join(root,'dist');
 const manifest=JSON.parse(fs.readFileSync(path.join(dist,'site-manifest.json'),'utf8'));
 const pages=manifest.pages;
+// A single querySelector result is not iterable; using it in a for..of loop
+// throws during module initialization and silently disables later UI sections.
+const browserScript=fs.readFileSync(path.join(dist,'assets/app.js'),'utf8');
+assert.doesNotMatch(browserScript,/for\s*\(\s*(?:const|let)\s+\w+\s+of\s+\$\s*\(/,
+ 'Browser initialization uses querySelector in an iterable loop; use querySelectorAll ($$)');
 assert.equal(pages.length,81,'78 app pages plus 3 legal pages');
 assert.equal(new Set(pages.map(p=>p.url)).size,pages.length,'duplicate routes');
 assert.equal(new Set(pages.map(p=>p.title)).size,pages.length,'duplicate SEO titles');
