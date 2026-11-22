@@ -35,7 +35,7 @@ function writeFile(relative,body){const p=path.join(dist,relative);fs.mkdirSync(
 function fileFor(url){return url==='/'?'index.html':url.slice(1)+'index.html';}
 function breadHtml(items){return '<nav class="breadcrumbs" aria-label="Breadcrumb">'+link('/','Home')+items.map(x=>' <span aria-hidden="true">/</span> '+(x[1]?link(x[1],x[0]):'<strong>'+e(x[0])+'</strong>')).join('')+'</nav>';}
 function nav(){return '<a class="skip" href="#main">Skip to main content</a><header class="site-header"><div class="container header-inner">'+
-'<a class="logo" href="/" aria-label="Grams and Cups home"><span class="logo-symbol" aria-hidden="true">◕</span><span>Grams <span class="logo-word-accent">&amp;</span> Cups</span></a>'+
+'<a class="logo" href="/" aria-label="Grams and Cups home"><span class="logo-symbol" aria-hidden="true">⅓</span><span>Grams <span class="logo-word-accent">&amp;</span> Cups</span></a>'+
 '<button type="button" class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="main-nav" data-nav-toggle>☰</button>'+
 '<nav id="main-nav" class="main-nav" data-nav aria-label="Primary navigation">'+link('/cooking/grams-to-cups/','Converter')+link('/cooking/#ingredients','Ingredients')+link('/cooking/charts/','Charts')+link('/cooking/recipe-scaler/','Recipe scaler')+link('/cooking/sources-and-methods/','Our sources','nav-cta')+'</nav></div></header>';}
 function footer(){return '<footer class="footer"><div class="container"><div class="footer-grid"><div>'+link('/','Grams & Cups','logo')+'<p>Friendly cooking measurements, grounded in referenced ingredient weights.<br>No account required; calculations stay in your browser.</p></div><nav class="footer-links" aria-label="Footer">'+link('/about/','About')+link('/privacy/','Privacy')+link('/contact/','Contact')+link('/cooking/sources-and-methods/','Sources')+link('/cooking/charts/','Print chart')+'</nav></div><div class="footer-note">© '+new Date().getUTCFullYear()+' Grams & Cups · Recipe reference estimates are not laboratory density measurements. Confirm important recipes by weighing ingredients.</div></div></footer>';}
@@ -54,7 +54,7 @@ function doc(spec){
  (permitted?'<link rel="canonical" href="'+e(canonical)+'">':'')+'<title>'+e(pageTitle)+'</title><meta property="og:type" content="website"><meta property="og:title" content="'+e(pageTitle)+'"><meta property="og:description" content="'+e(description)+'">'+(permitted?'<meta property="og:url" content="'+e(canonical)+'">':'')+
  '<link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/assets/styles.css">'+schema+
  '<script type="module" src="/assets/app.js" defer></script></head><body>'+nav()+'<main id="main">'+
- '<div class="container">'+breadHtml(bread)+'</div>'+body+'</main>'+footer()+'</body></html>';
+ (url==='/'?'':'<div class="container">'+breadHtml(bread)+'</div>')+body+'</main>'+footer()+'</body></html>';
  writeFile(fileFor(url),html);
  pages.push({url,title,description,kind,indexCandidate:eligible,wordCount:body.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().split(' ').length});
 }
@@ -79,7 +79,7 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  let preview='—';
  try{preview=f(convertQuantity(Number(amount),from,to,{ingredient:ref,standard:'us'}));}catch{}
  const shortUnit=({cup:'US cups',g:'g',kg:'kg',oz:'oz',ml:'mL',tbsp:'tbsp',tsp:'tsp','fl-oz':'US fl oz'})[to]||to;
- return '<div class="calc-card"><div class="calc-top"><strong><span class="live-dot" aria-hidden="true"></span>'+e(heading)+'</strong><span class="muted">PRIVATE · INSTANT</span></div>'+
+ return '<div class="calc-card" id="converter"><div class="calc-top"><strong><span class="live-dot" aria-hidden="true"></span>'+e(heading)+'</strong><span class="muted">PRIVATE · INSTANT</span></div>'+
  '<form class="calc-body" data-calc novalidate><div class="form-grid">'+
  '<div class="field full"><label for="quantity">How much are you measuring?</label><input id="quantity" data-amount type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="'+e(amount)+'" aria-describedby="amount-help"><small id="amount-help">Try 1/4, 1 1/2, or 125.5.</small></div>'+
  '<div class="field full"><div class="quick-row" role="group" aria-label="Common quantities"><span class="micro-label">QUICK VALUES</span>'+amountButtons+'</div></div>'+
@@ -128,6 +128,7 @@ function home(){
  '<span class="eyebrow">THE EVERYDAY BAKING TOOLKIT</span>'+
  '<h1 class="hero-heading">Grams to cups, <em>without the guesswork.</em></h1>'+
  '<p class="lede">Not every cup weighs the same. Get the conversion that fits <strong>your ingredient</strong>, with a clear weight reference behind every answer.</p>'+
+ '<a class="btn btn-primary hero-mobile-cta" href="#converter">Start converting <span aria-hidden="true">↓</span></a>'+
  '<div class="hero-points"><span>24 documented ingredients</span><span>US & metric cups</span><span>Instant local calculations</span></div>'+
  '<div class="hero-story"><div class="hero-story-symbol" aria-hidden="true">½</div><div><b>Measure less. Make more.</b><p>Precise baking starts with the right ingredient and the right cup size.</p><small>Source-backed kitchen math, beautifully simple.</small></div></div>'+
  '</div>'+converterForm({})+'</div></div>';
