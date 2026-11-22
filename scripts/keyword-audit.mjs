@@ -183,7 +183,7 @@ fs.mkdirSync(out,{recursive:true});
 fs.writeFileSync(path.join(out,'seo-keyword-decisions.csv'),'\ufeff'+quotedRows(detailed));
 const keywordToUrl=[['keyword','competitor','source_observed_position','source_us_volume','source_kd',
  'source_keyword_traffic_not_our_site','competitor_ranking_url','original_heuristic_url',
- 'final_canonical_target_suggestion','target_index_eligible','status','evidence_limitations'],
+ 'provisional_target_url_not_verified_rank','target_index_eligible','status','evidence_limitations'],
  ...detailed.slice(1).map(x=>[x[1],x[0],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10],x[11]])];
 assert.equal(keywordToUrl.length,2301,'A source-true keyword-to-URL ledger must contain all 2300 rows');
 fs.writeFileSync(path.join(out,'keyword-to-url.csv'),'\ufeff'+quotedRows(keywordToUrl));
