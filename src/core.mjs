@@ -161,8 +161,10 @@ export function batchConvertIngredients(text,{ingredients,target='cup',standard=
   try{
    const amount=parseAmount(rawAmount);
    const result=convertQuantity(amount,unit,target,{ingredient:food,standard});
-   return {index,original,status:'converted',output:formatKitchenAmount(result,{fractions:fractions&&target==='cup'})+' '+(target==='cup'?(result<=1+1e-10?'cup':'cups'):'g')+' '+food.name,
-     amount,result,from:unit,to:target,ingredient:food.name,ingredientId:food.id,reason:'Reference: '+food.referenceGrams+' g / '+food.referenceAmount+' '+food.referenceUnit};
+   const quantityUnit=target==='cup'?(standard==='metric'?'metric':'US')+' cup'+(result<=1+1e-10?'':'s'):'g';
+   const originalUnit=food.referenceUnit==='cup'?'US cup':food.referenceUnit==='tablespoon'?'US tablespoon':'US teaspoon';
+   return {index,original,status:'converted',output:formatKitchenAmount(result,{fractions:fractions&&target==='cup'})+' '+quantityUnit+' '+food.name,
+     amount,result,from:unit,to:target,ingredient:food.name,ingredientId:food.id,reason:'Reference: '+food.referenceGrams+' g / '+food.referenceAmount+' '+originalUnit};
   }catch(error){
    return {index,original,status:'review',output:original,reason:error.message,ingredient:food.name};
   }
