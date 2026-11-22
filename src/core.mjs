@@ -125,8 +125,10 @@ function unsafeIngredientRemainder(text){
  // Numeric food descriptions like "2% milk" are intentionally conservative:
  // leave the whole line unchanged rather than guessing.
  const secondAmount=/(?:^|[^\p{L}\p{N}])(?:\d+(?:[.,]\d+)?(?:\/\d+)?|\.\d+)(?=$|[^\p{L}\p{N}])/u;
+ const spelledSecondAmount=/(?:,|，|\band\b|\bplus\b|\bwith\b)\s*(?:(?:about|roughly|approximately)\s+)?(?:one|two|three|four|five|six|seven|eight|nine|ten|half|quarter|an?|a\s+few)\b/iu;
  return /;/u.test(rest)||
   secondAmount.test(rest)||
+  spelledSecondAmount.test(rest)||
   /^\s*[,\.]\s*\d/u.test(rest)||
   /^\s*(?:[-–—/]|to\b|or\b)\s*(?:\d|\.)/iu.test(rest)||
   /(?:\+|&|\band\b|\bplus\b)\s*(?:\d|\.)/iu.test(rest)||
