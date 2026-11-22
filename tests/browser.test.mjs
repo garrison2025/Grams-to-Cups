@@ -209,6 +209,13 @@ try{
  assert.notEqual(capacityResult,sourceResult,'water capacity option changes actual mass-to-volume result');
  assert.ok(await page.locator('[data-source-capacity]').isVisible(),'physical water estimate must not claim recipe data citation');
  assert.ok(await page.locator('[data-source-ingredient]').isHidden(),'recipe chart source hidden while capacity mode is active');
+ await page.evaluate(()=>{
+  window.__copiedConversion='';
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+   writeText:async value=>{window.__copiedConversion=value}
+  }});
+  Object.defineProperty(navigator,'share',{configurable:true,value:undefined});
+ });
  await page.locator('[data-copy]').click();
  assert.match(await page.evaluate(()=>window.__copiedConversion),/Physical-capacity water estimate/i,
   'copied water conversion explicitly includes its physical-capacity basis');
