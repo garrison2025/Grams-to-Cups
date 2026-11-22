@@ -16,12 +16,19 @@ jobs:
           node-version: '22'
       - name: Test preview noindex build
         run: npm run build
-      - name: Test approved production canonical and sitemap
+      - name: Ensure CI alone never permits placeholder production domains
+        run: |
+          if CI=true CF_PAGES_BRANCH=main SITE_URL=https://example.com PUBLIC_INDEX_APPROVED=true node scripts/build.mjs; then
+            echo "::error::Placeholder production site was incorrectly approved"
+            exit 1
+          fi
+      - name: Test approved production canonical and sitemap (explicit fixture only)
         run: npm run build
         env:
           CF_PAGES_BRANCH: main
           SITE_URL: https://example.com
           PUBLIC_INDEX_APPROVED: 'true'
+          SITE_URL_FIXTURE_APPROVED_FOR_CI: 'true'
 
       - name: Preserve keyword and page SEO review reports
         uses: actions/upload-artifact@v4
