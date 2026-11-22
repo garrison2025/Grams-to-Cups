@@ -84,10 +84,38 @@ try{
  await page.locator('[data-chart-filter]').fill('zzz never an ingredient');
  assert.ok(await page.locator('[data-chart-empty]').isVisible(),'empty search feedback is visible');
  assert.equal(errors.length,0,'no desktop runtime errors after charts');
+
+ await page.goto(origin+'/cooking/batch-converter/',{waitUntil:'networkidle'});
+ assert.ok(await page.getByRole('heading',{name:/Batch Ingredient Converter/i}).isVisible(),'batch converter page renders');
+ assert.ok((await page.locator('[data-batch-summary]').innerText()).includes('4 converted'),'default list identifies four supported ingredients');
+ assert.ok((await page.locator('[data-batch-summary]').innerText()).includes('1 need review'),'ambiguous flour stays flagged for review');
+ await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 1 need review · 0 blank');
+ assert.equal((await page.locator('[data-batch-results] .batch-converted-row').count()),2);
+ assert.equal((await page.locator('[data-batch-results] .batch-review-row').count()),1);
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 cup All-purpose flour'),'exact flour conversion');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 cups Granulated white sugar'),'fraction-friendly results');
+ const batchDownload=page.waitForEvent('download');
+ await page.locator('[data-batch-csv]').click();
+ assert.equal((await batchDownload).suggestedFilename(),'batch-ingredient-conversions.csv');
+ await page.locator('[data-batch-target]').selectOption('g');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('99 g Granulated white sugar'),'reverse conversion uses sugar reference');
+ await page.locator('[data-batch-clear]').click();
+ assert.equal(await page.locator('[data-batch-lines]').inputValue(),'','clear action empties input');
+ await page.goto(origin+'/cooking/recipe-scaler/',{waitUntil:'networkidle'});
+ await page.locator('[data-recipe-lines]').fill('1½ cups milk\n½ tsp salt\npinch of salt');
+ await page.locator('[data-old-servings]').fill('2');
+ await page.locator('[data-new-servings]').fill('3');
+ const scaled=await page.locator('[data-recipe-output]').innerText();
+ assert.ok(scaled.includes('2 1/4 cups milk'),'recipe displays exact mixed kitchen fraction');
+ assert.ok(scaled.includes('3/4 tsp salt'),'recipe displays Unicode fraction');
+ assert.ok(scaled.includes('pinch of salt  [check manually]'),'unknown serving units stay visible for review');
+ assert.equal(errors.length,0,'no desktop runtime errors after batch conversion and recipe scaling');
+
  const mobile=await browser.newPage({viewport:{width:375,height:812},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  const mobileErrors=[];
  mobile.on('pageerror',err=>mobileErrors.push(err.message));
- for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/','/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/']){
+ for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/','/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/','/cooking/batch-converter/','/cooking/recipe-scaler/']){
   await mobile.goto(origin+route,{waitUntil:'networkidle'});
   const overflow=await mobile.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
   assert.ok(overflow<=1,route+' mobile overflow '+overflow);
@@ -109,7 +137,7 @@ try{
    }
   }
  }
- console.log('Browser audit passed: live ingredient volume comparison, mass-volume context switching, searchable CSV chart, conversion presets, browser errors, mobile menu and no horizontal overflow.');
+ console.log('Browser audit passed: full recipe scaler Unicode fractions, safe local batch conversion with review warnings and CSV, desktop/mobile overflow, conversion presets, ingredient comparison and interactive charts.');
 }catch(err){failed=true;console.error(err.stack||err)}
 finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 if(failed)process.exit(1);
