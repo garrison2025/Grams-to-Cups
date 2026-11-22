@@ -35,7 +35,7 @@ function writeFile(relative,body){const p=path.join(dist,relative);fs.mkdirSync(
 function fileFor(url){return url==='/'?'index.html':url.slice(1)+'index.html';}
 function breadHtml(items){return '<nav class="breadcrumbs" aria-label="Breadcrumb">'+link('/','Home')+items.map(x=>' <span aria-hidden="true">/</span> '+(x[1]?link(x[1],x[0]):'<strong>'+e(x[0])+'</strong>')).join('')+'</nav>';}
 function nav(){return '<a class="skip" href="#main">Skip to main content</a><header class="site-header"><div class="container header-inner">'+
-'<a class="logo" href="/" aria-label="Grams and Cups home"><span class="logo-symbol" aria-hidden="true">◕</span><span>Grams <span style="color:#23745e">&amp;</span> Cups</span></a>'+
+'<a class="logo" href="/" aria-label="Grams and Cups home"><span class="logo-symbol" aria-hidden="true">◕</span><span>Grams <span class="logo-word-accent">&amp;</span> Cups</span></a>'+
 '<button type="button" class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="main-nav" data-nav-toggle>☰</button>'+
 '<nav id="main-nav" class="main-nav" data-nav aria-label="Primary navigation">'+link('/cooking/grams-to-cups/','Converter')+link('/cooking/#ingredients','Ingredients')+link('/cooking/charts/','Charts')+link('/cooking/recipe-scaler/','Recipe scaler')+link('/cooking/sources-and-methods/','Our sources','nav-cta')+'</nav></div></header>';}
 function footer(){return '<footer class="footer"><div class="container"><div class="footer-grid"><div>'+link('/','Grams & Cups','logo')+'<p>Friendly cooking measurements, grounded in referenced ingredient weights.<br>No account required; calculations stay in your browser.</p></div><nav class="footer-links" aria-label="Footer">'+link('/about/','About')+link('/privacy/','Privacy')+link('/contact/','Contact')+link('/cooking/sources-and-methods/','Sources')+link('/cooking/charts/','Print chart')+'</nav></div><div class="footer-note">© '+new Date().getUTCFullYear()+' Grams & Cups · Recipe reference estimates are not laboratory density measurements. Confirm important recipes by weighing ingredients.</div></div></footer>';}
@@ -49,7 +49,7 @@ function doc(spec){
  const pageTitle=title+' | Grams & Cups';
  const crumbs=[{name:'Home',item:origin+'/'},...bread.map(x=>({name:x[0],item:origin+(x[1]||url)}))];
  const schema=permitted?jsonld({'@context':'https://schema.org','@type':'WebPage',name:pageTitle,url:canonical,description,inLanguage:'en',isPartOf:{'@type':'WebSite',name:'Grams & Cups',url:origin+'/'}})+(bread.length?jsonld({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:crumbs.map((x,i)=>({'@type':'ListItem',position:i+1,name:x.name,item:x.item}))}):'')+(kind==='WebApplication'?jsonld({'@context':'https://schema.org','@type':'WebApplication',name:title,url:canonical,applicationCategory:'UtilitiesApplication',operatingSystem:'Any modern web browser',offers:{'@type':'Offer',price:'0',priceCurrency:'USD'}}):''):'';
- const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f9f8f4">'+
+ const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f8f7f2">'+
  '<meta name="description" content="'+e(description)+'"><meta name="robots" content="'+(permitted?'index,follow':'noindex,follow')+'">'+
  (permitted?'<link rel="canonical" href="'+e(canonical)+'">':'')+'<title>'+e(pageTitle)+'</title><meta property="og:type" content="website"><meta property="og:title" content="'+e(pageTitle)+'"><meta property="og:description" content="'+e(description)+'">'+(permitted?'<meta property="og:url" content="'+e(canonical)+'">':'')+
  '<link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/assets/styles.css">'+schema+
@@ -59,7 +59,11 @@ function doc(spec){
  pages.push({url,title,description,kind,indexCandidate:eligible,wordCount:body.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().split(' ').length});
 }
 function section(title,intro,contents,alt=false){return '<section class="section'+(alt?' section-alt':'')+'"><div class="container"><div class="section-head"><h2>'+e(title)+'</h2><p>'+e(intro)+'</p></div>'+contents+'</div></section>';}
-function grid(items,cols=3){return '<div class="cards'+(cols===4?' four':'')+'">'+items.map(([url,title,desc])=>'<a class="tile" href="'+e(url)+'"><b>'+e(title)+'</b><p>'+e(desc)+'</p><span class="arrow" aria-hidden="true">↗</span></a>').join('')+'</div>';}
+function grid(items,cols=3){
+ return '<div class="cards'+(cols===4?' four':'')+'">'+items.map(([url,title,desc],i)=>
+ '<a class="tile" href="'+e(url)+'"><span class="tile-index" aria-hidden="true">'+String(i+1).padStart(2,'0')+'</span><b>'+e(title)+'</b><p>'+e(desc)+'</p><span class="arrow" aria-hidden="true">↗</span></a>').join('')+'</div>';
+}
+
 function table(headers,rows){return '<div class="table-scroll"><table><thead><tr>'+headers.map(x=>'<th scope="col">'+e(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+e(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
 function unitSelect(label,which,selected){
  const options=units.map(u=>'<option value="'+u+'"'+(selected===u?' selected':'')+'>'+e(unitDescription(u))+'</option>').join('');
@@ -68,17 +72,39 @@ function unitSelect(label,which,selected){
 function ingredientSelect(selected='all-purpose-flour'){return '<div class="field full"><label for="ingredient-choice">Ingredient (needed when converting mass ↔ volume)</label><select id="ingredient-choice" data-ingredient>'+data.map(i=>'<option value="'+e(i.id)+'"'+(i.id===selected?' selected':'')+'>'+e(i.name)+'</option>').join('')+'</select><small>Different ingredients have different mass per cup. References reflect their stated measurement methods.</small></div>';}
 function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flour',heading='Instant conversion'}={}){
  const ref=byId.get(ingredient)||data[0];
- let preview='—';try{preview=f(convertQuantity(Number(amount),from,to,{ingredient:ref,standard:'us'}))+' '+unitDescription(to);}catch{}
- const fraction=from==='g'&&to==='cup'?approximateFraction(convertQuantity(Number(amount),from,to,{ingredient:ref})):'';
- return '<div class="calc-card"><div class="calc-top"><strong><span class="live-dot"></span>'+e(heading)+'</strong><span class="muted">Free · private · instant</span></div>'+
- '<form class="calc-body" data-calc novalidate><div class="form-grid"><div class="field full"><label for="quantity">Amount</label><input id="quantity" data-amount type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="'+e(amount)+'" aria-describedby="amount-help"><small id="amount-help">Decimals, fractions (1/4) and mixed numbers (1 1/2) work.</small></div>'+
- unitSelect('From','from',from)+unitSelect('To','to',to)+ingredientSelect(ingredient)+
- '<div class="field full"><label for="cup-standard">Cup standard</label><select id="cup-standard" data-standard><option value="us" selected>US customary — 236.588 mL</option><option value="metric">Metric — 250 mL</option></select></div></div>'+
- '<div class="calc-actions"><button class="btn btn-primary" type="button" data-swap>↔ Swap</button><button class="btn" type="reset" data-reset>Reset</button></div>'+
- '<div class="result" role="group" aria-label="Conversion result"><div class="result-label">Your result</div><output class="result-number" aria-live="polite" aria-atomic="true" data-result>'+e(preview)+'</output><p class="result-text" data-result-note>'+(fraction?'About '+e(fraction)+' cups. ':'')+'Approximate cooking reference.</p></div>'+
- '<p data-error class="error" role="alert" hidden></p><div class="calc-actions"><button class="btn" type="button" data-copy>Copy result</button><button class="btn" type="button" data-share>Share link</button><button class="btn" type="button" data-print>Print</button></div>'+
- '<p class="source-chip"><span data-feedback role="status"></span><span>Reference: '+link(source,'King Arthur Baking weight chart')+'. Measurements are approximate unless both units measure the same dimension.</span></p></form></div>';
+ const quickAmounts=[50,100,200,250];
+ const foodButtons=[['all-purpose-flour','Flour'],['granulated-sugar','Sugar'],['butter','Butter'],['long-grain-rice-dry','Rice']]
+ .map(([id,label])=>'<button class="ingredient-chip" type="button" data-ingredient-preset="'+e(id)+'" aria-pressed="'+String(id===ingredient)+'">'+e(label)+'</button>').join('');
+ const amountButtons=quickAmounts.map(n=>'<button class="amount-chip" type="button" data-amount-preset="'+n+'" aria-pressed="'+String(Number(amount)===n)+'">'+n+' '+e(from)+'</button>').join('');
+ let preview='—';
+ try{preview=f(convertQuantity(Number(amount),from,to,{ingredient:ref,standard:'us'}));}catch{}
+ const shortUnit=({cup:'US cups',g:'g',kg:'kg',oz:'oz',ml:'mL',tbsp:'tbsp',tsp:'tsp','fl-oz':'US fl oz'})[to]||to;
+ return '<div class="calc-card"><div class="calc-top"><strong><span class="live-dot" aria-hidden="true"></span>'+e(heading)+'</strong><span class="muted">PRIVATE · INSTANT</span></div>'+
+ '<form class="calc-body" data-calc novalidate><div class="form-grid">'+
+ '<div class="field full"><label for="quantity">How much are you measuring?</label><input id="quantity" data-amount type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="'+e(amount)+'" aria-describedby="amount-help"><small id="amount-help">Try 1/4, 1 1/2, or 125.5.</small></div>'+
+ '<div class="field full"><div class="quick-row" role="group" aria-label="Common quantities"><span class="micro-label">QUICK VALUES</span>'+amountButtons+'</div></div>'+
+ ingredientSelect(ingredient)+
+ '<div class="field full"><div class="quick-row" role="group" aria-label="Popular ingredients"><span class="micro-label">POPULAR</span>'+foodButtons+'</div></div>'+
+ '<div class="unit-stage">'+unitSelect('From unit','from',from)+
+ '<button class="unit-switch" type="button" data-swap aria-label="Swap from and to units" title="Swap conversion direction">⇄</button>'+
+ unitSelect('To unit','to',to)+'</div>'+
+ '<div class="standard-line"><label for="cup-standard">Cup standard</label><select id="cup-standard" data-standard><option value="us" selected>US · 236.588 mL</option><option value="metric">Metric · 250 mL</option></select></div>'+
+ '</div>'+
+ '<div class="result" role="group" aria-label="Live conversion result">'+
+ '<div class="result-label">YOUR CONVERSION</div>'+
+ '<div class="result-amount" aria-live="polite" aria-atomic="true"><output class="result-number" data-result>'+e(preview)+'</output><span class="result-unit" data-result-unit>'+e(shortUnit)+'</span></div>'+
+ '<p class="result-text" data-result-note>Based on '+e(ref.name)+' — '+e(ref.method)+'. Approximate cooking reference.</p>'+
+ '<div class="cup-meter-wrap" data-meter-wrap><div class="cup-meter" aria-hidden="true"><div class="cup-meter-fill" data-meter-fill style="width:83%"></div></div><div class="cup-meter-label" data-meter-label>Proportion of one cup</div></div>'+
+ '<div class="result-meta"><span>Ingredient: <b data-meta-ingredient>'+e(ref.name)+'</b></span><span>Reference: <b data-meta-reference>'+e(ref.referenceGrams)+' g / '+e(ref.referenceAmount)+' '+e(ref.referenceUnit)+'</b></span></div>'+
+ '</div>'+
+ '<p data-error class="error" role="alert" hidden></p>'+
+ '<div class="calc-actions"><button class="btn btn-primary" type="button" data-copy>↗ Copy result</button>'+
+ '<button class="btn" type="button" data-share>Share link</button><button class="btn" type="button" data-print>Print</button>'+
+ '<button class="btn btn-ghost" type="button" data-reset>Reset</button></div>'+
+ '<p class="source-chip"><span data-feedback role="status"></span><span>Measured against '+link(source,'King Arthur Baking’s published ingredient weights')+'. Results reflect the selected ingredient and measurement method.</span></p>'+
+ '</form></div>';
 }
+
 function answerFor(amount,ingredient='all-purpose-flour',standard='us'){
  const i=byId.get(ingredient),cups=convertQuantity(amount,'g','cup',{ingredient:i,standard});
  return {cups,html:'<div class="seo-answer"><strong>'+e(f(amount))+' grams of '+e(i.name)+' ≈ '+e(f(cups))+' '+(standard==='us'?'US':'metric')+' cups</strong><p>Using '+e(f(i.referenceGrams))+' g per '+e(i.referenceAmount)+' '+e(i.referenceUnit)+' from '+link(i.sourceUrl,i.sourceName)+'. This is a cooking-reference estimate, not a universal grams-to-cups equation.</p></div>'};
@@ -89,12 +115,37 @@ const hubList=tools.map(t=>['/cooking/'+t[0]+'/',t[1],t[5]==='ingredient'?'Ingre
 const ingredientList=data.map(i=>['/cooking/ingredients/'+i.id+'/',i.name,i.method]);
 const numberList=numberValues.map(n=>['/cooking/grams-to-cups/'+n+'-grams-to-cups/',n+' grams to cups','Compare flour, sugar, butter and more']);
 function home(){
- const body='<div class="container hero"><div class="hero-grid"><div class="hero-copy"><span class="eyebrow">Better baking, less guessing</span><h1 class="hero-heading">Measure ingredients with confidence.</h1><p class="lede">A gram measures weight; a cup measures volume. Choose what you are baking with and get a clear, source-backed estimate in seconds.</p><div class="hero-points"><span>24 documented ingredients</span><span>US & metric cups</span><span>No account or paid API</span></div></div>'+converterForm({})+'</div></div>'+
- section('A converter for real ingredients','Every value has a cited weight reference and a stated measuring method.',grid(ingredientList.slice(0,12),4),true)+
- section('Common baking tasks','The tools, charts, and guides people actually need.',grid([['/cooking/grams-to-cups/','Grams to cups','Convert mass to ingredient-aware cup estimates'],['/cooking/cups-to-grams/','Cups to grams','Weight-first baking conversions'],['/cooking/recipe-scaler/','Recipe scaler','Adjust an ingredient list without a spreadsheet'],['/cooking/charts/','Printable chart','Reference quantities for flour, sugar and more'],['/cooking/guides/cup-sizes/','US vs metric cups','Why 250 mL is not a US cup'],['/cooking/sources-and-methods/','Our source method','How every conversion is calculated']]))+
- section('Popular amounts','Find answers for common weights without assuming every ingredient weighs the same.',grid(numberList.filter((_,i)=>[2,6,8,10,12,13].includes(i))));
- doc({url:'/',title:'Cooking Measurement Tools — Ingredient-Based Cups & Grams',description:'Free, source-backed grams to cups and cups to grams tools for 24 baking ingredients, recipe scaling and printable charts.',body,kind:'WebPage'});
+ const flour=byId.get('all-purpose-flour'),sugar=byId.get('granulated-sugar');
+ const flour100=f(convertQuantity(100,'g','cup',{ingredient:flour}));
+ const sugar100=f(convertQuantity(100,'g','cup',{ingredient:sugar}));
+ const popular=[100,200,250,300,500].map(n=>['/cooking/grams-to-cups/'+n+'-grams-to-cups/',n+' g to cups']);
+ const strip='<div class="home-ticker"><div class="container home-ticker-inner"><b>POPULAR CONVERSIONS</b>'+popular.map(([u,l])=>link(u,l)).join('')+'</div></div>';
+ const comparison='<section class="comparison-showcase"><div class="container comparison-grid"><div class="comparison-copy"><span class="kicker">A LITTLE FOOD SCIENCE</span><h2>Same weight.<br><em>Different volume.</em></h2><p>100 grams of flour and 100 grams of granulated sugar do not fill the same amount of space. That is why choosing an ingredient matters more than memorizing a universal conversion.</p>'+
+ link('/cooking/sources-and-methods/','Explore our measuring method','btn')+'</div>'+
+ '<div class="comparison-stack"><div class="compare-item"><small>100 GRAMS · ALL-PURPOSE FLOUR</small><strong>'+e(flour100)+'</strong><span>US cups · spoon & level</span></div>'+
+ '<div class="compare-item"><small>100 GRAMS · GRANULATED SUGAR</small><strong>'+e(sugar100)+'</strong><span>US cups · level cup</span></div></div></div></section>';
+ const hero='<div class="container hero"><div class="hero-grid"><div class="hero-copy">'+
+ '<span class="eyebrow">THE EVERYDAY BAKING TOOLKIT</span>'+
+ '<h1 class="hero-heading">Grams to cups, <em>without the guesswork.</em></h1>'+
+ '<p class="lede">Not every cup weighs the same. Get the conversion that fits <strong>your ingredient</strong>, with a clear weight reference behind every answer.</p>'+
+ '<div class="hero-points"><span>24 documented ingredients</span><span>US & metric cups</span><span>Instant local calculations</span></div>'+
+ '<div class="hero-story"><div class="hero-story-symbol" aria-hidden="true">½</div><div><b>Measure less. Make more.</b><p>Precise baking starts with the right ingredient and the right cup size.</p><small>Source-backed kitchen math, beautifully simple.</small></div></div>'+
+ '</div>'+converterForm({})+'</div></div>';
+ const body=hero+strip+
+ section('Explore by ingredient','Flour, sugar, butter and more — choose the exact food before converting by volume.',grid(ingredientList.slice(0,8),4),true)+
+ comparison+
+ section('A little easier in the kitchen','Save time with practical tools for recipe scaling, print-friendly reference charts and measuring fractions.',grid([
+ ['/cooking/grams-to-cups/','Grams to cups','Choose an ingredient and instantly find its approximate cup equivalent'],
+ ['/cooking/cups-to-grams/','Cups to grams','Bake by weight with more reliable kitchen results'],
+ ['/cooking/recipe-scaler/','Recipe scaler','Scale quantities to match the number of people you are feeding'],
+ ['/cooking/charts/','Printable charts','Keep a source-backed reference beside your mixing bowl'],
+ ['/cooking/guides/cup-sizes/','US vs metric cups','Understand the difference between cup systems'],
+ ['/cooking/','All cooking tools','Browse our full collection of practical converters']
+ ]))+
+ section('Start with a familiar number','Look up ingredient-by-ingredient conversions without treating every food as flour.',grid(numberList.filter((_,i)=>[2,6,8,10,12,13].includes(i))),true);
+ doc({url:'/',title:'Grams to Cups Converter — Accurate Ingredient-Based Cooking Measurements',description:'Convert grams to cups and cups to grams with source-backed ingredient weights, instant live answers, recipe scaler and printable kitchen charts.',body,kind:'WebPage'});
 }
+
 function hub(){
  const body=intro('Cooking measurement converters','Every ingredient has its own weight per cup. Explore all conversion directions, 24 ingredient references, popular amounts, printable charts, and practical measurement guides.')+
  section('All cooking converters','Ingredient-aware mass and volume tools, plus fixed-volume conversions.',grid(hubList))+
@@ -234,7 +285,7 @@ infoPage('about','About Grams & Cups','Grams & Cups is a free, independent kitch
 infoPage('privacy','Privacy Policy','We aim to minimize data collection. The calculator and recipe scaler are local-first browser tools; there is no account, analytics platform or ad network in the current code.');
 infoPage('contact','Contact and Corrections','Found a questionable food weight or broken conversion? Report the exact ingredient, source, and expected result in the public repository issue tracker.');
 writeFile('404.html','<!doctype html><html lang="en"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page not found | Grams & Cups</title><link rel="stylesheet" href="/assets/styles.css"><main class="container section"><h1>Page not found</h1><p>That page does not exist. Try the conversion tools or the ingredient directory.</p>'+link('/cooking/','Browse cooking tools','btn btn-primary')+'</main></html>');
-writeFile('favicon.svg','<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#20674f"/><path d="M19 17h26l-3 27H22z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><path d="M23 27h18M24 35h16" stroke="#d6f0dc" stroke-width="4"/></svg>');
+writeFile('favicon.svg','<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#122e27"/><path d="M18 20h28l-4 26H22z" fill="none" stroke="#eaf2ad" stroke-width="4" stroke-linejoin="round"/><path d="M21 29h22M24 38h16" stroke="#f8f7f2" stroke-width="3" stroke-linecap="round"/></svg>');
 for(const [src,dst] of [['public/styles.css','assets/styles.css'],['public/app.js','assets/app.js'],['src/core.mjs','assets/core.mjs'],['src/ingredients.json','assets/ingredients.json']]){const out=path.join(dist,dst);fs.mkdirSync(path.dirname(out),{recursive:true});fs.copyFileSync(path.join(root,src),out);}
 if(!publicIndex)writeFile('_headers','/*\n  X-Robots-Tag: noindex\n  X-Content-Type-Options: nosniff\n');
 else writeFile('_headers','/*\n  X-Content-Type-Options: nosniff\n');
