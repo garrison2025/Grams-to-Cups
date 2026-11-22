@@ -14,7 +14,8 @@ const releaseRequested=process.env.CF_PAGES_BRANCH==='main'&&process.env.PUBLIC_
 const hostname=origin?new URL(origin).hostname.toLowerCase():'';
 const reservedHost=hostname==='localhost'||hostname==='127.0.0.1'||hostname==='0.0.0.0'||hostname==='example.com'||hostname.endsWith('.example')||hostname.endsWith('.invalid')||hostname.endsWith('.test')||hostname.endsWith('.localhost');
 if(releaseRequested&&!origin)throw new Error('Production publication requested but SITE_URL is missing or invalid. Set the exact stable HTTPS host.');
-if(releaseRequested&&reservedHost&&process.env.CI!=='true')throw new Error('Production SITE_URL cannot be a placeholder or local/test domain. Set your verified public hostname.');
+const approvedCiFixture=process.env.CI==='true'&&process.env.SITE_URL_FIXTURE_APPROVED_FOR_CI==='true'&&hostname==='example.com';
+if(releaseRequested&&reservedHost&&!approvedCiFixture)throw new Error('Production SITE_URL cannot be a placeholder or local/test domain. Set your verified public hostname.');
 const publicIndex=releaseRequested&&!!origin;
 const pages=[],e=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
 const primaryUrl=url=>url==='/cooking/grams-to-cups/'?'/':url;
