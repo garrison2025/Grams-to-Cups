@@ -345,10 +345,12 @@ try{
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'fraction-friendly results');
  await page.locator('[data-batch-lines]').fill('• 42 g unsweetened cocoa powder\n- 200 g flour');
  assert.ok((await page.locator('[data-batch-summary]').innerText()).includes('1 need review'));
- await page.locator('[data-batch-review="1"]').focus();
- await page.locator('[data-batch-review="1"]').selectOption('bread-flour');
- assert.ok(await page.locator('[data-batch-review="1"]').evaluate(el=>document.activeElement===el),
+ const reviewPicker=page.locator('[data-batch-review="1"]');
+ await reviewPicker.press('ArrowDown');
+ assert.equal(await reviewPicker.inputValue(),'all-purpose-flour','keyboard selects the first food');
+ assert.ok(await reviewPicker.evaluate(el=>document.activeElement===el),
   'the selected row keeps keyboard focus after conversion');
+ await reviewPicker.selectOption('bread-flour');
  assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 0 need review · 0 blank');
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('Bread flour (King Arthur reference)'));
  assert.equal(await page.locator('[data-batch-review="1"]').inputValue(),'bread-flour',
