@@ -293,6 +293,7 @@ function numberPage(n){
  const body=intro('How Many Cups Is '+n+' Grams?','The answer depends on the ingredient. Compare common baking foods using documented weights, then choose a different cup standard in the calculator.')+
  '<section class="section"><div class="container content-grid"><div>'+answer.html+converterForm({amount:n,heading:n+' grams to cups'})+
  '<div class="panel mt-3"><h2>'+n+' grams: food-by-food comparison</h2><p>Compare the same '+n+' grams with 24 distinct ingredient weights. A cup of all-purpose flour weighs less than a cup of sugar, so the same mass takes up more space.</p>'+numberComparison(n)+
+ '<p class="inline-note">Water in this comparison uses the recipe chart value of 227 g per US cup. It is not the physical-capacity estimate of about 1 g/mL. '+link('/cooking/ingredients/water/','Compare water methods')+'.</p>'+
  '<h2>Closest common cup measures for '+n+' grams</h2><p>The exact cup estimate may not match a measuring cup in your drawer. This table compares four common foods with familiar cup fractions and shows how many grams that convenient measure differs from '+n+' grams. It is not an instruction to round blindly: when the weight matters, use a scale.</p>'+ 
  table(['Ingredient','Calculated US cups','Closest common cup measure','Weight difference'],examples)+
  '<p class="source-chip">All reference weights are linked to '+link(source,'the original published chart')+'. Rounded values are illustrative; results vary by ingredient state and measuring method.</p></div></div>'+
@@ -309,12 +310,19 @@ function ingredientPage(i){
  const popularWeights=i.id==='all-purpose-flour'?flourNumbers:i.id==='granulated-sugar'?sugarNumbers:[];
  const values=[25,50,75,100,125,150,200,250,300,400,500];
  const cupFractions=[[1/8,'1/8 cup'],[1/4,'1/4 cup'],[1/3,'1/3 cup'],[1/2,'1/2 cup'],[2/3,'2/3 cup'],[3/4,'3/4 cup'],[1,'1 cup'],[1.5,'1 1/2 cups'],[2,'2 cups']];
+ const waterPanel=i.id==='water'?'<div class="panel mt-3" data-water-explanation><h2>Water: recipe chart weight or actual cup capacity?</h2>'+
+ '<p><strong>The recipe chart lists 227 g per US cup.</strong> A standard US cup is 236.588 mL. At approximately 1 g per mL, a separate physical-volume estimate is about 236.588 g per US cup or 250 g per metric cup. Actual water density changes with temperature. Both methods are estimates serving different purposes.</p>'+
+ table(['Water measure','Published recipe reference','Capacity estimate (≈1 g/mL)'],[
+ ['1 US cup','227 g',f(US_CUP_ML)+' g'],
+ ['1 metric cup',f(convertQuantity(1,'cup','g',{ingredient:i,standard:'metric'}))+' g','250 g'],
+ ['100 g water',f(convertQuantity(100,'g','cup',{ingredient:i}))+' US cups',f(convertQuantity(100,'g','cup',{ingredient:i,waterMode:'capacity'}))+' US cups']])+
+ '<p>Select the appropriate <strong>Water measurement method</strong> below. The recipe value is from '+link(i.sourceUrl,'the King Arthur Baking chart')+'; the ~1 g/mL capacity approximation is not from that published recipe chart.</p></div>':'';
  const body=intro(i.name+': Grams to Cups','Use the correct '+i.state+' reference. This weight belongs to the measuring method shown below; packed, sifted, dry and cooked ingredients are not interchangeable.')+
  '<section class="section"><div class="container content-grid"><div>'+
- '<div class="facts"><div class="fact"><strong>'+e(f(convertQuantity(1,'cup','g',{ingredient:i})))+' g</strong><span>per US cup</span></div><div class="fact"><strong>'+e(f(preview))+' cups</strong><span>per 100 grams</span></div><div class="fact"><strong>'+e(i.method)+'</strong><span>measurement method</span></div></div>'+
+ '<div class="facts"><div class="fact"><strong>'+e(f(convertQuantity(1,'cup','g',{ingredient:i})))+' g</strong><span>per US cup'+(i.id==='water'?' · recipe chart':'')+'</span></div><div class="fact"><strong>'+e(f(preview))+' cups</strong><span>per 100 grams'+(i.id==='water'?' · recipe chart':'')+'</span></div><div class="fact"><strong>'+e(i.method)+'</strong><span>measurement method</span></div></div>'+
  '<div class="panel mt-3"><h2>How many grams are in one US cup of '+e(i.name.toLowerCase())+'?</h2>'+
  '<p>One US cup of '+e(i.name.toLowerCase())+' is approximately <strong>'+e(f(convertQuantity(1,'cup','g',{ingredient:i})))+' grams</strong> using the cited '+e(i.referenceGrams)+' g per '+e(i.referenceAmount)+' '+(i.referenceUnit==='cup'?'US cup':'US tablespoon')+' reference. Conversely, 100 grams is about <strong>'+e(f(preview))+' US cups</strong>. This estimate applies to '+e(i.state)+' measured by '+e(i.method)+', not to every preparation or brand. Source: '+link(i.sourceUrl,i.sourceName)+'.</p></div>'+
- '<div class="mt-3">'+converterForm({amount:100,ingredient:i.id,heading:i.name+' conversion'})+'</div>'+
+ waterPanel+'<div class="mt-3">'+converterForm({amount:100,ingredient:i.id,heading:i.name+' conversion'})+'</div>'+
  '<div class="panel mt-3"><h2>'+e(i.name)+' conversion chart</h2><p>These quantities are calculated from '+e(i.referenceGrams)+' g per '+e(i.referenceAmount)+' '+e(i.referenceUnit)+'. '+e(i.note)+'</p>'+
  table(['Grams','US cups','Metric cups'],values.map(n=>[n+' g',f(convertQuantity(n,'g','cup',{ingredient:i,standard:'us'})),f(convertQuantity(n,'g','cup',{ingredient:i,standard:'metric'}))]))+
  '<h2>'+e(i.name)+': cups to grams</h2><p>For weighing a recipe rather than filling cups, use this reverse chart. The numbers assume the same food state, measuring technique, and US cup standard as the published reference. A metric cup (250 mL) uses a different quantity.</p>'+ 
