@@ -14,6 +14,8 @@ if(!['true','false'].includes(expected))throw new Error('Set LIVE_EXPECT_INDEX=t
 if(!/^https:\/\/[a-z0-9.-]+$/i.test(envUrl.replace(/\/$/,'')))throw new Error('Set LIVE_SITE_URL to the exact HTTPS hostname, without a path, query or port.');
 const origin=envUrl.replace(/\/$/,'');
 const domain=new URL(origin).hostname.toLowerCase();
+if(domain==='convertunits.cc'||domain.endsWith('.convertunits.cc'))
+ throw new Error('This is not the independent Grams-to-Cups production hostname.');
 if(isIP(domain)||domain==='example.com'||domain.endsWith('.example')||domain.endsWith('.test')||domain.endsWith('.invalid')||domain.endsWith('.internal')||domain.endsWith('.local')||domain==='localhost')throw new Error('Cannot smoke-test an IP address, placeholder or local domain.');
 const approved=expected==='true';
 const fetchText=async pathname=>{
