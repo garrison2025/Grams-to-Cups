@@ -100,7 +100,8 @@
     "name": "Granulated white sugar",
     "aliases": [
       "white sugar",
-      "sugar"
+      "sugar",
+      "granulated sugar"
     ],
     "state": "granulated sugar",
     "method": "level cup",
@@ -119,8 +120,7 @@
     "id": "brown-sugar-packed",
     "name": "Brown sugar, packed",
     "aliases": [
-      "packed brown sugar",
-      "brown sugar"
+      "packed brown sugar"
     ],
     "state": "packed brown sugar",
     "method": "firmly packed cup",
@@ -139,8 +139,8 @@
     "id": "powdered-sugar-unsifted",
     "name": "Confectioners’ sugar, unsifted",
     "aliases": [
-      "powdered sugar",
-      "icing sugar"
+      "unsifted powdered sugar",
+      "unsifted icing sugar"
     ],
     "state": "unsifted powder",
     "method": "level cup",
