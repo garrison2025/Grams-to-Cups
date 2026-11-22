@@ -111,6 +111,14 @@ img,svg{max-width:100%}
 .result-meta{display:flex;gap:12px;flex-wrap:wrap;padding-top:15px;margin-top:15px;border-top:1px solid rgba(240,246,224,.17);font-size:.71rem;color:#d2e0d4}
 .result-meta span{white-space:normal}
 .result-meta b{color:#fff;font-weight:710}
+/* Read the answer at a glance: the unit is visibly tied to the result,
+   and method/reference metadata has a stable two-column desktop layout. */
+.result-amount{gap:9px 13px;align-items:center}
+.result-amount .result-unit{display:inline-flex;align-items:center;min-height:32px;padding:6px 11px;border-radius:999px;border:1px solid rgba(234,242,173,.34);background:rgba(234,242,173,.095);line-height:1.2}
+.result-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;column-gap:20px;row-gap:9px}
+.result-meta>span{min-width:0;overflow-wrap:anywhere}
+@media(max-width:520px){.result-meta{grid-template-columns:1fr;row-gap:8px}.tile-leading{gap:7px}.tile-kind{font-size:.58rem}.tile[data-food-group]{padding-top:13px}}
+
 .cup-meter-wrap{margin:12px 0 0}
 .cup-meter{width:100%;max-width:250px;height:8px;background:rgba(255,255,255,.19);border-radius:99px;overflow:hidden}
 .cup-meter-fill{height:100%;background:var(--lemon);border-radius:99px;transition:width .24s cubic-bezier(.2,.8,.2,1)}
@@ -143,6 +151,20 @@ img,svg{max-width:100%}
 .tile-index{width:37px;height:37px;border-radius:11px;background:#eff5e8;color:var(--forest);display:grid;place-items:center;font-family:var(--display);font-weight:600;font-size:1.0rem}
 .tile:nth-child(4n+2) .tile-index{background:#fae6d9;color:#8f3c21}
 .tile:nth-child(4n+3) .tile-index{background:#ececd8;color:#5a5631}
+/* Ingredient families are marked by both visible text and calm, source-based color,
+   never by color alone; other tool tiles retain their existing numbered identity. */
+.tile-leading{display:inline-flex;align-items:center;gap:10px;max-width:100%;min-width:0}
+.tile-kind{font-size:.64rem;line-height:1.3;font-weight:840;letter-spacing:.105em;text-transform:uppercase;color:var(--food-accent,#435d4c)}
+.tile[data-food-group]{border-top:3px solid var(--food-accent,#486750);padding-top:19px}
+.tile[data-food-group] .tile-index{background:var(--food-tint,#e9f0e6);color:var(--food-accent,#435d4c);font-family:var(--body);font-weight:840}
+.tile[data-food-group="flour"]{--food-accent:#81512f;--food-tint:#f7e9dc}
+.tile[data-food-group="sugar"]{--food-accent:#864b3a;--food-tint:#f9e9e3}
+.tile[data-food-group="dairy"]{--food-accent:#315d70;--food-tint:#e4f0f5}
+.tile[data-food-group="grains"]{--food-accent:#62612d;--food-tint:#f0f0db}
+.tile[data-food-group="oils"]{--food-accent:#276452;--food-tint:#e2f2e9}
+.tile[data-food-group="sweeteners"]{--food-accent:#815024;--food-tint:#faecd8}
+.tile[data-food-group="other"]{--food-accent:#4b5d63;--food-tint:#e8edef}
+
 .tile b{font-size:1.05rem;font-weight:760;line-height:1.3;letter-spacing:-.035em;margin-top:2px}
 .tile p{color:var(--muted);font-size:.81rem;line-height:1.55;margin:0;max-width:40ch}
 .tile .arrow{margin-top:auto;align-self:flex-end;color:var(--forest);font-size:1rem;font-weight:850}
@@ -184,7 +206,13 @@ img,svg{max-width:100%}
 .seo-answer strong{font-family:var(--display);font-size:clamp(1.35rem,2.25vw,2.15rem);font-weight:600;line-height:1.3;letter-spacing:-.035em;display:block}
 .seo-answer p{margin:9px 0 0;color:var(--muted);font-size:.85rem;line-height:1.55}
 .muted-box{border:1px solid var(--line);border-radius:13px;background:var(--soft);padding:20px}
-.table-scroll{border:1px solid var(--line);border-radius:16px;overflow:auto;background:#fff;max-width:100%}
+.table-scroll{border:1px solid var(--line);border-radius:16px;overflow:auto;background:#fff;max-width:100%;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#aac1ae #f2f5f0}
+.table-scroll:focus-visible{outline:3px solid #a56842;outline-offset:3px}
+.table-shell{min-width:0}
+.table-scroll-hint{display:none;margin:7px 0 14px;padding:0 3px;color:#476352;font-size:.72rem;font-weight:670;line-height:1.45}
+@media(max-width:520px){.table-scroll-hint{display:block}}
+@media print{.table-scroll{overflow:visible}.table-scroll-hint{display:none!important}}
+
 table{width:100%;border-collapse:collapse;text-align:left;min-width:460px}
 thead{background:#eef2ea}
 th{font-size:.75rem;letter-spacing:.025em;color:#43604e;font-weight:810}
@@ -194,6 +222,7 @@ tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:#ecf1e9}
 td{color:#365246;font-size:.86rem}
 td:first-child{font-weight:680;color:#214839}
+tbody th[scope="row"]{font-size:.86rem;color:#214839;font-weight:680;line-height:1.5}
 .list-links{display:flex;flex-wrap:wrap;gap:9px}
 .chip{display:inline-flex;border:1px solid #d3dfd1;background:#fff;padding:9px 13px;min-height:44px;align-items:center;color:var(--ink);font-size:.79rem;font-weight:680;text-decoration:none;border-radius:999px}
 .chip:hover{background:var(--lemon);color:var(--ink)}
