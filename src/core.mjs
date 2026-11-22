@@ -86,7 +86,7 @@ function scaledCountableNoun(suffix,amount){
  const m=String(suffix).match(/^(\s*(?:(?:large|medium|small|whole|fresh|ripe|chopped|crushed|diced)\s+)*)([a-z]+)(\b.*)$/i);
  if(!m)return suffix;
  const current=m[2].toLowerCase();
- const singular=Object.hasOwn(COUNTABLE_INGREDIENT_NOUNS,current)?current:COUNTABLE_PLURALS[current];
+ const singular=Object.hasOwn(COUNTABLE_INGREDIENT_NOUNS,current)?current:Object.hasOwn(COUNTABLE_PLURALS,current)?COUNTABLE_PLURALS[current]:null;
  if(!singular)return suffix;
  const replacement=amount<=1?singular:COUNTABLE_INGREDIENT_NOUNS[singular];
  const text=m[2][0]===m[2][0].toUpperCase()?replacement[0].toUpperCase()+replacement.slice(1):replacement;
