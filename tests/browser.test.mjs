@@ -225,6 +225,11 @@ try{
  const units=(await page.locator('[data-recipe-output]').innerText()).trim();
  assert.ok(units.includes('2 cups milk'),'recipe multiplier pluralizes singular unit');
  assert.ok(units.includes('4 cups water'),'recipe multiplier preserves plural unit');
+ await page.locator('[data-recipe-lines]').fill('1 large egg\n2 cloves garlic\n1 pinch salt');
+ const counts=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(counts.includes('2 large eggs'),'unitless eggs become plural when scaled');
+ assert.ok(counts.includes('4 cloves garlic'),'unitless clove phrase has no doubled spaces');
+ assert.ok(counts.includes('2 pinches salt'),'pinch becomes pinches');
  const recipeCsv=page.waitForEvent('download');
  await page.locator('[data-download-csv]').click();
  assert.equal((await recipeCsv).suggestedFilename(),'scaled-recipe.csv','recipe export is downloadable locally');
