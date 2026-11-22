@@ -159,7 +159,10 @@ test('scaler refuses a second quantity after commas, semicolons or explanatory t
   '1 cup milk, 1/2 tsp cinnamon',
   '1 cup milk and 2 eggs',
   '2 cups milk, 3% fat',
-  '1 cup milk; whisk thoroughly'
+  '1 cup milk; whisk thoroughly',
+  '2 eggs and one onion',
+  '1 cup milk, a pinch of salt',
+  '1 cup milk with half a teaspoon cinnamon'
  ];
  const result=scaleRecipe(lines.join('\n'),4,6,{fractions:true});
  assert.equal(result.unparsed,lines.length,'No multi-quantity or semicolon line may be partially marked successful');
