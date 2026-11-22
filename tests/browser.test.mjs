@@ -490,6 +490,16 @@ try{
  await staticPage.goto(origin+'/cooking/ingredients/all-purpose-flour/',{waitUntil:'domcontentloaded'});
  assert.ok(await staticPage.getByRole('heading',{name:'All-purpose flour: cups to grams'}).isVisible(),'source-based result remains readable without JavaScript');
  assert.ok((await staticPage.locator('table').nth(1).innerText()).includes('60 g'),'static half-cup conversion survives with JavaScript disabled');
+ assert.match((await staticPage.locator('[data-ingredient-evidence]').innerText()),/100 g ≈ 0\.789 metric cups/,
+  'ingredient source answer discloses independently calculated metric cup quantity');
+ await staticPage.goto(origin+'/cooking/grams-to-cups/200-grams-to-cups/',{waitUntil:'domcontentloaded'});
+ const quote=await staticPage.locator('[data-answer-evidence]').innerText();
+ assert.match(quote,/200 g ÷ 120 g per US cup ≈ 1\.667 US cups/,
+  '200g answer has a reproducible grams-per-US-cup calculation without JS');
+ assert.match(quote,/1\.577 metric cups/,'metric conversion is visibly distinct from US cups');
+ assert.match(quote,/Reference checked/,'citation shows when the source pairing was verified');
+ assert.ok(await staticPage.getByRole('columnheader',{name:'Food state and measuring method'}).isVisible(),
+  'multi-food lookup must label food states, not report unqualified densities');
  await staticPage.goto(origin+'/cooking/tablespoons-to-ml/',{waitUntil:'domcontentloaded'});
  assert.ok(await staticPage.locator('[data-meter-wrap]').isHidden(),'static fixed-unit page must not show a fabricated 83% cup meter');
  assert.equal((await staticPage.locator('[data-result]').innerText()).trim(),'29.574','static fixed volume conversion is correct without JavaScript');

@@ -200,6 +200,10 @@ img,svg{max-width:100%}
 .seo-answer{margin:0 0 20px;background:#e6efe4;border:1px solid #ccdfca;border-radius:19px;padding:23px 29px}
 .seo-answer strong{font-family:var(--display);font-size:clamp(1.35rem,2.25vw,2.15rem);font-weight:600;line-height:1.3;letter-spacing:-.035em;display:block}
 .seo-answer p{margin:9px 0 0;color:var(--muted);font-size:.85rem;line-height:1.55}
+.answer-evidence{border-top:1px solid #b7d0b8;margin-top:13px;padding-top:4px}
+.answer-evidence p{line-height:1.6}
+.answer-evidence b,.ingredient-evidence strong{color:#234a39;font-weight:780}
+.ingredient-evidence{border-left:3px solid #b3cdaa;padding-left:12px}
 .muted-box{border:1px solid var(--line);border-radius:13px;background:var(--soft);padding:20px}
 .table-scroll{border:1px solid var(--line);border-radius:16px;overflow:auto;background:#fff;max-width:100%;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#aac1ae #f2f5f0}
 .table-scroll:focus-visible{outline:3px solid #a56842;outline-offset:3px}
