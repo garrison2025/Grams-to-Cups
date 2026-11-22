@@ -69,6 +69,12 @@ The build also runs `scripts/keyword-audit.mjs`, validating all 2,300 supplied c
 
 The source remains a **partial** competitor export. Mapping is algorithmic and requires editorial review before a URL is treated as a verified ranking opportunity.
 
+## Food intent evidence and practical reference pages
+
+The static build keeps 24 separate source-backed ingredient pages with both weight→volume and US cup fractions→gram reference charts. All 21 numerical weight pages have a common-cup proximity table with an explicit gram difference and a use-a-scale warning. CI checks these page sections on every build.
+
+The Semrush analysis exports `seo-ingredient-intent.csv` as a fifth non-public report. It finds secondary exact-food keyword evidence for six of the 27 index candidates that lacked the original provisional URL mapping. The other 21 candidates remain unverified in this limited source sample and must not be described as having verified search volume.
+
 ## Numeric SEO quality gate
 
 The keyword audit also writes `reports/seo-numeric-intent.csv` covering all 21 gram-to-cup amount URLs. Only 20 currently qualify with an observed Semrush KD≤29 term. The working `1000-grams-to-cups/` page stays noindex (observed minimum KD37); do not override this merely to raise sitemap size. Other food, guide and trust pages require separate editorial judgement; missing rows from an incomplete Semrush export are not proof of no traffic.
