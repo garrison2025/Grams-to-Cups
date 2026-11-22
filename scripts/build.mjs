@@ -108,7 +108,8 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  '</div>'+
  '<div class="result" role="group" aria-label="Live conversion result">'+
  '<div class="result-label">YOUR CONVERSION</div>'+
- '<div class="result-amount" aria-live="polite" aria-atomic="true"><output class="result-number" data-result>'+e(preview)+'</output><span class="result-unit" data-result-unit>'+e(shortUnit)+'</span></div>'+
+ '<div class="result-amount"><output class="result-number" data-result>'+e(preview)+'</output><span class="result-unit" data-result-unit>'+e(shortUnit)+'</span></div>'+
+ '<span class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-live-result></span>'+
  '<p class="result-text" data-result-note>'+e(initialNote)+'</p>'+
  '<div class="cup-meter-wrap" data-meter-wrap'+(showMeter?'':' hidden')+'><div class="cup-meter" aria-hidden="true"><div class="cup-meter-fill" data-meter-fill style="width:'+(showMeter?(meterPercent===0?0.5:meterPercent):0)+'%"></div></div><div class="cup-meter-label" data-meter-label>'+(showMeter?(meterPercent===0?'Less than 1%':meterPercent+'%')+' of one US cup':'')+'</div></div>'+
  '<div class="result-meta"><span><span data-meta-kind>'+(crossDimension?'Ingredient':'Conversion')+'</span>: <b data-meta-ingredient>'+e(crossDimension?ref.name:'Fixed units')+'</b></span><span>Reference: <b data-meta-reference>'+e(crossDimension?referenceText:'Defined unit relationship')+'</b></span></div>'+
