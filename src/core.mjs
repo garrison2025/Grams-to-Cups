@@ -118,11 +118,25 @@ function scaledUnit(unit,amount){
 }
 function unsafeIngredientRemainder(text){
  const rest=String(text);
- return /^\s*[,\.]\s*\d/u.test(rest)||
+ // A recipe row is atomic: if another independent amount occurs anywhere after
+ // the first one, do not scale only the first ingredient. This catches
+ // "1 cup milk, 2 eggs", "1 cup milk; 2 eggs", bare counts, mixed fractions,
+ // quantities in parentheses, and quantities after preparation notes.
+ // Numeric food descriptions like "2% milk" are intentionally conservative:
+ // leave the whole line unchanged rather than guessing.
+ const secondAmount=/(?:^|[^\p{L}\p{N}])(?:\d+(?:[.,]\d+)?(?:\/\d+)?|\.\d+)(?=$|[^\p{L}\p{N}])/u;
+ return /;/u.test(rest)||
+  secondAmount.test(rest)||
+  /^\s*[,\.]\s*\d/u.test(rest)||
   /^\s*(?:[-–—/]|to\b|or\b)\s*(?:\d|\.)/iu.test(rest)||
   /(?:\+|&|\band\b|\bplus\b)\s*(?:\d|\.)/iu.test(rest)||
   /\b\d+(?:\.\d+)?\s*(?:g|grams?|kg|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|ml|milliliters?)\b/iu.test(rest)||
   /[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉\u2044]/u.test(rest);
+}
+function isStandaloneCookingInstruction(remainder){
+ // No unit was recognized. Temperature, cooking durations and heat settings
+ // must never become scaled ingredient weights or counts.
+ return /^\s*(?:°\s*[cf]\b|degrees?\b|fahrenheit\b|celsius\b|kelvin\b|minutes?\b|mins?\b|hours?\b|hrs?\b|seconds?\b|secs?\b|days?\b|weeks?\b|[cf]\b(?:\s|$)|%)/iu.test(remainder);
 }
 export function scaleRecipe(text,originalServings,newServings,{fractions=false}={}){
  const source=parseAmount(originalServings),dest=parseAmount(newServings);
@@ -143,6 +157,8 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
   const unit=isRange?(match[3]||''):(match[2]||'');
   const rest=isRange?(match[4]||''):(match[3]||'');
   if(unsafeIngredientRemainder(rest))return {original:raw,scaled:raw,ok:false};
+  if(!unit&&isStandaloneCookingInstruction(rest))
+   return {original:raw,scaled:raw,ok:false};
   // In an interval with no stated kitchen unit, scale only recognizable
   // countable ingredient nouns; do not alter time/temperature/method ranges.
   if(isRange&&!unit){
