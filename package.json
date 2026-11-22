@@ -8,12 +8,14 @@
   },
   "scripts": {
     "test": "node --test tests/site.test.mjs",
-    "build": "npm test && npm run audit:syntax && node scripts/build.mjs && node scripts/audit.mjs && node scripts/publication-audit.mjs && node scripts/keyword-audit.mjs",
+    "build": "npm test && npm run audit:syntax && node scripts/build.mjs && node scripts/audit.mjs && node scripts/publication-audit.mjs && node scripts/keyword-audit.mjs && node scripts/candidate-audit.mjs && node scripts/seo-geo-audit.mjs",
     "check": "npm run build",
-    "audit:syntax": "node --check public/app.js && node --check src/core.mjs && node --check scripts/build.mjs && node --check scripts/audit.mjs && node --check scripts/keyword-audit.mjs && node --check scripts/publication-audit.mjs && node --check scripts/live-smoke.mjs && node --check src/seo-evidence.mjs",
+    "audit:syntax": "node --check public/app.js && node --check src/core.mjs && node --check scripts/build.mjs && node --check scripts/audit.mjs && node --check scripts/keyword-audit.mjs && node --check scripts/publication-audit.mjs && node --check scripts/live-smoke.mjs && node --check src/seo-evidence.mjs && node --check scripts/candidate-audit.mjs && node --check scripts/lighthouse-runner.mjs && node --check scripts/seo-geo-audit.mjs",
     "test:browser": "node tests/browser.test.mjs",
     "audit:keywords": "node scripts/keyword-audit.mjs",
     "audit:publication": "node scripts/publication-audit.mjs",
-    "smoke:live": "node scripts/live-smoke.mjs"
+    "smoke:live": "node scripts/live-smoke.mjs",
+    "audit:candidates": "node scripts/candidate-audit.mjs",
+    "audit:seo-geo": "node scripts/seo-geo-audit.mjs"
   }
 }

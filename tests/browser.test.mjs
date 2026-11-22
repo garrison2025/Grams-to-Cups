@@ -33,22 +33,86 @@ try{
  assert.ok(await page.getByRole('heading',{name:/Grams to cups.*without the guesswork/i}).isVisible(),'hero should show editorial heading');
  await page.locator('[data-result]').waitFor();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.833','default flour reference');
+ assert.equal((await page.locator('.result-amount .result-unit').innerText()).trim(),'US cups',
+  'result has a clearly labeled unit');
+ assert.equal(await page.locator('.result-amount .result-unit').evaluate(el=>getComputedStyle(el).borderTopWidth),
+  '1px','result unit has a readable capsule instead of unstyled text');
+ assert.ok((await page.locator('.tile[data-food-group="flour"]').count())>0,'flour cards have a visible family');
+ assert.ok((await page.locator('.tile[data-food-group="sugar"]').count())>0,'sugar cards use a distinct family');
+ assert.equal((await page.locator('.tile[data-food-group="flour"] .tile-kind').first().innerText()).trim(),
+  'FLOUR','food category is conveyed with text rather than color alone');
+ // Real keyboard typing, not only programmatic .fill(), must update the result.
+ await page.locator('[data-amount]').focus();
+ await page.keyboard.press('ControlOrMeta+A');
+ await page.keyboard.type('125');
+ assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.042','keyboard input updates conversion');
+ await page.waitForFunction(()=>document.querySelector('[data-live-result]')?.textContent.includes('1.042 US cups'));
+ assert.match(await page.locator('[data-live-result]').textContent(),/Conversion result: 1\.042 US cups for All-purpose flour/,
+  'screen-reader status announces the settled result separately from immediate visible changes');
+ await page.locator('[data-reset]').click();
+ // Test the native copy action and the non-Web-Share fallback without browser permission prompts.
+ await page.evaluate(()=>{
+  window.__copiedConversion='';
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+   writeText:async value=>{window.__copiedConversion=value}
+  }});
+  Object.defineProperty(navigator,'share',{configurable:true,value:undefined});
+ });
+ await page.locator('[data-copy]').click();
+ assert.match(await page.evaluate(()=>window.__copiedConversion),/100 grams.*0\.833.*US cups/s,'copied text includes quantity, result and unit');
+ assert.match(await page.locator('[data-feedback]').innerText(),/Copied conversion/);
+ await page.locator('[data-share]').click();
+ const shared=await page.evaluate(()=>window.__copiedConversion);
+ assert.ok(shared.includes('amount=100')&&shared.includes('ingredient=all-purpose-flour')&&shared.includes('from=g')&&shared.includes('to=cup'),
+  'shared URL preserves current converter state without uploading data');
+ assert.match(await page.locator('[data-feedback]').innerText(),/Shareable link copied/);
+ await page.evaluate(()=>{
+  window.__resultFeedbackAnimations=0;
+  const output=document.querySelector('[data-result]');
+  const original=output.animate.bind(output);
+  output.animate=(...args)=>{window.__resultFeedbackAnimations++;return original(...args)};
+ });
  await page.locator('[data-amount-preset="200"]').click();
+ assert.equal(await page.evaluate(()=>window.__resultFeedbackAnimations),1,
+  'preset clicks should give quick compositor-only result feedback');
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.667','amount chip updates live result');
+ assert.match(await page.locator('[data-measure-summary]').innerText(),/1 cup \+ 2 × 1\/3 cup/,
+  '200 g of flour uses three zero-reference-error cup fills');
+ await page.locator('[data-ingredient-search]').fill('bread flour');
+ assert.equal(await page.locator('[data-ingredient]').inputValue(),'bread-flour',
+  'the main calculator searches the exact source-backed bread flour');
  await page.locator('[data-ingredient-preset="granulated-sugar"]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.01','ingredient chip uses distinct density');
  await page.locator('[data-amount-preset="100"]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.505','100 grams sugar');
+ const feedbackCount=await page.evaluate(()=>window.__resultFeedbackAnimations);
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.locator('[data-amount-preset="200"]').click();
+ assert.equal(await page.evaluate(()=>window.__resultFeedbackAnimations),feedbackCount,
+  'reduced-motion preference disables result animations but calculations continue');
+ assert.equal((await page.locator('[data-result]').innerText()).trim(),'1.01','reduced motion does not disable calculator');
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.locator('[data-amount-preset="100"]').click();
  await page.locator('[data-swap]').click();
  await page.locator('[data-amount]').fill('0.5');
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'99','half cup sugar grams');
  await page.locator('[data-reset]').click();
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'0.833','reset returns default reference');
+ await page.locator('[data-amount]').fill('1,000');
+ assert.equal((await page.locator('[data-result]').innerText()).trim(),'8.333','US grouped input remains a valid quantity');
+ await page.locator('[data-amount]').fill('1,5');
+ assert.equal((await page.locator('[data-result]').innerText()).trim(),'—','malformed thousand grouping is rejected');
+ await page.locator('[data-reset]').click();
  await page.locator('[data-amount]').fill('1/4');
  assert.ok((await page.locator('[data-result]').innerText()).trim()!=='—','fractions compute');
  await page.locator('[data-amount]').fill('nonsense');
  assert.equal((await page.locator('[data-result]').innerText()).trim(),'—','bad values must not look valid');
  assert.ok(await page.locator('[data-error]').isVisible(),'invalid quantity shows clear error');
+ await page.locator('[data-amount]').fill('0.000000001');
+ const tinyValue=(await page.locator('[data-result]').innerText()).trim();
+ assert.notEqual(tinyValue,'0','tiny positive weight must not render as zero cups');
+ assert.match(tinyValue,/[1-9]/,'tiny quantity is meaningfully visible');
+ assert.match(await page.locator('[data-meter-label]').innerText(),/Less than 1%/,'sub-1% cup fill is not falsely labelled zero');
  await page.locator('[data-reset]').click();
  await page.locator('[data-compare-preset="250"]').click();
  assert.equal((await page.locator('[data-compare-grams]').innerText()).trim(),'250 g','comparison preset changes grams');
@@ -69,32 +133,142 @@ try{
  assert.ok(await page.locator('[data-density-field]').first().isHidden(),'hide ingredient controls for fixed volume conversions');
  assert.ok(await page.locator('[data-cup-standard-row]').isHidden(),'hide irrelevant cup standard when no cup involved');
  assert.ok(await page.locator('[data-source-fixed]').isVisible(),'fixed unit source messaging is visible');
+ assert.equal((await page.locator('[data-meta-ingredient]').innerText()).trim(),'Fixed units','fixed conversions do not suggest ingredient weight references');
+ await page.evaluate(()=>{
+  window.__copiedFixed='';
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__copiedFixed=value}}});
+  Object.defineProperty(navigator,'share',{configurable:true,value:undefined});
+ });
+ await page.locator('[data-copy]').click();
+ const fixedText=await page.evaluate(()=>window.__copiedFixed);
+ assert.match(fixedText,/2 US tablespoons.*milliliters/,'copy accurately describes fixed volume units');
+ assert.ok(!/all-purpose flour/i.test(fixedText),'fixed conversions must never claim to use flour density');
+ await page.locator('[data-share]').click();
+ const fixedShare=await page.evaluate(()=>window.__copiedFixed);
+ assert.ok(fixedShare.includes('from=tbsp')&&fixedShare.includes('to=ml'),'fixed-volume share link preserves direction');
+ assert.ok(!fixedShare.includes('ingredient='),'fixed-volume share link does not add irrelevant ingredient parameters');
  await page.locator('[data-from]').selectOption('g');
  assert.ok(await page.locator('[data-density-field]').first().isVisible(),'show ingredient when switching to mass-volume');
  assert.ok(await page.locator('[data-source-ingredient]').isVisible(),'show source reference only for ingredient-dependent quantities');
  await page.goto(origin+'/cooking/charts/',{waitUntil:'networkidle'});
+ assert.equal(await page.locator('[data-chart-table] .table-scroll').getAttribute('tabindex'),'0',
+  'scrollable table can receive keyboard focus');
+ assert.ok(await page.locator('[data-chart-table] .table-scroll-hint').isHidden(),
+  'wide-screen table does not show an unnecessary mobile swipe instruction');
  await page.locator('[data-chart-filter]').fill('brown sugar');
- assert.equal((await page.locator('[data-chart-count]').innerText()).trim(),'1 of 24 ingredients shown','chart filters ingredient rows');
+ assert.equal((await page.locator('[data-chart-count]').innerText()).trim(),'1 of 27 ingredients shown','chart filters ingredient rows');
+ await page.locator('[data-chart-standard]').selectOption('metric');
+ await page.locator('[data-chart-custom]').fill('1/3');
+ assert.match(await page.locator('[data-chart-table] thead').innerText(),/1\/3 metric cup/,
+  'metric third column uses editable fractional cup amount');
+ assert.match(await page.locator('[data-chart-context]').innerText(),/Metric|metric cup/i,
+  'visible chart caption identifies actual cup unit and context');
+ const sugarRow=page.locator('[data-chart-food-id="brown-sugar-packed"]');
+ const sugarThird=(await sugarRow.locator('td').nth(2).innerText()).trim();
+ assert.match(sugarThird,/\d.*g/,'custom metric column contains calculated gram weights');
+ await page.locator('[data-chart-custom]').fill('0');
+ assert.ok(await page.locator('[data-chart-error]').isVisible(),'invalid custom quantity explains why export is disabled');
+ assert.ok(await page.locator('[data-chart-download]').isDisabled(),'cannot export stale values when input is invalid');
+ assert.ok(await page.locator('[data-chart-print]').isDisabled(),'cannot print stale values when input is invalid');
+ await page.locator('[data-chart-custom]').fill('1.5');
+ assert.ok(await page.locator('[data-chart-error]').isHidden(),'valid correction restores chart');
+ assert.match(await page.locator('[data-chart-table] thead').innerText(),/1\.5 metric cup/);
+
  const visibleRows=await page.locator('[data-chart-table] tbody tr:visible').count();
  assert.equal(visibleRows,1,'chart only shows matching rows');
  const download=page.waitForEvent('download');
  await page.locator('[data-chart-download]').click();
  const exportFile=await download;
  assert.equal(exportFile.suggestedFilename(),'cooking-conversion-chart.csv','filtered chart downloads CSV');
+ const downloadedChart=fs.readFileSync(await exportFile.path(),'utf8');
+ assert.ok(downloadedChart.includes('1.5 metric cup'),'CSV must export selected custom cup standard, not stale US header');
+ assert.ok(downloadedChart.includes((await page.locator('[data-chart-food-id="brown-sugar-packed"] td').nth(2).innerText()).trim()),
+  'CSV row weights exactly match the visible filtered chart');
  await page.locator('[data-chart-filter]').fill('zzz never an ingredient');
  assert.ok(await page.locator('[data-chart-empty]').isVisible(),'empty search feedback is visible');
  assert.equal(errors.length,0,'no desktop runtime errors after charts');
-
+ await page.locator('[data-chart-filter]').fill('water');
+ await page.locator('[data-chart-custom]').fill('1');
+ assert.equal((await page.locator('[data-chart-food-id="water"] td').nth(2).innerText()).trim(),
+  '239.868 g','metric cup water retains original 227 g / US cup recipe basis');
+ await page.locator('[data-chart-water-mode]').selectOption('capacity');
+ assert.equal((await page.locator('[data-chart-food-id="water"] td').nth(2).innerText()).trim(),
+  '250 g','physical capacity mode applies about 1 g/mL to metric cup');
+ assert.match(await page.locator('[data-chart-food-id="water"] td').nth(3).innerText(),/Physical capacity/);
+ assert.match(await page.locator('[data-chart-context]').innerText(),/NOT the published recipe weight/i);
+ for(const route of ['/cooking/charts/flour/','/cooking/charts/sugar/']){
+  await page.goto(origin+route,{waitUntil:'networkidle'});
+  assert.ok(await page.locator('[data-chart-standard]').isVisible(),'all focused charts share cup standard control');
+  await page.locator('[data-chart-standard]').selectOption('metric');
+  await page.locator('[data-chart-custom]').fill('2');
+  assert.match(await page.locator('[data-chart-table] thead').innerText(),/2 metric cup/);
+  assert.ok(await page.locator('[data-chart-water-mode]').count()===0,
+   'water option appears only in charts containing water');
+ }
+ await page.goto(origin+'/cooking/ingredients/water/',{waitUntil:'networkidle'});
+ assert.ok(await page.locator('[data-water-explanation]').isVisible(),'water reference and capacity methods are visibly compared');
+ assert.equal(await page.locator('[data-water-mode]').inputValue(),'recipe');
+ const sourceResult=await page.locator('[data-result]').innerText();
+ await page.locator('[data-water-mode]').selectOption('capacity');
+ const capacityResult=await page.locator('[data-result]').innerText();
+ assert.notEqual(capacityResult,sourceResult,'water capacity option changes actual mass-to-volume result');
+ assert.ok(await page.locator('[data-source-capacity]').isVisible(),'physical water estimate must not claim recipe data citation');
+ assert.ok(await page.locator('[data-source-ingredient]').isHidden(),'recipe chart source hidden while capacity mode is active');
+ await page.evaluate(()=>{
+  window.__copiedConversion='';
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+   writeText:async value=>{window.__copiedConversion=value}
+  }});
+  Object.defineProperty(navigator,'share',{configurable:true,value:undefined});
+ });
+ await page.locator('[data-copy]').click();
+ assert.match(await page.evaluate(()=>window.__copiedConversion),/Physical-capacity water estimate/i,
+  'copied water conversion explicitly includes its physical-capacity basis');
+ await page.locator('[data-share]').click();
+ assert.match(await page.evaluate(()=>window.__copiedConversion),/waterMode=capacity/,
+  'shared water URL preserves source/capacity selection');
  await page.goto(origin+'/cooking/ingredients/all-purpose-flour/',{waitUntil:'networkidle'});
  assert.ok(await page.getByRole('heading',{name:'All-purpose flour: cups to grams'}).isVisible(),'ingredient reverse lookup is visible');
  const reverseChart=page.locator('table').nth(1);
  assert.ok((await reverseChart.innerText()).includes('1/2 cup'),'reverse chart includes practical cup sizes');
  assert.ok((await reverseChart.innerText()).includes('60 g'),'flour half-cup uses cited 120g-per-cup source');
  assert.ok((await reverseChart.innerText()).includes('metric cups'),'reverse chart explains metric differences');
+ const flourSpecific=page.locator('a[href="/cooking/ingredients/all-purpose-flour/125-grams-to-cups/"]');
+ assert.ok(await flourSpecific.isVisible(),'ingredient page links to an independently useful 125g flour guide');
+ await flourSpecific.click();
+ assert.ok(await page.getByRole('heading',{name:/125 grams of all-purpose flour to cups/i}).isVisible(),
+  'ingredient+number link reaches usable specific page');
+ await page.goto(origin+'/cooking/ingredients/granulated-sugar/',{waitUntil:'networkidle'});
+ const sugarSpecific=page.locator('a[href="/cooking/ingredients/granulated-sugar/200-grams-to-cups/"]');
+ assert.ok(await sugarSpecific.isVisible(),'sugar page links to its specific 200g conversion');
+ await sugarSpecific.click();
+ assert.ok(await page.getByRole('heading',{name:/200 grams of granulated white sugar to cups/i}).isVisible(),
+  'sugar specific conversion renders');
  await page.goto(origin+'/cooking/grams-to-cups/100-grams-to-cups/',{waitUntil:'networkidle'});
  assert.ok(await page.getByRole('heading',{name:'Closest common cup measures for 100 grams'}).isVisible(),'numeric landing offers useful measuring comparisons');
- assert.ok((await page.locator('table').nth(1).innerText()).includes('Weight difference'),'numeric page warns about grams difference');
+ assert.ok((await page.locator('table').filter({hasText:'Weight difference'}).last().innerText()).includes('Weight difference'),'numeric page warns about grams difference');
+ assert.ok(await page.locator('a[href="/cooking/ingredients/all-purpose-flour/100-grams-to-cups/"]').isVisible(),
+  'general 100g conversion has a crawlable contextual link to the 100g flour page');
+ assert.ok(await page.locator('a[href="/cooking/ingredients/granulated-sugar/100-grams-to-cups/"]').isVisible(),
+  'general 100g conversion has a crawlable contextual link to the 100g sugar page');
  assert.equal(errors.length,0,'no browser errors after expanded reference pages');
+ for(const grams of [200,300]){
+  await page.goto(origin+'/cooking/grams-to-cups/'+grams+'-grams-to-cups/',{waitUntil:'networkidle'});
+  const fastRow=page.locator('.quick-answer-panel tbody tr').filter({hasText:'All-purpose flour'});
+  const detailedRow=page.locator('[data-common-measures] tbody tr').filter({hasText:'All-purpose flour'});
+  assert.equal(await detailedRow.locator('td').nth(1).innerText(),
+   await fastRow.locator('td').nth(1).innerText(),
+   grams+' g quick and detailed flour measurements must be identical');
+  assert.match(await detailedRow.innerText(),/Under 0\.01 g/,'the exact combination reports its own difference');
+  if(grams===200)assert.match(await detailedRow.innerText(),/1 cup \+ 2 × 1\/3 cup/);
+  else assert.doesNotMatch(await detailedRow.innerText(),/240 g|60 g below/);
+ }
+ await page.locator('[data-amount]').fill('50');
+ const alternateText=await page.locator('[data-measure-alternative]').innerText();
+ assert.match(alternateText,/(?:5 g|5\.0 g)/,'50g flour cup-only option discloses its own gram difference');
+ assert.match(alternateText,/10% difference/,'50g flour cup-only option discloses its own ten-percent difference');
+ assert.match(alternateText,/Prefer a kitchen scale/,'poor volume approximations recommend weighing');
+ assert.match(await page.locator('[data-measure-error]').innerText(),/Primary option/,'primary has a separately labeled error');
 
  await page.goto(origin+'/cooking/batch-converter/',{waitUntil:'networkidle'});
  assert.ok(await page.getByRole('heading',{name:/Batch Ingredient Converter/i}).isVisible(),'batch converter page renders');
@@ -104,8 +278,59 @@ try{
  assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 1 need review · 0 blank');
  assert.equal((await page.locator('[data-batch-results] .batch-converted-row').count()),2);
  assert.equal((await page.locator('[data-batch-results] .batch-review-row').count()),1);
- assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 cup All-purpose flour'),'exact flour conversion');
- assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 cups Granulated white sugar'),'fraction-friendly results');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1 US cup All-purpose flour'),'exact flour conversion');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'fraction-friendly results');
+ await page.locator('[data-batch-lines]').fill('• 42 g unsweetened cocoa powder\n- 200 g flour');
+ assert.ok((await page.locator('[data-batch-summary]').innerText()).includes('1 need review'));
+ await page.locator('[data-batch-review="1"]').selectOption('bread-flour');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'2 converted · 0 need review · 0 blank');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('Bread flour (King Arthur reference)'));
+ await page.locator('[data-batch-target]').selectOption('g');
+ await page.locator('[data-batch-lines]').fill('1 US cup milk, 2 eggs\n120 g all-purpose flour');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'1 converted · 1 need review · 0 blank');
+ assert.ok((await page.locator('[data-batch-results] .batch-review-row').innerText()).includes('1 US cup milk, 2 eggs'),
+  'whole multi-quantity source row remains intact');
+ assert.equal(await page.locator('[data-batch-review="0"]').count(),0,
+  'unsafe multi-quantity row does not offer a food override');
+ assert.match(await page.locator('[data-batch-results] .batch-review-row').innerText(),/Split into separate ingredient lines/);
+ await page.locator('[data-batch-lines]').fill('1 US cup milk, 2eggs\n120 g all-purpose flour');
+ assert.equal((await page.locator('[data-batch-summary]').innerText()).trim(),'1 converted · 1 need review · 0 blank',
+  'joined quantity and ingredient is not a partial conversion');
+ assert.equal(await page.locator('[data-batch-review="0"]').count(),0,
+  'an unsafe compact multi-item row must not offer manual ingredient replacement');
+ assert.ok((await page.locator('[data-batch-results] .batch-review-row').innerText()).includes('1 US cup milk, 2eggs'),
+  'compact quantity retains the entire original row');
+ assert.doesNotMatch(await page.locator('[data-batch-results] .batch-review-row').innerText(),/227 g Milk, fresh/,
+  'milk alone is not reported as converted when eggs were also entered');
+ await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
+ await page.locator('[data-batch-target]').selectOption('cup');
+ await page.locator('[data-batch-standard]').selectOption('metric');
+ assert.equal((await page.locator('[data-batch-target] option[value="cup"]').innerText()).trim(),'Metric cups',
+  'target selector must not say US cups while calculating metric cups');
+ assert.match(await page.locator('[data-batch-results]').innerText(),/metric cup Granulated white sugar/,'metric cup results are unambiguous');
+ await page.locator('[data-batch-standard]').selectOption('us');
+ assert.equal((await page.locator('[data-batch-target] option[value="cup"]').innerText()).trim(),'US cups',
+  'target selector restores US cups when selecting the US standard');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('1/2 US cup Granulated white sugar'),'US cup label restored after switching standard');
+ // The tool must accept its own formatted cup labels when copied back into the input.
+ await page.locator('[data-batch-lines]').fill('1 US cup All-purpose flour\n1 metric cup All-purpose flour');
+ await page.locator('[data-batch-target]').selectOption('g');
+ await page.locator('[data-batch-standard]').selectOption('metric');
+ const roundTripRows=page.locator('[data-batch-results] .batch-converted-row');
+ assert.equal(await roundTripRows.count(),2,'both explicit cup standards parse when pasted');
+ assert.ok((await roundTripRows.first().innerText()).includes('120 g All-purpose flour'),
+  'metric dropdown must not reinterpret an explicitly labeled US cup');
+ assert.ok((await roundTripRows.nth(1).innerText()).includes('126.8'),
+  'explicit metric cup retains its distinct mass');
+ await page.locator('[data-batch-target]').selectOption('cup');
+ await page.locator('[data-batch-lines]').fill('1 US cup All-purpose flour');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('0.9464 metric cup All-purpose flour'),
+  'US-to-metric cup conversion must change the numeric cup result');
+ await page.locator('[data-batch-standard]').selectOption('us');
+ await page.locator('[data-batch-target]').selectOption('cup');
+ await page.locator('[data-batch-lines]').fill('1,000 g all-purpose flour');
+ assert.ok((await page.locator('[data-batch-results]').innerText()).includes('8 1/3 US cups All-purpose flour'),'batch supports US thousands separators');
+ await page.locator('[data-batch-lines]').fill('120 g all-purpose flour\n½ cup granulated sugar\n200 g flour');
  const batchDownload=page.waitForEvent('download');
  await page.locator('[data-batch-csv]').click();
  assert.equal((await batchDownload).suggestedFilename(),'batch-ingredient-conversions.csv');
@@ -113,31 +338,172 @@ try{
  assert.ok((await page.locator('[data-batch-results]').innerText()).includes('99 g Granulated white sugar'),'reverse conversion uses sugar reference');
  await page.locator('[data-batch-clear]').click();
  assert.equal(await page.locator('[data-batch-lines]').inputValue(),'','clear action empties input');
+ await page.goto(origin+'/cooking/half-a-measurement/',{waitUntil:'networkidle'});
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'3/4',
+  'fraction calculator adds 1/2 + 1/4 exactly');
+ await page.locator('[data-fraction-first]').fill('1/3');
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'7/12',
+  'fraction addition uses exact rational arithmetic instead of decimal approximation');
+ await page.locator('[data-fraction-operation]').selectOption('*');
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'1/12',
+  'fraction multiplication uses exact rational arithmetic');
+ await page.locator('[data-fraction-operation]').selectOption('/');
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'1 1/3',
+  'fraction division supports mixed number results');
+ await page.locator('[data-fraction-operation]').selectOption('-');
+ await page.locator('[data-fraction-second]').fill('1/2');
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'—',
+  'negative kitchen results do not appear as valid amounts');
+ assert.match(await page.locator('[data-fraction-error]').innerText(),/cannot be negative/,
+  'negative quantities provide a clear error message');
+ await page.locator('[data-fraction-first]').fill('3/4');
+ assert.equal((await page.locator('[data-fraction-result]').innerText()).trim(),'1/4',
+  'fraction calculator recovers after fixing bad values');
  await page.goto(origin+'/cooking/recipe-scaler/',{waitUntil:'networkidle'});
- await page.locator('[data-recipe-lines]').fill('1½ cups milk\n½ tsp salt\npinch of salt');
+ await page.locator('[data-recipe-lines]').fill('1½ cups milk\n½ tsp salt\npinch of salt\n2-3 eggs');
  await page.locator('[data-old-servings]').fill('2');
  await page.locator('[data-new-servings]').fill('3');
  const scaled=await page.locator('[data-recipe-output]').innerText();
  assert.ok(scaled.includes('2 1/4 cups milk'),'recipe displays exact mixed kitchen fraction');
  assert.ok(scaled.includes('3/4 tsp salt'),'recipe displays Unicode fraction');
  assert.ok(scaled.includes('pinch of salt  [check manually]'),'unknown serving units stay visible for review');
+ assert.ok(scaled.includes('3–4 1/2 eggs'),'both endpoints of a clear recipe interval scale together');
+ await page.locator('[data-recipe-lines]').fill('1 ¹⁄₂ cups flour\n1½–3 cups milk\n1 ¹⁄2 cups broken');
+ const sup=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(sup.includes('2 1/4 cups flour'),'superscript/subscript fraction must scale as 1.5, not 1');
+ assert.ok(sup.includes('2 1/4–4 1/2 cups milk'),'range with mixed fraction scales both ends');
+ assert.ok(sup.includes('1 ¹⁄2 cups broken  [check manually]'),'ambiguous partial superscript fraction warns rather than guessing');
+ await page.locator('[data-recipe-lines]').fill('1 cup milk + 2 tbsp cream');
+ const compound=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(compound.includes('1 cup milk + 2 tbsp cream  [check manually]'),'compound quantities must not be only partially scaled');
+ await page.locator('[data-recipe-lines]').fill(
+  '1 cup milk, 2 eggs\n1 cup milk; 2 eggs\n1 cup milk, 2eggs\n1 cup milk and2eggs\n15 minutes\n350°F\n180°C\n2 eggs\n1 cup flour, sifted'
+ );
+ const guarded=(await page.locator('[data-recipe-output]').innerText()).trim();
+ for(const unchanged of ['1 cup milk, 2 eggs','1 cup milk; 2 eggs','1 cup milk, 2eggs','1 cup milk and2eggs','15 minutes','350°F','180°C']){
+  assert.ok(guarded.includes(unchanged+'  [check manually]'),
+   'ambiguous ingredient or cooking instruction must stay unchanged and visibly request review: '+unchanged);
+ }
+ assert.ok(guarded.includes('3 eggs'),'single countable ingredients still scale');
+ assert.ok(guarded.includes('1 1/2 cups flour, sifted'),
+  'a harmless preparation note without a second quantity remains valid');
+ await page.locator('[data-recipe-lines]').fill('1,000 g flour\n1,5 cups milk');
+ const groupedScaled=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(groupedScaled.includes('1,500 g flour'),'valid grouped recipe quantity scales correctly');
+ assert.ok(groupedScaled.includes('1,5 cups milk  [check manually]'),'invalid grouping is preserved for review');
  assert.equal(errors.length,0,'no desktop runtime errors after batch conversion and recipe scaling');
+ await page.locator('[data-recipe-lines]').fill('1 cup milk\n2 cups water');
+ await page.locator('[data-old-servings]').fill('2');
+ await page.locator('[data-new-servings]').fill('4');
+ const units=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(units.includes('2 cups milk'),'recipe multiplier pluralizes singular unit');
+ assert.ok(units.includes('4 cups water'),'recipe multiplier preserves plural unit');
+ await page.locator('[data-recipe-lines]').fill('1 US cup milk\n½ metric cup cream');
+ const qualified=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(qualified.includes('2 US cups milk'),'US cup label survives scaling');
+ assert.ok(qualified.includes('1 metric cup cream'),'metric cup label survives scaling');
+ await page.locator('[data-recipe-lines]').fill('1 large egg\n2 cloves garlic\n1 pinch salt');
+ const counts=(await page.locator('[data-recipe-output]').innerText()).trim();
+ assert.ok(counts.includes('2 large eggs'),'unitless eggs become plural when scaled');
+ assert.ok(counts.includes('4 cloves garlic'),'unitless clove phrase has no doubled spaces');
+ assert.ok(counts.includes('2 pinches salt'),'pinch becomes pinches');
+ const recipeCsv=page.waitForEvent('download');
+ await page.locator('[data-download-csv]').click();
+ assert.equal((await recipeCsv).suggestedFilename(),'scaled-recipe.csv','recipe export is downloadable locally');
+ // Pages include usable, source-backed HTML answers even with JavaScript disabled.
+ const staticPage=await browser.newPage({viewport:{width:375,height:812},javaScriptEnabled:false});
+ await staticPage.goto(origin+'/cooking/ingredients/all-purpose-flour/',{waitUntil:'domcontentloaded'});
+ assert.ok(await staticPage.getByRole('heading',{name:'All-purpose flour: cups to grams'}).isVisible(),'source-based result remains readable without JavaScript');
+ assert.ok((await staticPage.locator('table').nth(1).innerText()).includes('60 g'),'static half-cup conversion survives with JavaScript disabled');
+ await staticPage.goto(origin+'/cooking/tablespoons-to-ml/',{waitUntil:'domcontentloaded'});
+ assert.ok(await staticPage.locator('[data-meter-wrap]').isHidden(),'static fixed-unit page must not show a fabricated 83% cup meter');
+ assert.equal((await staticPage.locator('[data-result]').innerText()).trim(),'29.574','static fixed volume conversion is correct without JavaScript');
+ assert.equal((await staticPage.locator('[data-meta-ingredient]').innerText()).trim(),'Fixed units','static fixed-unit conversion must not claim a flour reference');
+ assert.match(await staticPage.locator('[data-result-note]').innerText(),/defined conversion/i,'static note explains fixed measurement');
+ await staticPage.goto(origin+'/',{waitUntil:'domcontentloaded'});
+ assert.ok(await staticPage.locator('[data-meter-wrap]').isVisible(),'static home calculator shows useful cup progress');
+ assert.match(await staticPage.locator('[data-meter-label]').innerText(),/83% of one US cup/,'static progress reflects the actual cup estimate');
+ await staticPage.goto(origin+'/cooking/ingredients/all-purpose-flour/',{waitUntil:'domcontentloaded'});
+ assert.ok(await staticPage.locator('.table-scroll-hint').first().isVisible(),
+  'static no-JavaScript table still explains how mobile visitors see all columns');
+ await staticPage.goto(origin+'/cooking/half-a-measurement/',{waitUntil:'domcontentloaded'});
+ assert.equal((await staticPage.locator('[data-fraction-result]').innerText()).trim(),'3/4',
+  'a useful 1/2 + 1/4 example is pre-rendered without JavaScript');
+ await staticPage.goto(origin+'/',{waitUntil:'domcontentloaded'});
+ assert.ok(await staticPage.locator('[data-nav]').isVisible(),
+  'responsive header navigation must remain usable without JavaScript');
+ assert.ok(await staticPage.locator('[data-nav-toggle]').isHidden(),
+  'no-JavaScript visitors must not get an inert menu toggle');
+ await staticPage.close();
 
  const mobile=await browser.newPage({viewport:{width:375,height:812},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  const mobileErrors=[];
  mobile.on('pageerror',err=>mobileErrors.push(err.message));
- for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/','/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/','/cooking/batch-converter/','/cooking/recipe-scaler/']){
+ // Four required breakpoint classes: 320px, 375px, 768px and desktop 1440px.
+ // 375px is verified below with interactions; 1440px is verified by the desktop page above.
+ for(const width of [320,768]){
+  await mobile.setViewportSize({width,height:width===320?720:1024});
+  for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/',
+   '/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/','/cooking/half-a-measurement/','/cooking/batch-converter/','/cooking/recipe-scaler/']){
+   await mobile.goto(origin+route,{waitUntil:'networkidle'});
+   const overflow=await mobile.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+   assert.ok(overflow<=1,route+' '+width+'px horizontal overflow '+overflow);
+   assert.ok(await mobile.locator('h1').first().isVisible(),route+' '+width+'px heading is visible');
+   assert.equal(mobileErrors.length,0,route+' '+width+'px JS exceptions: '+mobileErrors.join(','));
+   if(width===320&&route==='/'){
+    await mobile.locator('[data-advanced-units]').evaluate(el=>{el.open=true;});
+    for(const selector of ['[data-nav-toggle]','[data-swap]','[data-amount-preset]','[data-ingredient-preset]']){
+     const rect=await mobile.locator(selector).first().boundingBox();
+     assert.ok(rect&&rect.width>=44&&rect.height>=44,selector+' must offer at least a 44×44px mobile touch target');
+    }
+   }
+  }
+ }
+ await mobile.setViewportSize({width:375,height:812});
+ for(const route of ['/','/cooking/grams-to-cups/','/cooking/ingredients/all-purpose-flour/','/cooking/grams-to-cups/200-grams-to-cups/','/cooking/charts/','/cooking/half-a-measurement/','/cooking/batch-converter/','/cooking/recipe-scaler/']){
   await mobile.goto(origin+route,{waitUntil:'networkidle'});
   const overflow=await mobile.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
   assert.ok(overflow<=1,route+' mobile overflow '+overflow);
   assert.ok(await mobile.locator('h1').first().isVisible(),route+' mobile heading hidden');
   assert.equal(mobileErrors.length,0,route+' browser errors: '+mobileErrors.join(','));
+  if(route==='/cooking/batch-converter/'){
+   const tableRegion=mobile.locator('.batch-result-table');
+   assert.equal(await tableRegion.getAttribute('tabindex'),'0',
+    'batch conversion results are keyboard focusable on mobile');
+   assert.ok(await mobile.locator('.table-scroll-hint').first().isVisible(),
+    'batch results explain horizontal swiping to reach the conversion column');
+  }
+  if(route==='/cooking/charts/'){
+   const tableRegion=mobile.locator('[data-chart-table] .table-scroll');
+   const dims=await tableRegion.evaluate(el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}));
+   assert.ok(dims.scrollWidth>dims.clientWidth,'chart contains real extra columns on mobile');
+   assert.ok(await mobile.locator('[data-chart-table] .table-scroll-hint').isVisible(),
+    'mobile table explains horizontal swipe');
+   await tableRegion.focus();
+   await mobile.keyboard.press('ArrowRight');
+   await mobile.waitForFunction(()=>document.querySelector('[data-chart-table] .table-scroll')?.scrollLeft>0);
+   assert.ok(await tableRegion.evaluate(el=>el.scrollLeft>0),
+    'keyboard input scrolls accessible chart horizontally');
+  }
   if(route==='/'){
+   const amountBounds=await mobile.locator('[data-amount]').boundingBox();
+   assert.ok(amountBounds&&amountBounds.y<650,
+    'at 375px the main calculator input should be visible earlier, not buried below the hero');
    const button=mobile.locator('[data-nav-toggle]');
    await button.click();
    assert.equal(await button.getAttribute('aria-expanded'),'true','mobile menu opens');
+   assert.equal(await button.getAttribute('aria-label'),'Close navigation','expanded menu is clearly labeled');
+   await mobile.keyboard.press('Escape');
+   assert.equal(await button.getAttribute('aria-expanded'),'false','Escape closes mobile navigation');
+   await button.focus();
+   await mobile.keyboard.press('Enter');
+   assert.equal(await button.getAttribute('aria-expanded'),'true','keyboard Enter opens mobile menu');
    await button.click();
    assert.equal(await button.getAttribute('aria-expanded'),'false','mobile menu closes');
+   await button.click();
+   await mobile.mouse.click(7,775);
+   assert.equal(await button.getAttribute('aria-expanded'),'false','outside tap closes mobile menu');
+   assert.equal(await button.getAttribute('aria-label'),'Open navigation','closed menu is clearly labeled');
    assert.ok(await mobile.locator('.hero-mobile-cta').isVisible(),'mobile hero includes direct converter action');
    await mobile.locator('.hero-mobile-cta').click();
    assert.ok(await mobile.locator('#converter').isVisible(),'mobile jump target exists');

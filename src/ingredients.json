@@ -485,5 +485,69 @@
     "approximate": true,
     "note": "Do not apply to whole walnut halves.",
     "sourceEntry": "Walnuts (chopped)"
+  },
+  {
+    "id": "bread-flour",
+    "name": "Bread flour (King Arthur reference)",
+    "aliases": [
+      "bread flour",
+      "king arthur bread flour"
+    ],
+    "state": "dry bread flour",
+    "method": "spooned and leveled, not compacted",
+    "referenceGrams": 120,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "note": "King Arthur Baking's Bread Flour reference; not a universal density for all high-protein flour brands.",
+    "sourceEntry": "Bread Flour",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true
+  },
+  {
+    "id": "cocoa-unsweetened",
+    "name": "Unsweetened cocoa powder",
+    "aliases": [
+      "cocoa powder",
+      "unsweetened cocoa",
+      "unsweetened cocoa powder"
+    ],
+    "state": "dry unsweetened cocoa powder",
+    "method": "lightly filled and leveled, no packing",
+    "referenceGrams": 42,
+    "referenceAmount": 0.5,
+    "referenceUnit": "cup",
+    "note": "The source gives 42 g per 1/2 US cup. Do not substitute sweetened cocoa mixes.",
+    "sourceEntry": "Cocoa (unsweetened)",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true
+  },
+  {
+    "id": "unbleached-cake-flour",
+    "name": "Unbleached cake flour (King Arthur reference)",
+    "aliases": [
+      "unbleached cake flour",
+      "king arthur cake flour"
+    ],
+    "state": "dry unbleached cake flour",
+    "method": "spooned and leveled, not compacted",
+    "referenceGrams": 120,
+    "referenceAmount": 1,
+    "referenceUnit": "cup",
+    "note": "This is a specific King Arthur unbleached cake flour reference; not a generic weight for all low-protein cake flours.",
+    "sourceEntry": "Unbleached Cake Flour",
+    "referenceCupMl": 236.5882365,
+    "sourceName": "King Arthur Baking Ingredient Weight Chart",
+    "sourceUrl": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+    "reviewedAt": "2026-11-22",
+    "referenceType": "recipe_reference",
+    "approximate": true
   }
 ]

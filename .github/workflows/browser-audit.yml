@@ -9,9 +9,21 @@ on:
       - 'src/**'
       - 'tests/browser.test.mjs'
       - '.github/workflows/browser-audit.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'public/**'
+      - 'scripts/**'
+      - 'src/**'
+      - 'tests/browser.test.mjs'
+      - '.github/workflows/browser-audit.yml'
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   browser-audit:
     runs-on: ubuntu-latest

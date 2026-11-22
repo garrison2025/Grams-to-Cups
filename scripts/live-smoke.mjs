@@ -14,6 +14,8 @@ if(!['true','false'].includes(expected))throw new Error('Set LIVE_EXPECT_INDEX=t
 if(!/^https:\/\/[a-z0-9.-]+$/i.test(envUrl.replace(/\/$/,'')))throw new Error('Set LIVE_SITE_URL to the exact HTTPS hostname, without a path, query or port.');
 const origin=envUrl.replace(/\/$/,'');
 const domain=new URL(origin).hostname.toLowerCase();
+if(domain==='convertunits.cc'||domain.endsWith('.convertunits.cc'))
+ throw new Error('This is not the independent Grams-to-Cups production hostname.');
 if(isIP(domain)||domain==='example.com'||domain.endsWith('.example')||domain.endsWith('.test')||domain.endsWith('.invalid')||domain.endsWith('.internal')||domain.endsWith('.local')||domain==='localhost')throw new Error('Cannot smoke-test an IP address, placeholder or local domain.');
 const approved=expected==='true';
 const fetchText=async pathname=>{
@@ -53,6 +55,7 @@ await inspect('/cooking/grams-to-cups/100-grams-to-cups/');
 await inspect('/cooking/grams-to-cups/',{indexed:false});
 await inspect('/cooking/batch-converter/',{indexed:false});
 await inspect('/cooking/grams-to-cups/1000-grams-to-cups/',{indexed:false});
+for(const route of ['/cooking/tablespoons-to-grams/','/cooking/ingredients/almond-flour/','/cooking/ingredients/water/'])await inspect(route,{indexed:false});
 for(const item of ['/assets/app.js','/assets/core.mjs','/assets/ingredients.json','/assets/styles.css','/favicon.svg']){
  const {response,body}=await fetchText(item);
  demand(response,200,item);
@@ -66,10 +69,10 @@ if(approved){
  const {response,body}=await fetchText('/sitemap.xml');
  demand(response,200,'/sitemap.xml');
  const locs=[...body.matchAll(/<loc>([^<]+)<\/loc>/g)].map(x=>x[1]);
- assert.equal(locs.length,65,'Production sitemap should contain 65 index candidates');
- assert.equal(new Set(locs).size,65,'Duplicate sitemap URLs');
+ assert.equal(locs.length,62,'Production sitemap should contain 62 approved index URLs');
+ assert.equal(new Set(locs).size,62,'Duplicate sitemap URLs');
  assert.ok(locs.every(x=>x.startsWith(origin+'/')),'Sitemap contains a different hostname');
- assert.ok(!locs.some(x=>x.endsWith('/cooking/grams-to-cups/')||x.endsWith('/cooking/batch-converter/')||x.includes('1000-grams-to-cups')),'Noindex pages leaked into sitemap');
+ assert.ok(!locs.some(x=>['/cooking/grams-to-cups/','/cooking/batch-converter/','/cooking/tablespoons-to-grams/','/cooking/ingredients/almond-flour/','/cooking/ingredients/water/'].some(y=>x.endsWith(y))||x.includes('1000-grams-to-cups')),'Noindex pages leaked into sitemap');
  checks.push('/sitemap.xml');
 }else{
  assert.ok(!robots.includes('Sitemap:'),'Unindexed preview should not advertise a sitemap');

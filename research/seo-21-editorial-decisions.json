@@ -1,0 +1,133 @@
+{
+  "policy": "Grams-to-Cups independent site. Source: 2026-11-22 plan Appendix A + local source-backed features + partial US competitor-page evidence. Editorial decisions are about indexing eligibility, not rankings.",
+  "externalKeywordSampleCoverage": "partial: 2300 exported Semrush rows, not full keyword database; page screenshot estimates do not prove specific-keyword ranking or future site traffic",
+  "status": "final source-limited editorial disposition for 21 previously pending routes",
+  "decisions": [
+    {
+      "url": "/cooking/",
+      "decision": "approved-index",
+      "basis": "navigation",
+      "rationale": "Cooking hub links tools, ingredients, printable charts and reference methods; useful navigation, not a standalone keyword-volume claim."
+    },
+    {
+      "url": "/cooking/grams-to-tablespoons/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Ingredient-specific grams-to-US-tablespoons calculator; source-backed mass/volume result distinct from the core grams-to-cups page."
+    },
+    {
+      "url": "/cooking/tablespoons-to-grams/",
+      "decision": "functional-noindex",
+      "basis": "high_kd",
+      "rationale": "Plan primary keyword KD31 exceeds the project's KD≤29 preference. Keep accurate ingredient-aware conversion, omit independent index entry until supported lower-KD demand is verified."
+    },
+    {
+      "url": "/cooking/tablespoons-to-ml/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Defined US tablespoon-to-milliliter conversion is immediately calculable and independently solves the reverse of the mL-to-tablespoon task."
+    },
+    {
+      "url": "/cooking/ml-to-tablespoons/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Defined milliliter-to-US-tablespoon converter supplies the requested direction and measurement context; distinct user workflow."
+    },
+    {
+      "url": "/cooking/ingredients/almond-flour/",
+      "decision": "functional-noindex",
+      "basis": "source_state_mismatch",
+      "rationale": "Available weight reference specifically describes toasted almond flour; broad target query does not establish the same state. Keep the explicitly labeled tool and reference, do not index a broader unverified claim."
+    },
+    {
+      "url": "/cooking/ingredients/brown-sugar-packed/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Cited packed-brown-sugar state, method and cup-to-gram reverse table distinguish this food from unpacked sugar."
+    },
+    {
+      "url": "/cooking/ingredients/powdered-sugar-unsifted/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Unsifted powdered-sugar reference, state warning and reversible measurement table are distinct from granulated sugar."
+    },
+    {
+      "url": "/cooking/ingredients/milk-fresh/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Specific fresh-milk reference and reversible weight/volume measurements; source notes distinguish this food from water and dry milk."
+    },
+    {
+      "url": "/cooking/ingredients/water/",
+      "decision": "functional-noindex",
+      "basis": "high_kd",
+      "rationale": "Plan primary keyword KD47, without an observed qualified lower-KD intent; water reference remains available in the converter and ingredient directory."
+    },
+    {
+      "url": "/cooking/ingredients/long-grain-rice-dry/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Dry long-grain rice reference with state-specific table, not interchangeable with cooked rice or generic rice."
+    },
+    {
+      "url": "/cooking/ingredients/vegetable-oil/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Vegetable-oil ingredient reference and reversible cup/gram table; no claim that all oils share one density."
+    },
+    {
+      "url": "/cooking/charts/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Multi-food reference chart is printable and locally downloadable, a distinct comparison workflow from single conversions."
+    },
+    {
+      "url": "/cooking/charts/flour/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Flour-focused printable reference across measured amounts and preparation states; user can look up rather than recalculate."
+    },
+    {
+      "url": "/cooking/charts/sugar/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Sugar-family printable reference distinguishing sugar types and weights, with source-based entries."
+    },
+    {
+      "url": "/cooking/guides/cup-sizes/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Practical US-customary versus 250 mL metric cup explanation and separate calculation standards; useful concept beyond a number conversion."
+    },
+    {
+      "url": "/cooking/guides/measuring-odd-cups/",
+      "decision": "approved-index",
+      "basis": "competitor_page",
+      "rationale": "Actionable physical measuring methods for uncommon cup fractions, not a duplicate conversion landing."
+    },
+    {
+      "url": "/cooking/sources-and-methods/",
+      "decision": "approved-index",
+      "basis": "trust",
+      "rationale": "Methods and source traceability are essential for interpreting recipe-weight estimates; keyword-volume proof not required."
+    },
+    {
+      "url": "/about/",
+      "decision": "approved-index",
+      "basis": "trust",
+      "rationale": "About page gives the site's scope, limitations and accountable positioning."
+    },
+    {
+      "url": "/privacy/",
+      "decision": "approved-index",
+      "basis": "trust",
+      "rationale": "Privacy disclosure and local processing explanation are required site transparency, not a traffic acquisition keyword."
+    },
+    {
+      "url": "/contact/",
+      "decision": "approved-index",
+      "basis": "trust",
+      "rationale": "Contact and corrections information supports source-error reporting and site accountability."
+    }
+  ]
+}

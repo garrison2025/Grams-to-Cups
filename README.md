@@ -7,12 +7,29 @@ A complete, browser-local, source-backed cooking conversion website. **One imple
 ## Finished functional scope
 
 - **14 Cooking tools:** grams ↔ cups, grams ↔ tablespoons, cups ↔ tablespoons, mL ↔ US tablespoons, US tablespoons ↔ mL, US cups ↔ US fluid ounces, US fluid ounces ↔ US cups, half-measurement fraction calculator, recipe scaler and the multiline ingredient batch converter. The main converter also supports teaspoons, mass ounces, kilograms and milliliters via unit selection.
-- **24 documented ingredients**, each including original measurement, quantity, state, method, source URL, review date and limitation. The data are recipe-chart estimates, **not physical density constants**.
+- **27 source-backed calculation references**, with three additional foods used in the tools/charts but not automatically assigned an SEO URL, each including original measurement, quantity, state, method, source URL, review date and limitation. The data are recipe-chart estimates, **not physical density constants**.
 - **21 numerical comparison pages**, **24 ingredient-specific pages**, **10 ingredient+number pages**, 3 printable chart pages, 3 measuring guides, source methodology and cooking hub; **77 Cooking routes**, plus independent homepage and About/Privacy/Contact (81 static HTML pages).
-- Free calculator with regular and Unicode kitchen fractions (½, 1½, ¾), US and metric cup standards, swap/reset/copy/share/print, URL-state sharing, ingredient search, recipe serving scaling and safe CSV export.
-- **Batch ingredient conversion**: paste up to 100 ingredient lines; convert to grams or cups using exact food identifiers; unrecognized ingredients or states are preserved and flagged for manual review, never assigned a guessed density. Copy or export a CSV with review warnings. The batch tool is functional but noindex until separate SEO value is proven.
+- Free calculator with regular and Unicode kitchen fractions (½, 1½, ¾), **exact common kitchen fraction arithmetic** (for example 1/3 + 1/4 = 7/12) in the existing half-measurement tool, US and metric cup standards, swap/reset/copy/share/print, URL-state sharing, ingredient search, serving scaling with safe common count nouns and CSV export.
+- **Batch ingredient conversion**: paste up to 100 ingredient lines; convert to grams or cups using exact food identifiers; explicit `US cup` and `metric cup` labels take precedence over the global destination standard, while unqualified cups use the chosen standard. Results can be copied back into the converter without silently changing a US cup to a metric cup. Unrecognized ingredients or states are preserved and flagged for manual review, never assigned a guessed density. Copy or export a CSV with review warnings. The batch tool is functional but noindex until separate SEO value is proven.
 - Pre-rendered answers, tables, metadata, breadcrumbs and internal links; true 404 page, sitemap only for approved production, per-page canonical and index review.
-- Responsive original styling, visible keyboard focus, accessible field labels, reduced-motion support, privacy-first client JS. No fake testimonials, review stars or preapproved AdSense claims.
+- Responsive original styling, visible keyboard focus, accessible field labels, reduced-motion support and separate **320 ms debounced polite screen-reader result announcements** while the visible calculator updates immediately. All calculations remain browser-local. No fake testimonials, review stars or preapproved AdSense claims.
+
+## Final functional corrections: recipe intervals, chart options, water measurement basis
+
+- **Recipe scaler:** standard Unicode fractions (e.g. `½`, `1½`) plus superscript/subscript recipes (e.g. `1 ¹⁄₂`) are normalized before parsing. A plain quantity or two-ended interval such as `1–2 cups milk` or `1½–3 cups flour` scales the **entire interval**, not only the first number. Unexpected glyphs, multiple quantities separated by commas/semicolons (including `1 cup milk, 2 eggs`), cooking times/temperatures (including `15 minutes`, `350°F`), descending/ambiguous ranges, malformed decimals and complex expressions are preserved verbatim and marked `[check manually]`; they never silently produce a partial scaled value. Safe preparation notes like `1 cup flour, sifted` and a single `2 eggs` still scale normally.
+- **Three printable charts:** the all-ingredient, flour and sugar chart pages share selectable **US cups (236.588 mL)** and **metric cups (250 mL)**, a validated custom portion (including fractions like `1/3`), and static default values for visitors without JavaScript. The chart recalculates a single visible table; the current selected rows, headers and grams are the **same data** exported to CSV and printed. Invalid quantities disable both actions until corrected. Mobile tables remain keyboard scrollable.
+- **Water:** the cited King Arthur recipe table's `227 g / US cup` entry is kept unmodified and explicitly named **recipe reference**. A separate `capacity` choice computes water at **approximately 1 g/mL**, meaning `236.588 g` per US cup and `250 g` per metric cup at that approximation; this is not a second King Arthur weight and varies with temperature. The water ingredient page, live result, copy/share and the all-food chart/CSV explicitly show which mode is in use. No physical-density mode is offered for other ingredients.
+- **Release safety:** after these changes, source audits, Chromium workflow and mobile Lighthouse are still required. The independent site's real production hostname is not yet confirmed, so this does not authorize public indexing or deployment.
+
+## Mobile reading and ingredient card design
+
+The same static pages work without JavaScript. On narrow screens, wide cooking tables have **visible sideways-swipe guidance** and a keyboard-focusable scroll region with a descriptive accessible label. Their first column uses `scope="row"`, preserving semantic row headings for screen readers, copy and CSV export. The hint is hidden on desktop and in print.
+
+Ingredient-directory tiles carry a **visible food-family label** as well as a restrained tinted marker (flour, sugar, dairy, grains, oils, sweeteners or other). The family is derived only from the existing ingredient identifiers, not an unverified external category or SEO keyword. Generic conversion and guide tiles keep their numbered identity.
+
+Conversion results put the unit beside the number in a subtle capsule and present ingredient/reference metadata in a compact, responsive layout. Prior native click-feedback animation and `prefers-reduced-motion` support are preserved. The Chromium audit now checks visual class labels, mobile table overflow, keyboard scrolling and behavior with JavaScript turned off.
+
+Browser tests check fraction addition, subtraction, multiplication and division, unitless count-ingredient scaling (e.g. `1 large egg` → `2 large eggs`), graceful invalid-input handling and a useful pre-rendered fraction example without JavaScript. The static build audit rejects noniterable `querySelector` loops so a new widget cannot accidentally interrupt later page initialization.
 
 ## Get started
 
@@ -30,12 +47,24 @@ npm test
 
 GitHub Actions runs both a safe preview build and a simulated approved production build on each main push.
 
+## Independent site identity — final architecture
+
+This is **only** `garrison2025/Grams-to-Cups`, an independent website, not a page set in the older Convert-Units project. The **actual public domain has not been confirmed**. The builder refuses to publish with a different project's former domain, including subdomains, even if CI is enabled. Never infer production `SITE_URL` from the archived plan or from a temporary preview host. The canonical search-intent URL for the independent site is `/`.
+
+The 21 formerly unresolved SEO decisions have now been completed on the basis of the supplied partial Semrush exports, specific ingredient source states, observed competitor pages, and useful distinct functions. The final index policy is **62 eligible pages, 19 useful noindex pages**. This is a publishing decision, not a claim of Google indexation or growth. See [research/seo-21-editorial-decisions.json](research/seo-21-editorial-decisions.json).
+
 ## One-time public release verification
 
-- `npm run build` now includes a strict **publication audit** checking 81 individual pages, metadata, canonical, JSON-LD, robots, privacy headers, the exact 65-entry production sitemap, and unexpected third-party JS/CSS.
-- A missing `SITE_URL`, or a placeholder hostname such as `example.com`, blocks an explicitly approved production build. `example.com` is permitted **only inside GitHub CI simulation**.
+- `npm run build` now includes a strict **publication audit** checking 81 individual pages, metadata, canonical, JSON-LD, robots, privacy headers, the exact 62-entry production sitemap, and unexpected third-party JS/CSS.
+- A missing `SITE_URL`, or a placeholder hostname such as `example.com`, blocks an explicitly approved production build. `example.com` is permitted **only inside GitHub CI simulation** with the explicitly scoped `SITE_URL_FIXTURE_APPROVED_FOR_CI=true` test flag; `CI=true` by itself does not bypass the production-domain safeguard. **Never set this fixture flag on Cloudflare Pages.**
 - After the real site is deployed, open **GitHub → Actions → Live Cloudflare Pages release verification → Run workflow**. Supply the exact public HTTPS origin and choose whether it is supposed to be indexed. The native Node smoke test checks the live site, not merely the static generator. It has **not** been run for a real host because no deployed URL has been confirmed in this repository.
 - Alternatively run `npm run smoke:live` with `LIVE_SITE_URL` and `LIVE_EXPECT_INDEX` environment variables. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Lighthouse mobile lab quality gate
+
+The [Lighthouse mobile lab workflow](.github/workflows/lighthouse-audit.yml) tests representative pages on pull requests using a local, intentionally `noindex` preview and uploads raw JSON evidence. It measures **performance, accessibility, best practices, lab LCP and CLS**, enforcing a mobile accessibility score of at least 95. Preview SEO scores are deliberately **not** used because preview pages are meant to be `noindex`.
+
+Once the actual independent-site HTTPS origin is confirmed, run the same workflow manually with the `site_url` input and `expected_indexing=true`; it first performs real-host HTTP/sitemap checks and then audits live mobile SEO, accessibility and performance. The final-host SEO and accessibility targets are both 95 or higher. These are repeatable **lab** results, not real-user INP or Google Search Console proof. CLI dependencies are installed only on GitHub Actions and are not bundled with the site.
 
 ## Cloudflare Pages
 
@@ -54,27 +83,62 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for exact production settings and QA gates.
 
 **Canonical safeguards:** Local and Cloudflare preview builds have `noindex`, with no sitemap. The main branch stays `noindex` until both `SITE_URL` is valid and `PUBLIC_INDEX_APPROVED=true`. The builder will **never infer canonical from CF_PAGES_URL**, which can represent a transient deployment. Do not enable the index gate before the real public hostname is confirmed.
 
+## Search SEO and generative-answer readiness (SEO/GEO)
+
+The project uses the **same factual, crawlable pages** for classic search and AI-assisted search. No separate fabricated "AI-only" pages, fake FAQ stars, Review/Recipe rich results or unverified ranking claims are emitted. Google says AI Overviews and AI Mode require the same crawl/index/snippet fundamentals as regular Search, and do not require special AI text files or special AI schema ([Google Search Central](https://developers.google.com/search/docs/appearance/ai-features)).
+
+- **Readable evidence:** the home, individual tool and ingredient pages show complete numerical answers in static HTML. A cited answer states the **ingredient, food state, measuring method, exact US or metric cup unit, reference weight and uncertainty**; the site does not present flour, honey and sugar as sharing a universal density.
+- **Connected entities:** approved public pages use stable `WebSite`, `WebPage`, `BreadcrumbList` and (only for interactive tools) `WebApplication` JSON-LD entities. The `WebPage` and application are connected with matching `@id` references. Ingredient-weight content links to the actually visible King Arthur Baking reference using `citation`; no affiliation, independent laboratory testing, user ratings or Google AI placements are asserted.
+- **Social discoverability:** branded Open Graph site name, US locale and concise Twitter/X summary card metadata. Canonical, `og:url` and publication JSON-LD remain suppressed on unindexed previews; production metadata uses only a verified real independent site origin.
+- **Coverage and guardrails:** `scripts/seo-geo-audit.mjs` inspects **70 source-aware search-intent pages**, including 11 basic conversion directions, 21 gram-number comparisons, 24 food references, 10 food+number answers, 3 charts and the homepage. It writes private `reports/seo-geo-visible-answers.csv` and fails the build if an expected visible answer, unit, state or source explanation disappears. `scripts/publication-audit.mjs` verifies every public JSON-LD entity against visible text and original citations.
+- **No unproven rankings:** independent-site production indexing still requires the correct real hostname, a successful sitemap/robots/canonical audit, Search Console ownership and an observed production SEO audit. Structured data and static answers improve clarity, but do **not** guarantee indexing, AI citations or traffic.
+
 ## Evidence-aware SEO
 
 The full supplied (not full-domain) Semrush material is preserved at [research/semrush-us-2300-sample.csv](research/semrush-us-2300-sample.csv): 1,000 keyword rows from `gramstocupsconverter.cc`, 700 from `gramstocup.com`, 600 from `gramstocups.io`. These are third-party organic ranking estimates, not Search Console traffic or evidence of ad revenue. `site_target_suggestion` is explicitly heuristic and must never be interpreted as an observed ranking of this site.
 
-**Publication policy:** All 77 Cooking routes are functional; 16 have `noindex` by default because the supplied partial keyword and page evidence does not directly establish an independent SEO target. That is **not a feature omission**: users can still navigate, calculate, print and share those tools/pages. Main production sitemap holds **65 eligible page candidates including home/legal pages**, rather than dumping every possible numeric URL into Google.
+**Publication policy:** All 77 Cooking routes are functional; 19 have `noindex` under the finalized source-limited editorial decisions because the supplied partial keyword and page evidence does not directly establish an independent SEO target. That is **not a feature omission**: users can still navigate, calculate, print and share those tools/pages. The approved production sitemap contains **62 eligible page candidates including home/legal pages**, rather than dumping every possible numeric URL into Google.
+
+## Original 76-candidate plan: complete route reconciliation
+
+The user-supplied **2026-11-22 Appendix A** is now preserved in [research/seo-76-candidate-baseline.json](research/seo-76-candidate-baseline.json), with every original route, proposed primary query and observed Semrush search volume/KD (missing observations remain `null`, not zero). Every build runs `scripts/candidate-audit.mjs` and **fails** if a required URL is missing, the candidate count changes, or unexpected pages appear.
+
+All **76 planned URLs exist and work**: 58 are eligible for production indexing under the completed editorial review, and 18 remain usable `noindex` support pages. The other five site pages are the primary homepage, About, Privacy, Contact and the extra noindex batch conversion tool. Thus the full site remains **81 pages with 62 index candidates**. The broad `grams to cups` query is consolidated onto the homepage; its former cooking tool URL is not an additional indexable landing page.
+
+The current **partial** imported keyword sample maps 39 of the 76 planned routes directly by **unreviewed heuristic suggestion**, with six more having strict secondary ingredient-intent observations. Three other candidates have primary-query estimates in the approved plan but no corresponding sample page mapping, and 28 lack both mappings and source-plan primary-query estimates. These are **candidate evidence classes, not proved rankings or editorial validation**. All 21 previously unresolved editorial cases now have explicit source-limited dispositions: **18 index-eligible, three functional `noindex`**. This is not proof of Google indexing or guaranteed ranking.
+
+The **entire original competitor evidence** for all 76 rows is now present: exact phrase ranking observations, source-plan screenshot page estimates, and the original editorial release conditions. Before this update the candidate JSON carried only the primary keyword and numeric estimates; its data fields have been reconciled against the uploaded Appendix A with zero mismatches.
+
+**Crawl-path audit:** 80 of 81 static pages are reachable through actual HTML links from `/`, with a maximum of two link clicks. All ten `ingredient + grams` pages have contextual inbound links from both their specific ingredient page and the corresponding generic gram amount page. The sole deliberately unlinked URL is the usable but `noindex` duplicate `/cooking/grams-to-cups/`, whose principal search intent belongs to the homepage. Every build tests this graph and writes a private per-page report.
+
+The 21 originally unverified index candidates were separated into **five trust/directory pages** that do not need acquisition-keyword proof, **13 pages with observed competitor page screenshots but no sample keyword-to-page mapping**, **two pages whose primary plan keyword exceeds KD29 without observed low-KD sample support**, and **one page missing both mapping and screenshot proof**. These classifications are source-traceable triage flags, not an automated decision that Google will index or rank the URLs. A final source-limited publication decision is now recorded for every case in `research/seo-21-editorial-decisions.json`, including the three excluded routes: tablespoons-to-grams (KD31), almond flour (source state broader than keyword intent), and water grams-to-cups (KD47).
+
+This is a single production release project: passing a static build or having a route is **not** permission to enable real-world indexing before the deployed host and SEO review are verified.
 
 ## SEO keyword integrity and duplicate-page protection
 
 The core query `grams to cups` is assigned to the **homepage `/` only**. The original `/cooking/grams-to-cups/` still functions when opened directly but stays `noindex`; the site's internal links now direct visitors and crawlers to `/` for that intent. No new 301 redirects were invented for URLs that were never confirmed live.
 
-Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates five **non-public** audit reports:
+Every `npm run build` also executes `scripts/keyword-audit.mjs`. It reads **all 2,300 user-supplied Semrush observations** (1,643 unique query strings), checks that tentative target URLs exist, detects mismatches and generates fourteen **non-public** evidence and audit reports:
 
 - `reports/seo-keyword-decisions.csv`: one record per imported keyword, original estimated data unchanged, target URL, status and classification reason.
 - `reports/seo-page-evidence.csv`: one record per site page, index eligibility and number of mapped keyword observations.
 - `reports/seo-summary.json`: counts and gaps, so missing keyword evidence is never incorrectly equated to zero demand.
 - `reports/seo-numeric-intent.csv`: independently matched numeric search phrases, competitor sample KD, and eligibility for each of the 21 grams-to-cups number pages.
 - `reports/seo-ingredient-intent.csv`: secondary, exact-ingredient search-intent matches, with explicit food-state checks and no automatic keyword ownership.
+- `reports/seo-76-candidate-decisions.csv`: line-by-line reconciliation of the **76 URLs in the original approved plan**, including primary keyword, the plan's observed US volume/KD if available, real generated route, index eligibility, canonical intent, direct/secondary keyword evidence and editorial status.
+- `reports/seo-76-candidate-summary.json`: machine-readable totals and the five extra useful site routes outside that 76-item candidate list.
+- `reports/seo-21-index-review.csv`: per-page final disposition for the **21 originally unverified candidate routes**, preserving competitor screenshot evidence, source limitations and editorial rationale.
+- `reports/seo-21-index-review-summary.json`: evidence-gap buckets, with trust/navigation pages separated from acquisition-keyword pages.
+- `reports/seo-link-graph.csv`: every generated page's inbound link count, shortest home-page click depth, index policy and deliberate noindex exception.
+- `reports/seo-76-final-publication-status.json`: complete 76-URL machine-readable final decision record, including 58 index-eligible and 18 functional `noindex` candidates.
+- `reports/ingredient-source-evidence.json`: one source-locked record per ingredient (24), with explicit food states, methods, dates, weights and the published reference, not claimed laboratory density measurements.
+- `reports/keyword-to-url.csv`: all 2,300 original partial-export keyword observations with competitor, original ranking URL, estimated KD/volume and a **provisional** target URL; unknown values are preserved, not set to zero.
+- `reports/seo-geo-visible-answers.csv`: 70 source-aware search-intent routes with a checkable direct answer, precise units, source/food-state context and a short readable excerpt, explicitly **not** a search ranking or AI citation report.
 
-The GitHub Actions **Site build and tests** workflow attaches the five reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
+The GitHub Actions **Site build and tests** workflow attaches the fourteen reports as `grams-to-cups-seo-review` for download (30-day artifact retention). Reports are **not included in `dist/`** and are not exposed to site visitors.
 
-**Coverage warning:** 27 of 65 index candidates have no original suggested URL in the partial supplied keyword sample. Strict secondary food-phrase matching recovered observed conversion queries for 6 of those pages, leaving 21 without direct or secondary keyword evidence. Such absence in a partial export is not proof of zero search demand. Some are navigational, methodology or trust pages; absence from the sample is not proof of zero demand. See the per-page report before deciding whether each deserves separate indexing.
+**Coverage warning:** 24 of the 62 final index candidates lack an original suggested URL in the partial supplied keyword sample. Six have strict secondary ingredient-intent evidence; the remaining **18** were resolved through source-limited editorial review of independent site functions, trust pages and observed competitor page evidence. Such absence in a partial export is not proof of zero search demand, and an index decision is not an assertion of keyword rank or traffic. Some are navigational, methodology or trust pages; absence from the sample is not proof of zero demand. See the per-page report before deciding whether each deserves separate indexing.
 
 **Important limitation:** The 1,823 mapped rows remain `heuristic` until intent and competitor relevance are manually reviewed; 477 previously unmapped rows are categorized rather than automatically assigned to new SEO URLs. Out-of-scope conversions and ambiguous “oz” queries are not grounds for generating thin pages. All requested competitor ranking exports remain partial, not full-domain SEO coverage.
 
@@ -86,7 +150,7 @@ Avoid cloning third-party prose. Original calculation tools and source-backed ex
 
 ## Data model and accuracy
 
-`src/ingredients.json` contains 24 ingredient **recipe-reference** entries from the [King Arthur Baking Ingredient Weight Chart](https://www.kingarthurbaking.com/learn/ingredient-weight-chart) (reviewed 2026-11-22). It is not one universal grams↔cups factor. All entries now include the exact original chart item label (`sourceEntry`), displayed on ingredient pages and the methods table, and a separate verified measurement lock at `research/ingredient-reference-lock.json`. The full suite has 15 dependency-free tests, including missing-KD interpretation and CSV formula-injection protection.
+`src/ingredients.json` contains 24 ingredient **recipe-reference** entries from the [King Arthur Baking Ingredient Weight Chart](https://www.kingarthurbaking.com/learn/ingredient-weight-chart) (reviewed 2026-11-22). It is not one universal grams↔cups factor. All entries now include the exact original chart item label (`sourceEntry`), displayed on ingredient pages and the methods table, and a separate verified measurement lock at `research/ingredient-reference-lock.json`. The dependency-free unit suite covers source-locked ingredients, conversion precision, parsing, recipe scaling, keyword evidence and CSV formula-injection protection.
 
 Examples:
 - All-purpose flour: 120 g per US cup (spoon/level).

@@ -2,6 +2,14 @@
 
 This repository was created as a standalone website at the owner's direction. It does **not** write to the unrelated Convert-Units repository and does not assume a purchased custom domain.
 
+## Independent-site final decision (supersedes the older integration plan)
+
+Repository: `garrison2025/Grams-to-Cups`. **No public production hostname has been confirmed.** This is a standalone website; the previous Convert-Units repository and its production domain are **not** a deployment target. The builder explicitly refuses that project's legacy hostname or any subdomain of it, including if a test CI flag is set. Never write another project's domain as this site's canonical host.
+
+**Final source-limited SEO publication policy:** 81 functional URLs, 62 index-eligible, 19 noindex; the original 76 candidate routes have 58 eligible and 18 noindex entries. The 21 originally pending editorial cases were individually decided in `research/seo-21-editorial-decisions.json`. Three remain functional but are noindex: `/cooking/tablespoons-to-grams/` (plan KD31), `/cooking/ingredients/almond-flour/` (specific toasted state does not support broad search phrasing), and `/cooking/ingredients/water/` (plan KD47). All other reviewed cases have distinct user value and available competitor-page or navigational evidence; no ranking outcome is guaranteed.
+
+**Single-release sequence:** Run builds and tests in the PR branch and test a protected/unindexed Cloudflare preview if one is available. Only after the real HTTPS domain, canonical settings, final screenshots and Lighthouse checks are verified should the production environment be configured and the PR merged to `main` for the **one public release batch**. Do not launch an incomplete live site simply to test whether it ranks.
+
 ## Connect Cloudflare Pages
 
 1. Workers & Pages → Create application → Pages → Connect to Git → select `garrison2025/Grams-to-Cups`.
@@ -11,14 +19,14 @@ This repository was created as a standalone website at the owner's direction. It
 5. Verify all canonical destination URLs resolve at that hostname. Verify 404, robots.txt, no console errors, static assets, reference claims, accessible mobile calculation, ingredient search and the output from `npm run build`.
 6. Only after all checks, set `PUBLIC_INDEX_APPROVED=true` for the production environment and redeploy `main`. Cloudflare injects `CF_PAGES_BRANCH`; don't set it manually in dashboard.
 7. Confirm production `/sitemap.xml` exists, URLs use `SITE_URL`, all index-eligible pages carry canonical/index, and excluded candidates remain noindex. Submit sitemap to Google Search Console only when the site is verified.
-8. There are 81 generated HTML pages total: 77 Cooking routes and 4 site/core/legal routes. The 16 conservative noindex candidates still function but are excluded from sitemap.
+8. There are 81 generated HTML pages total: 77 Cooking routes and 4 site/core/legal routes. The 19 final noindex routes still function but are excluded from sitemap.
 
 Cloudflare previews should remain noindex. This is intentional, not a reason to enable indexing before QA.
 
 ## Mandatory publication safety and exact-host live check
 
 - Before approving indexing, configure the real `SITE_URL`. If `PUBLIC_INDEX_APPROVED=true` on `main` but the URL is missing, invalid or a placeholder, the build **fails closed**, rather than publishing incorrect canonical URLs. The CI-only `example.com` simulation is not an accepted real production host.
-- `scripts/publication-audit.mjs` checks all 81 rendered pages (one H1, unique titles/descriptions, expected robots, exactly matching canonical/OG/JSON-LD, first-party CSS/JS), plus preview response-header policy and the exact 65-entry sitemap in approved simulation.
+- `scripts/publication-audit.mjs` checks all 81 rendered pages (one H1, unique titles/descriptions, expected robots, exactly matching canonical/OG/JSON-LD, first-party CSS/JS), plus preview response-header policy and the exact 62-entry sitemap in approved simulation.
 - For the deployed site, use **GitHub → Actions → Live Cloudflare Pages release verification → Run workflow**. Enter the exact final HTTPS origin; select `false` while testing a noindex preview, and `true` only after production indexing is approved. This checks real HTTP responses for selected key pages, missing URLs, first-party assets, `_headers`, `robots.txt` and the sitemap.
 - On Windows PowerShell, the equivalent one-shot command is:
   ```powershell
@@ -30,11 +38,30 @@ Cloudflare previews should remain noindex. This is intentional, not a reason to 
 - A successful GitHub **build** is not proof of Cloudflare deployment, Google indexing, Lighthouse performance or AdSense approval. A green live-smoke check only proves the tested URLs and headers at the time of execution; Google Search Console and performance still require separate verification.
 - `src/seo-evidence.mjs` prevents empty/missing Semrush KD from being interpreted as KD0 and safely quotes third-party CSV text to neutralize spreadsheet formula injection. Source `research/semrush-us-2300-sample.csv` remains unchanged.
 
+## Final product regression gate before public indexing
+
+All three Cooking chart pages (/cooking/charts/, /cooking/charts/flour/, /cooking/charts/sugar/) must support both US and metric cups and a custom quantity in the 0.001–1,000 cup range. The visible table, printed table and filtered CSV must use the same row numbers and basis. Test 1/3 metric cup and a 1.5 metric cup CSV, as well as invalid input blocking exports. With JavaScript off, each chart retains its useful, correctly labeled US-cup default values.
+
+The recipe scaler must correctly handle 1 ¹⁄₂ cups, 1½ cups, 1–2 cups and 1½–3 cups. If it encounters a compound recipe line that cannot be interpreted without risk, it must leave the original text unchanged and flag it. Its warning is an intentional safety mechanism, not a failure to display the line.
+
+Water is a special explicitly labeled choice: the documented recipe chart uses 227 g / US cup; a separate approximate physical-capacity mode uses about 1 g / mL. The latter may vary with temperature and **must not be described as the chart's published grams-per-cup reference**. Verify the mode in the result, copied text, shareable link, printed water page and all-food chart/CSV. Other food densities must remain tied to their documented state and published references.
+
+The latest code remains in the same open PR. Complete the prelaunch Node/Chromium/Lighthouse and production-domain HTTP/SEO checks before approving `main` publication or any Google indexing.
+
+## Mobile Lighthouse release acceptance
+
+Use GitHub → **Actions → Lighthouse mobile lab and real-host acceptance**.
+
+- Pull requests automatically test three representative local preview routes (home, flour reference, fraction calculator) using ephemeral Lighthouse 13.6.0 and headless Chrome. Results are retained as `grams-cups-mobile-lighthouse` artifacts for 30 days. The local preview is deliberately `noindex`, so its SEO score is not a publication proof.
+- After the actual independent-site public HTTPS origin has been confirmed, choose **Run workflow**, enter the exact origin for `site_url`, and set `expected_indexing=true` only when the final production release has been approved. The workflow performs real HTTP/canonical/sitemap smoke checks first, then Lighthouse mobile audits of the homepage, ingredient, numeric and chart routes.
+- Target **mobile Accessibility and SEO scores ≥95**. Lab LCP≤2500ms and CLS≤0.1 are recorded with every run. **INP≤200ms** needs real-user instrumentation when the site has sufficient traffic; Lighthouse's synthetic run must not be falsely labeled a measured real-user INP.
+- Reports are uploaded even if a score gate fails. Fix issues on the same branch and rerun the acceptance check; do not claim launch is complete from a green source-code CI run alone.
+
 ## Quality gates in CI
 
 `npm run build` automatically:
 
-- Runs 15 Node tests: original reference weights, 24 ingredient data contracts, mass/volume distinction, cup definitions, numeric round trips, fractions, recipe scaling and CSV injection safety.
+- Runs the dependency-free Node unit tests for: original reference weights, 24 ingredient data contracts, mass/volume distinction, cup definitions, numeric round trips, fractions, recipe scaling and CSV injection safety.
 - Generates 81 static HTML pages, local conversion assets, a real 404 and index-aware robots/sitemap.
 - Checks route count, unique title and H1, body text, canonical/noindex, key asset existence, internal links, batch workbench presence and 21/24/10 page-family counts.
 - The GitHub workflow tests both preview and production publication configurations. Its `https://example.com` value is synthetic **only for CI**, never the site's production domain.
@@ -78,7 +105,7 @@ The recipe scaler offers **exact common kitchen fractions** by default, or decim
 
 ## Main keyword ownership and SEO audit artifact
 
-The homepage `/` is the only eligible landing page for the core `grams to cups` query. `/cooking/grams-to-cups/` remains usable, but `noindex` and internal card/paragraph links resolve to `/` to avoid competing primary SEO targets. Production index candidates: **65** out of 81 functional routes.
+The homepage `/` is the only eligible landing page for the core `grams to cups` query. `/cooking/grams-to-cups/` remains usable, but `noindex` and internal card/paragraph links resolve to `/` to avoid competing primary SEO targets. Production index candidates: **62** out of 81 functional routes, after the 21-case editorial review.
 
 The build also runs `scripts/keyword-audit.mjs`, validating all 2,300 supplied competitor ranking records and producing per-keyword/per-page classification files. Download them from the successful GitHub **Site build and tests** run → **Artifacts** → `grams-to-cups-seo-review`. The report output is excluded from `dist/` and from Git.
 
@@ -88,7 +115,7 @@ The source remains a **partial** competitor export. Mapping is algorithmic and r
 
 The static build keeps 24 separate source-backed ingredient pages with both weight→volume and US cup fractions→gram reference charts. All 21 numerical weight pages have a common-cup proximity table with an explicit gram difference and a use-a-scale warning. CI checks these page sections on every build.
 
-The Semrush analysis exports `seo-ingredient-intent.csv` as a fifth non-public report. It finds secondary exact-food keyword evidence for six of the 27 index candidates that lacked the original provisional URL mapping. The other 21 candidates remain unverified in this limited source sample and must not be described as having verified search volume.
+The Semrush analysis exports `seo-ingredient-intent.csv` as a fifth non-public report. It finds secondary exact-food keyword evidence for six of the 27 index candidates that lacked the original provisional URL mapping. All 21 formerly unresolved cases now have source-limited, explicitly recorded editorial dispositions (18 index-eligible, three noindex). Missing sample data is still unknown, not zero; this does not verify their ranking or search traffic.
 
 ## Numeric SEO quality gate
 

@@ -1,0 +1,127 @@
+/**
+ * Lighthouse mobile lab verification for local PR preview and (later) live HTTPS.
+ * Requires ephemeral lighthouse CLI 13.6.0, installed only in CI, not shipped.
+ * npm run build is run by the workflow before local preview measurement.
+ * A lab run is not real-user INP or a Search Console indexing check.
+ */
+import {spawnSync} from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const raw=(process.env.LIGHTHOUSE_SITE_URL||'').trim();
+const real=!!raw;
+if(real&&!/^https:\/\/[a-z0-9.-]+\/?$/i.test(raw))
+ throw new Error('Lighthouse production input must be an exact HTTPS hostname without path, port, query or fragment.');
+const origin=real?raw.replace(/\/$/,''):'http://127.0.0.1:4173';
+if(real){
+ const host=new URL(origin).hostname;
+ if(host==='localhost'||host==='example.com'||host==='convertunits.cc'||
+    host.endsWith('.convertunits.cc')||
+    /\.(?:localhost|test|example|invalid|internal)$/.test(host))
+  throw new Error('Refusing to audit a placeholder or another project as Grams-to-Cups production.');
+}
+const expectedPublic=(process.env.LIGHTHOUSE_EXPECT_PUBLIC||'false')==='true';
+if(!real&&expectedPublic)throw new Error('Cannot verify production indexability from an unindexed local preview.');
+const routes=real?
+ ['/','/cooking/ingredients/all-purpose-flour/','/cooking/grams-to-cups/100-grams-to-cups/','/cooking/charts/']:
+ ['/','/cooking/ingredients/all-purpose-flour/','/cooking/half-a-measurement/'];
+const outputDir=path.join(root,'reports','lighthouse');
+fs.mkdirSync(outputDir,{recursive:true});
+const results=[];
+const categories=expectedPublic?'performance,accessibility,best-practices,seo':'performance,accessibility,best-practices';
+for(let i=0;i<routes.length;i++){
+ const route=routes[i],url=origin+route;
+ const measure=(attempt)=>{
+  const suffix=attempt===1?'':'-retry-'+String(attempt).padStart(2,'0');
+  const file=path.join(outputDir,'mobile-'+String(i+1).padStart(2,'0')+suffix+'.json');
+  const flags=[
+   url,'--quiet','--only-categories='+categories,'--output=json','--output-path='+file,
+   '--chrome-flags=--headless --no-sandbox --disable-dev-shm-usage',
+   '--no-enable-error-reporting','--max-wait-for-load=60000'
+  ];
+  const run=spawnSync('lighthouse',flags,{stdio:'inherit',timeout:180000});
+  if(run.error)throw run.error;
+  assert.equal(run.status,0,'Lighthouse CLI failed for '+url);
+  const rawResult=JSON.parse(fs.readFileSync(file,'utf8'));
+  if(rawResult.runtimeError)throw new Error('Lighthouse runtime error '+url+': '+rawResult.runtimeError.message);
+  const score=c=>rawResult.categories[c]?.score===undefined?null:
+   Math.round(rawResult.categories[c].score*100);
+  const lcp=rawResult.audits['largest-contentful-paint']?.numericValue;
+  const cls=rawResult.audits['cumulative-layout-shift']?.numericValue;
+  const failedAudits=category=>(rawResult.categories[category]?.auditRefs||[])
+   .filter(ref=>ref.weight>0&&rawResult.audits[ref.id]?.score!==null&&rawResult.audits[ref.id]?.score<1)
+   .map(ref=>({id:ref.id,title:rawResult.audits[ref.id].title,
+    score:rawResult.audits[ref.id].score,
+    display:rawResult.audits[ref.id].displayValue||null,
+    weight:ref.weight}))
+   .sort((a,b)=>a.score-b.score||b.weight-a.weight)
+   .slice(0,10);
+  return {
+   route,url,performance:score('performance'),accessibility:score('accessibility'),
+   bestPractices:score('best-practices'),seo:score('seo'),
+   labLcpMs:Number.isFinite(lcp)?Math.round(lcp):null,
+   labCls:Number.isFinite(cls)?Number(cls.toFixed(4)):null,
+   labFcpMs:Math.round(rawResult.audits['first-contentful-paint']?.numericValue||0),
+   labTbtMs:Math.round(rawResult.audits['total-blocking-time']?.numericValue||0),
+   labSpeedIndexMs:Math.round(rawResult.audits['speed-index']?.numericValue||0),
+   failingPerformanceAudits:failedAudits('performance'),
+   failingAccessibilityAudits:failedAudits('accessibility'),
+   contrastNodes:(rawResult.audits['color-contrast']?.details?.items||[]).slice(0,10).map(x=>({
+    snippet:x.node?.snippet||null,selector:x.node?.selector||null,
+    label:x.node?.nodeLabel||null,reason:x.explanation||null
+   })),
+   topLongTasks:(rawResult.audits['long-tasks']?.details?.items||[]).slice(0,6).map(x=>({
+    duration:x.duration||null,startTime:x.startTime||null,url:x.url||null
+   })),
+   lighthouseVersion:rawResult.lighthouseVersion,
+   reportFile:path.relative(root,file),
+   statusCode:rawResult.audits['http-status-code']?.displayValue||null
+  };
+ };
+ const attempts=[measure(1)];
+ // PR synthetic lab scores fluctuate with shared-runner CPU contention. A
+ // first-run performance/TBT failure triggers two independent measurements
+ // and a MEDIAN, never a best-of-three or a lowered acceptance threshold.
+ // Record every sample in the artifact, including failures. Persistent
+ // performance regression in >=2/3 samples still fails the quality gate.
+ const first=attempts[0];
+ if(first.performance===null||first.performance<90||
+    first.labTbtMs===null||first.labTbtMs>750){
+  attempts.push(measure(2),measure(3));
+ }
+ const sorted=[...attempts].sort((a,b)=>(a.performance??-1)-(b.performance??-1)||
+   (b.labTbtMs??Infinity)-(a.labTbtMs??Infinity));
+ const row={...sorted[Math.floor(sorted.length/2)],
+  samples:attempts.map((item,index)=>({
+   attempt:index+1,performance:item.performance,accessibility:item.accessibility,
+   labTbtMs:item.labTbtMs,labLcpMs:item.labLcpMs,labCls:item.labCls,
+   reportFile:item.reportFile,topLongTasks:item.topLongTasks
+  })),
+  samplePolicy:attempts.length===3?'median of 3 for first-run performance/TBT failure':'single passing lab run'
+ };
+ results.push(row);
+ console.log('LIGHTHOUSE MOBILE',JSON.stringify(row));
+}
+const summary={
+ mode:!real?'local_preview_noindex':expectedPublic?'public_host':'unindexed_live_host',
+ publicHostConfirmed:real&&expectedPublic,
+ note:'Lab Lighthouse estimates, not real-user Core Web Vitals or observed INP. Preview noindex intentionally excludes SEO score; a real-host score requires an actual HTTPS deployment.',
+ results,
+ publicationTargets:{performance:90,accessibility:95,seo:95,labLcpMs:2500,labCls:0.1,labTbtMs:750}
+};
+fs.writeFileSync(path.join(outputDir,'summary.json'),JSON.stringify(summary,null,2)+'\n');
+const failures=[];
+for(const item of results){
+ if(item.performance===null||item.performance<90)failures.push(item.route+' mobile performance '+item.performance+' <90');
+ if(item.labTbtMs===null||item.labTbtMs>750)failures.push(item.route+' mobile total blocking time '+item.labTbtMs+'ms >750ms');
+ if(item.labLcpMs===null||item.labLcpMs>2500)failures.push(item.route+' mobile lab LCP '+item.labLcpMs+'ms >2500ms');
+ if(item.labCls===null||item.labCls>0.1)failures.push(item.route+' mobile lab CLS '+item.labCls+' >0.1');
+ if(item.accessibility===null||item.accessibility<95)failures.push(item.route+' mobile accessibility '+item.accessibility+' <95');
+ if(expectedPublic&&(item.seo===null||item.seo<95))failures.push(item.route+' mobile SEO '+item.seo+' <95');
+ // These bounded lab gates catch code-level regressions, not real-user field
+ // vitals or INP. Production still needs live HTTPS and field monitoring.
+}
+console.log('LIGHTHOUSE LAB SUMMARY',JSON.stringify({mode:summary.mode,results:results.length,failures}));
+if(failures.length)throw new Error('Lighthouse quality gate failed: '+failures.join('; '));

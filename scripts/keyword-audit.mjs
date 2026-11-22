@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
-import {parseSemrushNumber,csvSafeCell} from '../src/seo-evidence.mjs';
+import {parseSemrushNumber,parseSemrushKD,csvSafeCell} from '../src/seo-evidence.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const input=fs.readFileSync(path.join(root,'research/semrush-us-2300-sample.csv'),'utf8');
@@ -78,7 +78,7 @@ for(const row of records){
   const unclassified=classifyUnmapped(keyword);decision=unclassified.status;reason=unclassified.reason;
  }
  stats.decisions[decision]=(stats.decisions[decision]||0)+1;
- const kd=num(val(row,'semrush_kd')),traffic=num(val(row,'estimated_us_keyword_traffic')),vol=num(val(row,'us_volume'));
+ const kd=parseSemrushKD(val(row,'semrush_kd')),traffic=num(val(row,'estimated_us_keyword_traffic')),vol=num(val(row,'us_volume'));
  if(target){
   const group=grouped.get(target)||{rows:0,unique:new Set(),lowKdRows:0,trafficSampleSum:0,candidates:[]};
   group.rows++;group.unique.add(keyword.toLowerCase().trim());
@@ -98,7 +98,7 @@ for(const page of manifest.pages){
  pageReport.push([page.url,page.indexCandidate?'yes':'no',group?.rows||0,group?.unique.size||0,group?.lowKdRows||0,group?.trafficSampleSum||0,best?.kw||'',best?.vol??'',best?.kd??'',best?.competitor||'',!page.indexCandidate?'noindex_tool_or_unverified_page':group?'has_provisional_keyword_evidence':'no_sample_mapping_do_not_infer_zero_demand']);
 }
 assert.equal(stats.records,2300);
-assert.equal(stats.indexCandidates,65,'Publication gates for core and weak numeric intents changed');
+assert.equal(stats.indexCandidates,62,'Editorial production index decisions unexpectedly changed');
 const targetUrl=pageReport.find(x=>x[0]==='/');
 assert.ok(targetUrl&&targetUrl[2]>0,'Core keyword must link to homepage');
 assert.ok(!index.get('/cooking/grams-to-cups/').indexCandidate,'Duplicate core converter URL must remain noindex');
@@ -110,7 +110,7 @@ for(const page of manifest.pages.filter(p=>/^\/cooking\/grams-to-cups\/\d+-grams
  const amount=Number(page.url.match(/\/(\d+)-grams-to-cups\/$/)[1]);
  const numericPattern=new RegExp('\\b'+amount+'\\s*(?:grams?|g)\\s*(?:(?:to|in|into)\\s*)?(?:a\\s*)?cups?\\b','i');
  const matched=records.filter(row=>numericPattern.test(val(row,'keyword')));
- const kd=matched.map(row=>num(val(row,'semrush_kd'))).filter(x=>x!==null);
+ const kd=matched.map(row=>parseSemrushKD(val(row,'semrush_kd'))).filter(x=>x!==null);
  const minKd=kd.length?Math.min(...kd):null;
  const traffic=matched.reduce((sum,row)=>sum+(num(val(row,'estimated_us_keyword_traffic'))||0),0);
  const unique=new Set(matched.map(row=>val(row,'keyword').toLowerCase().trim())).size;
@@ -162,7 +162,7 @@ for(const [id,match,exclude] of foodRules){
   return match.test(keyword)&&unitIntent.test(keyword)&&!excludeIntent.test(keyword)&&!(exclude&&exclude.test(keyword));
  });
  const unique=new Set(matches.map(row=>val(row,'keyword').toLowerCase().trim()));
- const low=matches.filter(row=>{const kd=num(val(row,'semrush_kd'));return kd!==null&&kd<=29});
+ const low=matches.filter(row=>{const kd=parseSemrushKD(val(row,'semrush_kd'));return kd!==null&&kd<=29});
  foodEvidence.set(target,{count:matches.length,distinct:unique.size,lowKd:low.length,
   strongest:matches.slice().sort((a,b)=>(num(val(b,'estimated_us_keyword_traffic'))||0)-(num(val(a,'estimated_us_keyword_traffic'))||0))[0]});
  for(const row of matches)secondaryRows.push([target,id,val(row,'keyword'),val(row,'competitor'),
@@ -181,6 +181,12 @@ const secondaryFoodCount=[...foodEvidence.values()].filter(x=>x.count>0).length;
 const out=path.join(root,'reports');
 fs.mkdirSync(out,{recursive:true});
 fs.writeFileSync(path.join(out,'seo-keyword-decisions.csv'),'\ufeff'+quotedRows(detailed));
+const keywordToUrl=[['keyword','competitor','source_observed_position','source_us_volume','source_kd',
+ 'source_keyword_traffic_not_our_site','competitor_ranking_url','original_heuristic_url',
+ 'provisional_target_url_not_verified_rank','target_index_eligible','status','evidence_limitations'],
+ ...detailed.slice(1).map(x=>[x[1],x[0],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10],x[11]])];
+assert.equal(keywordToUrl.length,2301,'A source-true keyword-to-URL ledger must contain all 2300 rows');
+fs.writeFileSync(path.join(out,'keyword-to-url.csv'),'\ufeff'+quotedRows(keywordToUrl));
 fs.writeFileSync(path.join(out,'seo-page-evidence.csv'),'\ufeff'+quotedRows(pageReport));
 fs.writeFileSync(path.join(out,'seo-numeric-intent.csv'),'\ufeff'+quotedRows(numericReport));
 fs.writeFileSync(path.join(out,'seo-ingredient-intent.csv'),'\ufeff'+quotedRows(secondaryRows));

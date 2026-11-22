@@ -5,12 +5,19 @@ export function parseSemrushNumber(value){
  if(!s||s==='-'||/^n\/?a$/i.test(s))return null;
  if(!/^-?(?:\d+(?:\.\d+)?|\.\d+)$/.test(s))return null;
  const n=Number(s);
- return Number.isFinite(n)?n:null;
+ return Number.isFinite(n)&&n>=0?n:null;
+}
+
+// Semrush KD is a bounded 0–100 score; traffic and volume are different metrics.
+// Never call a missing, negative or out-of-range difficulty score an easy keyword.
+export function parseSemrushKD(value){
+ const n=parseSemrushNumber(value);
+ return n!==null&&n<=100?n:null;
 }
 export function csvSafeCell(value){
  let s=String(value??'');
  // Excel/Sheets may treat quoted CSV fields as executable spreadsheet formulas.
  // The apostrophe neutralizes formulas while keeping the underlying source file untouched.
- if(/^[\x00-\x20]*[=+@-]/.test(s))s="'"+s;
+ if(/^[\s\u0000-\u001f\u200b-\u200d\ufeff]*[=+@-]/u.test(s))s="'"+s;
  return '"'+s.replaceAll('"','""')+'"';
 }
