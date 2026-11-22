@@ -378,3 +378,7 @@ td:first-child{font-weight:680;color:#214839}
  .toggle-option{font-size:.79rem}
 }
 @media print{.batch-result-table{max-height:none;overflow:visible}.batch-result-table thead{position:static}.batch-options,.batch-feedback{display:none}}
+/* Fraction calculator uses three compact, accessible fields on desktop. */
+.fraction-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,.8fr) minmax(0,1fr);gap:12px;align-items:end}
+.fraction-grid>.field{min-width:0}
+@media(max-width:700px){.fraction-grid{grid-template-columns:minmax(0,1fr)}}
