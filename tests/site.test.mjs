@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {parseSemrushNumber,parseSemrushKD,csvSafeCell} from '../src/seo-evidence.mjs';
-import {parseAmount,convertQuantity,approximateFraction,scaleRecipe,csvCell,formatAmount,formatKitchenAmount,batchConvertIngredients,US_CUP_ML,METRIC_CUP_ML,US_TBSP_ML} from '../src/core.mjs';
+import {parseAmount,convertQuantity,approximateFraction,scaleRecipe,csvCell,formatAmount,formatKitchenAmount,calculateKitchenFractions,batchConvertIngredients,US_CUP_ML,METRIC_CUP_ML,US_TBSP_ML} from '../src/core.mjs';
 const foods=JSON.parse(fs.readFileSync(new URL('../src/ingredients.json',import.meta.url),'utf8'));
 const byId=id=>foods.find(x=>x.id===id);
 
@@ -80,6 +80,25 @@ test('fraction and input validation',()=>{
   assert.throws(()=>parseAmount(bad),undefined,bad);
  }
 });
+test('exact kitchen fraction arithmetic combines common measures without rounding to a false fraction',()=>{
+ const calc=(a,op,b)=>calculateKitchenFractions(a,op,b);
+ assert.deepEqual(calc('1/2','+','1/4'),{value:0.75,decimal:'0.75',fraction:'3/4',exact:true});
+ assert.equal(calc('1/3','+','1/4').fraction,'7/12','exact denominator 12 must not be rounded to 9/16');
+ assert.equal(calc('1½','+','¼').fraction,'1 3/4');
+ assert.equal(calc('3/4','-','1/4').fraction,'1/2');
+ assert.equal(calc('3/4','-','3/4').fraction,'0','zero is an acceptable subtraction result');
+ assert.equal(calc('1/8','*','1/4').fraction,'1/32');
+ assert.equal(calc('1/2','/','1/4').fraction,'2');
+ assert.equal(calc('3/4','/','1/2').fraction,'1 1/2');
+ assert.equal(calc('1,234.5','+','0.5').fraction,'1,235');
+ assert.deepEqual(calc('1/1000','+','1/1000'),{value:.002,decimal:'0.002',fraction:'0.002',exact:false},
+  'avoid presenting giant fractions as an everyday measuring spoon');
+ assert.throws(()=>calc('1/4','-','1/2'),/cannot be negative/);
+ assert.throws(()=>calc('1/2','/','0'),/positive amount|greater than zero/i);
+ assert.throws(()=>calc('1/2','^','1/2'),/Choose add/);
+ assert.throws(()=>calc('1,5','+','1/2'),/Use a number/);
+});
+
 test('recipe scaler preserves unknown lines and warns without guessing',()=>{
  const x=scaleRecipe('200 g flour\n1 1/2 cups milk\npinch of salt',4,6);
  assert.equal(x.rows[0].scaled,'300 g flour');
