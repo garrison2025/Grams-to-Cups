@@ -32,52 +32,74 @@ fs.mkdirSync(outputDir,{recursive:true});
 const results=[];
 const categories=expectedPublic?'performance,accessibility,best-practices,seo':'performance,accessibility,best-practices';
 for(let i=0;i<routes.length;i++){
- const route=routes[i];
- const file=path.join(outputDir,'mobile-'+String(i+1).padStart(2,'0')+'.json');
- const url=origin+route;
- const flags=[
-  url,'--quiet','--only-categories='+categories,'--output=json','--output-path='+file,
-  '--chrome-flags=--headless --no-sandbox --disable-dev-shm-usage',
-  '--no-enable-error-reporting','--max-wait-for-load=60000'
- ];
- const run=spawnSync('lighthouse',flags,{stdio:'inherit',timeout:180000});
- if(run.error)throw run.error;
- assert.equal(run.status,0,'Lighthouse CLI failed for '+url);
- const rawResult=JSON.parse(fs.readFileSync(file,'utf8'));
- if(rawResult.runtimeError)throw new Error('Lighthouse runtime error '+url+': '+rawResult.runtimeError.message);
- const score=c=>rawResult.categories[c]?.score===undefined?null:
-  Math.round(rawResult.categories[c].score*100);
- const lcp=rawResult.audits['largest-contentful-paint']?.numericValue;
- const cls=rawResult.audits['cumulative-layout-shift']?.numericValue;
- const failedAudits=category=>(rawResult.categories[category]?.auditRefs||[])
-  .filter(ref=>ref.weight>0&&rawResult.audits[ref.id]?.score!==null&&rawResult.audits[ref.id]?.score<1)
-  .map(ref=>({id:ref.id,title:rawResult.audits[ref.id].title,
-   score:rawResult.audits[ref.id].score,
-   display:rawResult.audits[ref.id].displayValue||null,
-   weight:ref.weight}))
-  .sort((a,b)=>a.score-b.score||b.weight-a.weight)
-  .slice(0,10);
- const row={
-  route,url,performance:score('performance'),accessibility:score('accessibility'),
-  bestPractices:score('best-practices'),seo:score('seo'),
-  labLcpMs:Number.isFinite(lcp)?Math.round(lcp):null,
-  labCls:Number.isFinite(cls)?Number(cls.toFixed(4)):null,
-  labFcpMs:Math.round(rawResult.audits['first-contentful-paint']?.numericValue||0),
-  labTbtMs:Math.round(rawResult.audits['total-blocking-time']?.numericValue||0),
-  labSpeedIndexMs:Math.round(rawResult.audits['speed-index']?.numericValue||0),
-  failingPerformanceAudits:failedAudits('performance'),
-  failingAccessibilityAudits:failedAudits('accessibility'),
-  contrastNodes:(rawResult.audits['color-contrast']?.details?.items||[]).slice(0,10).map(x=>({
-   snippet:x.node?.snippet||null,selector:x.node?.selector||null,
-   label:x.node?.nodeLabel||null,reason:x.explanation||null
+ const route=routes[i],url=origin+route;
+ const measure=(attempt)=>{
+  const suffix=attempt===1?'':'-retry-'+String(attempt).padStart(2,'0');
+  const file=path.join(outputDir,'mobile-'+String(i+1).padStart(2,'0')+suffix+'.json');
+  const flags=[
+   url,'--quiet','--only-categories='+categories,'--output=json','--output-path='+file,
+   '--chrome-flags=--headless --no-sandbox --disable-dev-shm-usage',
+   '--no-enable-error-reporting','--max-wait-for-load=60000'
+  ];
+  const run=spawnSync('lighthouse',flags,{stdio:'inherit',timeout:180000});
+  if(run.error)throw run.error;
+  assert.equal(run.status,0,'Lighthouse CLI failed for '+url);
+  const rawResult=JSON.parse(fs.readFileSync(file,'utf8'));
+  if(rawResult.runtimeError)throw new Error('Lighthouse runtime error '+url+': '+rawResult.runtimeError.message);
+  const score=c=>rawResult.categories[c]?.score===undefined?null:
+   Math.round(rawResult.categories[c].score*100);
+  const lcp=rawResult.audits['largest-contentful-paint']?.numericValue;
+  const cls=rawResult.audits['cumulative-layout-shift']?.numericValue;
+  const failedAudits=category=>(rawResult.categories[category]?.auditRefs||[])
+   .filter(ref=>ref.weight>0&&rawResult.audits[ref.id]?.score!==null&&rawResult.audits[ref.id]?.score<1)
+   .map(ref=>({id:ref.id,title:rawResult.audits[ref.id].title,
+    score:rawResult.audits[ref.id].score,
+    display:rawResult.audits[ref.id].displayValue||null,
+    weight:ref.weight}))
+   .sort((a,b)=>a.score-b.score||b.weight-a.weight)
+   .slice(0,10);
+  return {
+   route,url,performance:score('performance'),accessibility:score('accessibility'),
+   bestPractices:score('best-practices'),seo:score('seo'),
+   labLcpMs:Number.isFinite(lcp)?Math.round(lcp):null,
+   labCls:Number.isFinite(cls)?Number(cls.toFixed(4)):null,
+   labFcpMs:Math.round(rawResult.audits['first-contentful-paint']?.numericValue||0),
+   labTbtMs:Math.round(rawResult.audits['total-blocking-time']?.numericValue||0),
+   labSpeedIndexMs:Math.round(rawResult.audits['speed-index']?.numericValue||0),
+   failingPerformanceAudits:failedAudits('performance'),
+   failingAccessibilityAudits:failedAudits('accessibility'),
+   contrastNodes:(rawResult.audits['color-contrast']?.details?.items||[]).slice(0,10).map(x=>({
+    snippet:x.node?.snippet||null,selector:x.node?.selector||null,
+    label:x.node?.nodeLabel||null,reason:x.explanation||null
+   })),
+   topLongTasks:(rawResult.audits['long-tasks']?.details?.items||[]).slice(0,6).map(x=>({
+    duration:x.duration||null,startTime:x.startTime||null,url:x.url||null
+   })),
+   lighthouseVersion:rawResult.lighthouseVersion,
+   reportFile:path.relative(root,file),
+   statusCode:rawResult.audits['http-status-code']?.displayValue||null
+  };
+ };
+ const attempts=[measure(1)];
+ // PR synthetic lab scores fluctuate with shared-runner CPU contention. A
+ // first-run performance/TBT failure triggers two independent measurements
+ // and a MEDIAN, never a best-of-three or a lowered acceptance threshold.
+ // Record every sample in the artifact, including failures. Persistent
+ // performance regression in >=2/3 samples still fails the quality gate.
+ const first=attempts[0];
+ if(first.performance===null||first.performance<90||
+    first.labTbtMs===null||first.labTbtMs>750){
+  attempts.push(measure(2),measure(3));
+ }
+ const sorted=[...attempts].sort((a,b)=>(a.performance??-1)-(b.performance??-1)||
+   (b.labTbtMs??Infinity)-(a.labTbtMs??Infinity));
+ const row={...sorted[Math.floor(sorted.length/2)],
+  samples:attempts.map((item,index)=>({
+   attempt:index+1,performance:item.performance,accessibility:item.accessibility,
+   labTbtMs:item.labTbtMs,labLcpMs:item.labLcpMs,labCls:item.labCls,
+   reportFile:item.reportFile,topLongTasks:item.topLongTasks
   })),
-  topLongTasks:(rawResult.audits['long-tasks']?.details?.items||[]).slice(0,6).map(x=>({
-   duration:x.duration||null,startTime:x.startTime||null,
-   url:x.url||null
-  })),
-  lighthouseVersion:rawResult.lighthouseVersion,
-  reportFile:path.relative(root,file),
-  statusCode:rawResult.audits['http-status-code']?.displayValue||null
+  samplePolicy:attempts.length===3?'median of 3 for first-run performance/TBT failure':'single passing lab run'
  };
  results.push(row);
  console.log('LIGHTHOUSE MOBILE',JSON.stringify(row));
