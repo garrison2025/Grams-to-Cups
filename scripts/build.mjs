@@ -340,21 +340,35 @@ function ingredientNumberPage(i,n){
 }
 function chartPage(type){
  const chosen=type==='flour'?data.filter(i=>/flour/.test(i.id)):type==='sugar'?data.filter(i=>/sugar/.test(i.id)):data;
- const rows=chosen.map(i=>[i.name,f(convertQuantity(.25,'cup','g',{ingredient:i}))+' g',f(convertQuantity(.5,'cup','g',{ingredient:i}))+' g',f(convertQuantity(1,'cup','g',{ingredient:i}))+' g',i.method]);
+ const hasWater=chosen.some(i=>i.id==='water'),chartId='chart-'+(type||'all');
+ const rows=chosen.map(i=>[
+  i.name,
+  f(convertQuantity(.25,'cup','g',{ingredient:i}))+' g',
+  f(convertQuantity(.5,'cup','g',{ingredient:i}))+' g',
+  f(convertQuantity(1,'cup','g',{ingredient:i}))+' g',i.method]);
  const title=type==='flour'?'Flour Cups to Grams Chart':type==='sugar'?'Sugar Cups to Grams Chart':'Printable Cooking Conversion Chart';
- const body=intro(title,'A print-friendly kitchen reference based on published ingredient weights. Different preparation and packing methods change the result; use the listed method.')+
+ const body=intro(title,'Choose US or metric cups, select a custom quantity, and print or export the same source-backed results. Preparation methods affect ingredient weights.')+
  '<section class="section"><div class="container"><div class="panel"><h2>Measured US cup portions</h2>'+
- '<p>Find the specific food you use, then print the reference chart or export the visible rows. These values are approximations from the ingredient measurement source.</p>'+
- '<div data-chart><div class="chart-toolbar"><div class="field"><label for="chart-filter">Find an ingredient</label>'+
- '<input id="chart-filter" type="search" data-chart-filter placeholder="Search flour, sugar, butter…" autocomplete="off"></div>'+
+ '<p>Start with 1/4 cup and 1/2 cup, then customize the third column. The original table uses US cups (236.588 mL). Values are approximate cooking references, not independently measured densities.</p>'+
+ '<div data-chart><div class="chart-settings">'+
+ '<div class="field"><label for="'+chartId+'-standard">Cup standard</label><select id="'+chartId+'-standard" data-chart-standard><option value="us">US cup · 236.588 mL</option><option value="metric">Metric cup · 250 mL</option></select></div>'+
+ '<div class="field"><label for="'+chartId+'-custom">Custom cup amount</label><input id="'+chartId+'-custom" data-chart-custom value="1" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="'+chartId+'-custom-help"><small id="'+chartId+'-custom-help">Use 1/3, 1, 1.5 or 2 cups (maximum 1,000).</small></div>'+
+ (hasWater?'<div class="field"><label for="'+chartId+'-water">Water measurement basis</label><select id="'+chartId+'-water" data-chart-water-mode><option value="recipe">Recipe chart: 227 g / US cup</option><option value="capacity">Physical capacity: approximately 1 g/mL</option></select></div>':'')+
+ '</div><noscript><style>.chart-settings{display:none!important}</style><p class="inline-note">JavaScript is off: this static table shows the default US cup quantities, which remain available for printing.</p></noscript>'+
+ '<p class="chart-context" data-chart-context>Shown in US cups (236.588 mL), using published ingredient-specific weights. '+
+ (hasWater?'Water currently uses the 227 g per US cup recipe chart value, not a physical 1 g/mL capacity estimate.':'Preparation and packing methods matter.')+
+ '</p><p class="error" role="alert" data-chart-error hidden></p>'+
+ '<div class="chart-toolbar"><div class="field"><label for="'+chartId+'-filter">Find an ingredient</label>'+
+ '<input id="'+chartId+'-filter" type="search" data-chart-filter placeholder="Search flour, sugar, butter…" autocomplete="off"></div>'+
  '<div class="chart-tools"><span class="chart-count" role="status" data-chart-count>'+chosen.length+' of '+chosen.length+' ingredients shown</span>'+
  '<button class="btn" type="button" data-chart-download>Download CSV</button></div></div>'+
- '<div data-chart-table>'+table(['Ingredient','1/4 cup','1/2 cup','1 cup','Method'],rows)+'</div>'+
+ '<div data-chart-table>'+table(['Ingredient','1/4 US cup','1/2 US cup','1 US cup','Method'],rows,{rowIds:chosen.map(i=>i.id)})+'</div>'+
  '<p class="chart-empty" data-chart-empty hidden>No matching ingredients. Try another search.</p></div>'+
- '<p class="source-chip">Source: '+link(source,'King Arthur Baking Ingredient Weight Chart')+'. The listed methods and ingredient states matter.</p>'+
+ '<p class="source-chip">Recipe weight values: '+link(source,'King Arthur Baking Ingredient Weight Chart')+
+ '. Water also offers a separate, approximate physical-capacity mode; its 1 g/mL estimate is not supplied by the recipe chart.</p>'+
  '<div class="calc-actions"><button class="btn btn-primary" type="button" data-chart-print>Print this chart</button>'+link('/cooking/guides/cup-sizes/','Cup-size guide','btn')+'</div></div></div></section>'+
  section('Other chart formats','Choose a focused chart to reduce confusion.',grid([['/cooking/charts/','All foods','24 source-backed ingredient entries'],['/cooking/charts/flour/','Flour','Compare different flours'],['/cooking/charts/sugar/','Sugar','Compare packing and processing']],3),true);
- doc({url:'/cooking/charts/'+(type?type+'/':''),title,description:'Print a cups to grams chart for '+(type||'24 kitchen ingredients')+' with sourced measurements and ingredient-specific method notes.',body,bread:[['Cooking','/cooking/'],['Charts',type?'/cooking/charts/':null],...(type?[[title,null]]:[])],kind:'WebPage'});
+ doc({url:'/cooking/charts/'+(type?type+'/':''),title,description:'Print a cups to grams chart for '+(type||'24 kitchen ingredients')+' with US or metric cup options, custom quantities, cited weights and ingredient-specific methods.',body,bread:[['Cooking','/cooking/'],['Charts',type?'/cooking/charts/':null],...(type?[[title,null]]:[])],kind:'WebPage'});
 }
 function guidePage(slug){
  const guides={
