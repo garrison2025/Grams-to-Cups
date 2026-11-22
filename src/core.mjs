@@ -143,6 +143,13 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
   const unit=isRange?(match[3]||''):(match[2]||'');
   const rest=isRange?(match[4]||''):(match[3]||'');
   if(unsafeIngredientRemainder(rest))return {original:raw,scaled:raw,ok:false};
+  // In an interval with no stated kitchen unit, scale only recognizable
+  // countable ingredient nouns; do not alter time/temperature/method ranges.
+  if(isRange&&!unit){
+   const noun=rest.match(/^\s*(?:(?:large|medium|small|whole|fresh|ripe|chopped|crushed|diced)\s+)*([a-z]+)\b/i)?.[1]?.toLowerCase();
+   if(!noun||(!Object.hasOwn(COUNTABLE_INGREDIENT_NOUNS,noun)&&!Object.hasOwn(COUNTABLE_PLURALS,noun)))
+    return {original:raw,scaled:raw,ok:false};
+  }
   try{
    const lowRaw=parseAmount(first),highRaw=isRange?parseAmount(second):lowRaw;
    if(highRaw<lowRaw)throw Error('Descending recipe range.');
