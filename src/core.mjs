@@ -28,7 +28,10 @@ export function parseAmount(input){
 }
 export const formatAmount=(n,digits=3)=>{
  if(!Number.isFinite(n))throw new Error('The result is not finite.');
- return new Intl.NumberFormat('en-US',{maximumFractionDigits:digits}).format(n);
+ const formatted=new Intl.NumberFormat('en-US',{maximumFractionDigits:digits}).format(n);
+ // A small positive conversion must never display as zero after rounding.
+ if(n>0&&Number(formatted.replaceAll(',',''))===0)return Number(n.toPrecision(3)).toString();
+ return formatted;
 };
 export function approximateFraction(value){
  if(!Number.isFinite(value)||value<0||value>1e7)return '';
@@ -80,7 +83,12 @@ export function scaleRecipe(text,originalServings,newServings,{fractions=false}=
   // A range like "2-3 eggs" or "1 to 2 cups" must not silently scale only its first number.
   if(/^\s*(?:[-–—]|to\b|or\b)\s*(?:\d|\.)/i.test(m[3]||''))return {original:raw,scaled:raw,ok:false};
   try{const scaled=parseAmount(m[1])*factor;if(!Number.isFinite(scaled)||scaled>1e9)throw Error();
-  return {original:raw,scaled:(fractions?formatKitchenAmount(scaled):formatAmount(scaled,4))+' '+(m[2]||'')+(m[3]||''),ok:true};
+  // Scale unit wording as well: 1 cup becomes 2 cups, 2 cups becomes 1 cup.
+  const originalUnit=m[2]||'';
+  const unitStem=/^(cups?|tablespoons?|teaspoons?|grams?|ounces?|milliliters?)$/i.test(originalUnit)
+   ?originalUnit.toLowerCase().replace(/s$/,''):null;
+  const displayUnit=unitStem?(scaled<=1?unitStem:unitStem+'s'):originalUnit;
+  return {original:raw,scaled:(fractions?formatKitchenAmount(scaled):formatAmount(scaled,4))+' '+displayUnit+(m[3]||''),ok:true};
   }catch{return {original:raw,scaled:raw,ok:false};}
  });
  return {rows:output,factor,unparsed:output.filter(r=>!r.ok).length};
@@ -102,7 +110,7 @@ export function formatKitchenAmount(value,{fractions=true,precision=4}={}){
   for(const denominator of [2,3,4,6,8,16]){
    const numerator=Math.round(remainder*denominator);
    if(Math.abs(remainder-numerator/denominator)>1e-7)continue;
-   if(numerator===0)return String(whole);
+   if(numerator===0)return remainder===0?String(whole):formatAmount(value,precision);
    if(numerator===denominator)return String(whole+1);
    const gcd=(a,b)=>b?gcd(b,a%b):a,g=gcd(numerator,denominator);
    return (whole?whole+' ':'')+numerator/g+'/'+denominator/g;
