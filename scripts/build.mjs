@@ -109,10 +109,10 @@ function doc(spec){
 }
 function section(title,intro,contents,alt=false){return '<section class="section'+(alt?' section-alt':'')+'"><div class="container"><div class="section-head"><h2>'+e(title)+'</h2><p>'+e(intro)+'</p></div>'+contents+'</div></section>';}
 function ingredientCardType(url){
- const match=url.match(/^\\/cooking\\/ingredients\\/([^/]+)\\/$/);
- if(!match)return null;
- const id=match[1];
- if(!byId.has(id))return null;
+ const prefix='/cooking/ingredients/';
+ if(!url.startsWith(prefix)||!url.endsWith('/'))return null;
+ const id=url.slice(prefix.length,-1);
+ if(!id||id.includes('/')||!byId.has(id))return null;
  if(id.includes('flour'))return ['flour','Flour','F'];
  if(id.includes('sugar'))return ['sugar','Sugar','S'];
  if(['butter','milk-fresh','sour-cream','cream-cheese'].includes(id))return ['dairy','Dairy','D'];
