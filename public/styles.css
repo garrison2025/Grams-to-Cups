@@ -256,7 +256,7 @@ tbody th[scope="row"]{font-size:.86rem;color:#214839;font-weight:680;line-height
  .container{width:min(100% - 34px,1260px)}
  .hero{padding:24px 0 34px}
  .comparison-grid{grid-template-columns:1fr;gap:28px}
- .content-grid{grid-template-columns:1fr}
+ .content-grid{grid-template-columns:minmax(0,1fr)}
  .side-panel{position:static}
  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
  .cards.four{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -310,14 +310,14 @@ tbody th[scope="row"]{font-size:.86rem;color:#214839;font-weight:680;line-height
 @media print{
  :root{background:#fff}
  body{background:#fff;color:#000}
- .site-header,.footer,.nav-toggle,.calc-actions,.skip,.home-ticker,.hero-story,.hero-points,.ad-slot,.btn,.breadcrumbs,.quick-row,.comparison-showcase{display:none!important}
+ .site-header,.footer,.nav-toggle,.calc-actions,.skip,.home-ticker,.ad-slot,.btn,.breadcrumbs,.quick-row,.comparison-showcase{display:none!important}
  .container{width:100%;max-width:none}
  .panel,.calc-card,.tile{box-shadow:none!important;border:1px solid #ddd!important;break-inside:avoid}
  .calc-card{margin-bottom:20px}
  .result{background:#fff!important;border:1px solid #ddd;color:#000}
  .result-number,.result-unit,.result-text{color:#000!important}
  .section{padding:12px 0}
- .content-grid,.hero-grid{display:block}
+ .content-grid{display:block}
  .side-panel{display:none}
  .page-intro{background:#fff}
  @page{margin:12mm}
@@ -432,7 +432,7 @@ tbody th[scope="row"]{font-size:.86rem;color:#214839;font-weight:680;line-height
 .calc-main-fields .amount-field:only-child,.calc-main-fields .amount-field:has(+[hidden]){grid-column:1/-1}
 .calc-main-fields .field label{margin-bottom:6px}
 .calc-main-fields input,.calc-main-fields select{min-height:50px;padding:9px 11px;border-radius:11px;font-size:1rem}
-.calc-main-fields input[data-amount]{min-height:50px;font-size:1.42rem}
+.calc-main-fields input[data-amount]{height:50px;min-height:50px;padding:9px 11px;font-size:1.42rem;line-height:1}
 .calc-quantity-presets,.calc-food-presets{margin:9px 0 0}
 .calc-readout .result{margin:0}
 .calc-readout .calc-actions{margin-top:12px}
@@ -444,6 +444,9 @@ tbody th[scope="row"]{font-size:.86rem;color:#214839;font-weight:680;line-height
 .calc-extras{display:grid;gap:12px;align-content:start}
 .calc-extras .source-chip{margin:2px 0 0;padding-top:10px}
 .ingredient-picker{position:relative}
+.ingredient-picker input[data-ingredient-search]{padding-inline-end:29px}
+.ingredient-picker::after{content:"";position:absolute;inset:auto 15px 22px auto;width:7px;height:7px;border:solid #4c705d;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);pointer-events:none}
+.ingredient-picker:has([aria-expanded="true"])::after{transform:rotate(225deg)}
 .ingredient-options{position:absolute;inset:100% 0 auto;z-index:4;margin:6px 0 0;padding:5px;max-height:min(260px,36vh);overflow:auto;list-style:none;background:#fff;border:1px solid #c9dacb;border-radius:11px;box-shadow:0 12px 22px #18382722}
 .ingredient-options li{padding:9px 10px;min-height:44px;display:flex;align-items:center;border-radius:7px;color:#203f32;font-size:.88rem;cursor:pointer}
 .ingredient-options li:is(:hover,.is-active,[aria-selected="true"]){background:#e9f1e3}
