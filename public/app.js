@@ -142,6 +142,8 @@ for(const form of $$('[data-batch]')){
  let latest=null;
  const compute=()=>{
   try{
+   const cupsChoice=target.querySelector('option[value="cup"]');
+   if(cupsChoice)cupsChoice.textContent=standard.value==='metric'?'Metric cups':'US cups';
    latest=batchConvertIngredients(input.value,{ingredients,target:target.value,standard:standard.value,fractions:fraction.checked});
    tbody.replaceChildren();
    for(const item of latest.rows){
