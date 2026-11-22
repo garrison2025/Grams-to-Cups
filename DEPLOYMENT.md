@@ -15,11 +15,26 @@ This repository was created as a standalone website at the owner's direction. It
 
 Cloudflare previews should remain noindex. This is intentional, not a reason to enable indexing before QA.
 
+## Mandatory publication safety and exact-host live check
+
+- Before approving indexing, configure the real `SITE_URL`. If `PUBLIC_INDEX_APPROVED=true` on `main` but the URL is missing, invalid or a placeholder, the build **fails closed**, rather than publishing incorrect canonical URLs. The CI-only `example.com` simulation is not an accepted real production host.
+- `scripts/publication-audit.mjs` checks all 81 rendered pages (one H1, unique titles/descriptions, expected robots, exactly matching canonical/OG/JSON-LD, first-party CSS/JS), plus preview response-header policy and the exact 65-entry sitemap in approved simulation.
+- For the deployed site, use **GitHub → Actions → Live Cloudflare Pages release verification → Run workflow**. Enter the exact final HTTPS origin; select `false` while testing a noindex preview, and `true` only after production indexing is approved. This checks real HTTP responses for selected key pages, missing URLs, first-party assets, `_headers`, `robots.txt` and the sitemap.
+- On Windows PowerShell, the equivalent one-shot command is:
+  ```powershell
+  $env:LIVE_SITE_URL="https://YOUR-REAL-HOST"
+  $env:LIVE_EXPECT_INDEX="false"
+  npm run smoke:live
+  ```
+  Change to `true` only when the production approval step is complete. Never use a placeholder as an actual hostname.
+- A successful GitHub **build** is not proof of Cloudflare deployment, Google indexing, Lighthouse performance or AdSense approval. A green live-smoke check only proves the tested URLs and headers at the time of execution; Google Search Console and performance still require separate verification.
+- `src/seo-evidence.mjs` prevents empty/missing Semrush KD from being interpreted as KD0 and safely quotes third-party CSV text to neutralize spreadsheet formula injection. Source `research/semrush-us-2300-sample.csv` remains unchanged.
+
 ## Quality gates in CI
 
 `npm run build` automatically:
 
-- Runs 13 Node tests: original reference weights, 24 ingredient data contracts, mass/volume distinction, cup definitions, numeric round trips, fractions, recipe scaling and CSV injection safety.
+- Runs 15 Node tests: original reference weights, 24 ingredient data contracts, mass/volume distinction, cup definitions, numeric round trips, fractions, recipe scaling and CSV injection safety.
 - Generates 81 static HTML pages, local conversion assets, a real 404 and index-aware robots/sitemap.
 - Checks route count, unique title and H1, body text, canonical/noindex, key asset existence, internal links, batch workbench presence and 21/24/10 page-family counts.
 - The GitHub workflow tests both preview and production publication configurations. Its `https://example.com` value is synthetic **only for CI**, never the site's production domain.
