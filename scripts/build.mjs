@@ -15,7 +15,7 @@ const pages=[],e=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;')
 const f=n=>formatAmount(n,3),link=(url,label,cls='')=>'<a href="'+e(url)+'"'+(cls?' class="'+e(cls)+'"':'')+'>'+e(label)+'</a>';
 const source='https://www.kingarthurbaking.com/learn/ingredient-weight-chart';
 const numberValues=[25,30,50,60,75,80,100,125,150,180,200,225,250,300,350,400,450,500,600,750,1000];
-const noIndexCandidatePaths=new Set(['/cooking/cups-to-fluid-ounces/','/cooking/fluid-ounces-to-cups/','/cooking/recipe-scaler/','/cooking/ingredients/whole-wheat-flour/','/cooking/ingredients/coconut-flour/','/cooking/ingredients/gluten-free-flour/','/cooking/ingredients/brown-rice-cooked/','/cooking/ingredients/maple-syrup/','/cooking/ingredients/olive-oil/','/cooking/ingredients/cornstarch/','/cooking/ingredients/pumpkin-puree/','/cooking/ingredients/walnuts-chopped/','/cooking/guides/measuring-flour/']);
+const noIndexCandidatePaths=new Set(['/cooking/cups-to-fluid-ounces/','/cooking/fluid-ounces-to-cups/','/cooking/recipe-scaler/','/cooking/ingredients/whole-wheat-flour/','/cooking/ingredients/coconut-flour/','/cooking/ingredients/gluten-free-flour/','/cooking/ingredients/brown-rice-cooked/','/cooking/ingredients/maple-syrup/','/cooking/ingredients/olive-oil/','/cooking/ingredients/cornstarch/','/cooking/ingredients/pumpkin-puree/','/cooking/ingredients/walnuts-chopped/','/cooking/guides/measuring-flour/','/cooking/batch-converter/']);
 const flourNumbers=[100,125,150,200,250,300,400,500],sugarNumbers=[100,200];
 const tools=[
 ['grams-to-cups','Grams to Cups','g','cup',100,'ingredient'],
@@ -161,6 +161,7 @@ function home(){
  ['/cooking/grams-to-cups/','Grams to cups','Choose an ingredient and instantly find its approximate cup equivalent'],
  ['/cooking/cups-to-grams/','Cups to grams','Bake by weight with more reliable kitchen results'],
  ['/cooking/recipe-scaler/','Recipe scaler','Scale quantities to match the number of people you are feeding'],
+ ['/cooking/batch-converter/','Batch converter','Paste multiple ingredients and check the conversions side by side'],
  ['/cooking/charts/','Printable charts','Keep a source-backed reference beside your mixing bowl'],
  ['/cooking/guides/cup-sizes/','US vs metric cups','Understand the difference between cup systems'],
  ['/cooking/','All cooking tools','Browse our full collection of practical converters']
@@ -171,7 +172,7 @@ function home(){
 
 function hub(){
  const body=intro('Cooking measurement converters','Every ingredient has its own weight per cup. Explore all conversion directions, 24 ingredient references, popular amounts, printable charts, and practical measurement guides.')+
- section('All cooking converters','Ingredient-aware mass and volume tools, plus fixed-volume conversions.',grid(hubList))+
+ section('All cooking converters','Ingredient-aware mass and volume tools, plus fixed-volume conversions.',grid(hubList.concat([['/cooking/batch-converter/','Batch ingredient converter','Convert an entire ingredient list with explicit food references'],['/cooking/recipe-scaler/','Recipe scaler','Adjust every quantity for new serving sizes'],['/cooking/half-a-measurement/','Half a measurement','Fraction and amount calculator']])))+
  '<div id="ingredients"></div>'+section('Browse 24 ingredients','The name and measurement state matter. Packed sugar and dry rice do not convert like flour.','<div data-directory><div class="field" style="margin-bottom:18px"><label for="ingredient-search">Find an ingredient</label><input id="ingredient-search" type="search" placeholder="Search flour, sugar, butter…" data-directory-filter autocomplete="off"></div>'+grid(ingredientList,4).replaceAll('class="tile"','class="tile" data-filter-item')+'</div>',true)+
  section('Convert a specific weight','Select an amount, then compare multiple ingredients using referenced weights.',grid(numberList,4))+
  section('Charts and measuring guides','Practical tools with sources and printable results.',grid([['/cooking/charts/','All conversion charts','A print-friendly table of basic weights'],['/cooking/charts/flour/','Flour conversion chart','All-purpose, whole wheat, coconut and more'],['/cooking/charts/sugar/','Sugar conversion chart','Packed, granulated and unsifted varieties'],['/cooking/guides/measuring-flour/','Measuring flour','Avoid volume errors from compaction'],['/cooking/guides/cup-sizes/','Cup sizes','US vs metric cooking standards'],['/cooking/guides/measuring-odd-cups/','Odd cup amounts','Make 2/3 or 1/8 cup from common tools']]));
@@ -264,15 +265,49 @@ function guidePage(slug){
  const body=intro(g.title,g.desc)+'<section class="section"><div class="container content-grid"><div>'+content+'</div><aside class="panel side-panel"><h3>Helpful tools</h3>'+link('/cooking/grams-to-cups/','Grams to cups')+link('/cooking/charts/','Print a chart')+link('/cooking/recipe-scaler/','Recipe scaler')+'</aside></div></section>';
  doc({url:'/cooking/guides/'+slug+'/',title:g.title,description:g.desc,body,bread:[['Cooking','/cooking/'],[g.title,null]]});
 }
+
+function batchPage(){
+ const defaultList='120 g all-purpose flour\n198 g granulated sugar\n½ cup butter\n2 tbsp honey\n200 g flour';
+ const body=intro('Batch Ingredient Converter','Paste a kitchen ingredient list and convert each supported item to cups or grams. Unclear ingredient names stay unchanged and are flagged for manual review — never guessed.')+
+ '<section class="section"><div class="container content-grid"><div>'+
+ '<div class="calc-card"><div class="calc-top"><strong><span class="live-dot" aria-hidden="true"></span>Convert an ingredient list</strong><span class="muted">UP TO 100 LINES · LOCAL ONLY</span></div>'+
+ '<form class="calc-body" data-batch novalidate>'+
+ '<div class="field full"><label for="batch-list">Ingredients — one amount, unit and exact ingredient per line</label>'+
+ '<textarea id="batch-list" rows="8" maxlength="16000" data-batch-lines spellcheck="false">'+e(defaultList)+'</textarea>'+
+ '<small>Examples: 120 g all-purpose flour · ½ cup butter · 2 tbsp honey. “Flour” alone is not specific enough for a reliable weight-to-volume conversion.</small></div>'+
+ '<div class="form-grid mt-3"><div class="field"><label for="batch-target">Convert all lines to</label><select id="batch-target" data-batch-target><option value="cup">US cups</option><option value="g">Grams (g)</option></select></div>'+
+ '<div class="field"><label for="batch-standard">Cup standard</label><select id="batch-standard" data-batch-standard><option value="us">US · 236.588 mL</option><option value="metric">Metric · 250 mL</option></select></div></div>'+
+ '<div class="batch-options"><label class="toggle-option"><input type="checkbox" data-batch-fraction checked> Show familiar cup fractions when exact</label></div>'+
+ '<div class="calc-actions"><button class="btn btn-primary" type="button" data-batch-run>Convert list</button><button class="btn" type="button" data-batch-copy>Copy results</button>'+
+ '<button class="btn" type="button" data-batch-csv>Download CSV</button><button class="btn btn-ghost" type="button" data-batch-clear>Clear</button></div>'+
+ '<p class="error" role="alert" data-batch-error hidden></p><div class="batch-summary" role="status" data-batch-summary>Results appear below as you type.</div>'+
+ '<div class="table-scroll batch-result-table"><table><thead><tr><th scope="col">Original line</th><th scope="col">Conversion / review</th></tr></thead><tbody data-batch-results></tbody></table></div>'+
+ '<p class="source-chip">Ingredient weights from '+link(source,'King Arthur Baking’s ingredient weight chart')+'. Original lines are preserved if an ingredient or unit cannot be safely identified. Your text stays in your browser.</p>'+
+ '</form></div>'+
+ '<div class="panel mt-3"><h2>How the batch converter protects accuracy</h2>'+
+ '<p>Every mass-to-volume result depends on the exact ingredient and its original published reference weight. Packed brown sugar differs from loose brown sugar; sifted sugar differs from unsifted. Ambiguous names are flagged instead of silently converted.</p>'+
+ '<p>The tool supports fractional quantities, grams, ounces, cups, teaspoons, tablespoons and milliliters. Each row is processed locally; you can export both the converted lines and any review warnings for your recipe notes.</p>'+
+ '<div class="inline-note">This is a measurement assistant, not recipe rewriting. Keep ingredient temperature, packaging and the original cooking instructions in mind when substituting volume for weight.</div></div></div>'+
+ '<aside class="panel side-panel"><h3>Related tools</h3>'+
+ link('/cooking/recipe-scaler/','Scale serving sizes')+
+ link('/cooking/ingredients/all-purpose-flour/','All-purpose flour weight')+
+ link('/cooking/ingredients/granulated-sugar/','Granulated sugar weight')+
+ link('/cooking/charts/','Print food weight chart')+
+ link('/cooking/sources-and-methods/','Data and measurement methods')+
+ '<div class="inline-note">For best accuracy, write explicit names such as “all-purpose flour” and “packed brown sugar.”</div></aside></div></section>';
+ doc({url:'/cooking/batch-converter/',title:'Batch Ingredient Converter — Cups, Grams & Recipe Lists',description:'Paste an ingredient list and convert supported foods to cups or grams with exact fraction support, warnings for ambiguous items and a local CSV export.',body,bread:[['Cooking','/cooking/'],['Batch ingredient converter',null]],kind:'WebApplication',index:false});
+}
+
 function recipePage(){
  const body=intro('Free Recipe Scaler','Increase or decrease serving amounts using browser-local calculations. This tool changes quantities but does not guess missing ingredients or replace a baker’s judgment.')+
  '<section class="section"><div class="container content-grid"><div><div class="calc-card"><div class="calc-top"><strong><span class="live-dot"></span>Scale your recipe</strong><span class="muted">No upload · No account</span></div>'+
  '<form class="calc-body" data-recipe><div class="form-grid"><div class="field"><label for="old-servings">Original servings</label><input id="old-servings" data-old-servings type="text" value="4" inputmode="decimal"></div><div class="field"><label for="new-servings">New servings</label><input id="new-servings" data-new-servings type="text" value="6" inputmode="decimal"></div>'+
- '<div class="field full"><label for="recipe-lines">One ingredient per line</label><textarea id="recipe-lines" data-recipe-lines spellcheck="false">200 g all-purpose flour\n1 1/2 cups milk\n2 tbsp honey\n1/4 tsp salt</textarea><small>Start each line with a quantity; unsupported lines remain unchanged and are flagged for review.</small></div></div>'+
+ '<div class="field full"><label for="recipe-lines">One ingredient per line</label><textarea id="recipe-lines" data-recipe-lines spellcheck="false">200 g all-purpose flour\n1 1/2 cups milk\n2 tbsp honey\n1/4 tsp salt</textarea><small>Start each line with a quantity. Unicode fractions like ½ and 1½ work. Unsupported lines remain unchanged and are flagged for review.</small></div></div>'+
+ '<div class="batch-options"><label class="toggle-option"><input type="checkbox" data-recipe-fraction checked> Show common cup fractions when exact (e.g., 2 1/4)</label></div>'+
  '<div class="calc-actions"><button class="btn btn-primary" type="submit">Scale recipe</button><button class="btn" type="button" data-download-csv>Download CSV</button><button class="btn" type="button" data-recipe-print>Print</button></div>'+
  '<p class="error" data-recipe-error role="alert" hidden></p><div class="result recipe-results"><div class="result-label">Scaled ingredient list</div><pre data-recipe-output aria-live="polite"></pre></div></form></div>'+
  '<div class="panel mt-3"><h2>What this scaler does</h2><p>Amounts are multiplied by the new servings divided by the original servings. It preserves unit labels and ingredient text instead of guessing whether two ingredients share a density. Review lines that cannot be parsed safely.</p><p>Cooking time, pan size, rise time, and heat transfer do not necessarily scale in proportion with ingredient amounts. Use your recipe instructions for those decisions.</p></div></div>'+
- '<aside class="panel side-panel"><h3>Also useful</h3>'+link('/cooking/grams-to-cups/','Grams to cups')+link('/cooking/charts/','Printable conversion chart')+'</aside></div></section>';
+ '<aside class="panel side-panel"><h3>Also useful</h3>'+link('/cooking/batch-converter/','Batch ingredient converter')+link('/cooking/grams-to-cups/','Grams to cups')+link('/cooking/charts/','Printable conversion chart')+'</aside></div></section>';
  doc({url:'/cooking/recipe-scaler/',title:'Recipe Scaler — Adjust Ingredient Quantities Free',description:'Scale recipe quantities and serving sizes in your browser, preserve ingredient text and export a CSV without accounts or paid APIs.',body,bread:[['Cooking','/cooking/'],['Recipe scaler',null]],kind:'WebApplication'});
 }
 function halfPage(){
@@ -302,7 +337,7 @@ function infoPage(slug,title,bodyText){
 }
 home();hub();
 for(const t of tools)toolPage(t);
-halfPage();recipePage();
+halfPage();recipePage();batchPage();
 for(const n of numberValues)numberPage(n);
 for(const i of data)ingredientPage(i);
 for(const n of flourNumbers)ingredientNumberPage(byId.get('all-purpose-flour'),n);
@@ -321,5 +356,5 @@ else writeFile('_headers','/*\n  X-Content-Type-Options: nosniff\n');
 writeFile('robots.txt','User-agent: *\nAllow: /\n'+(publicIndex?'Sitemap: '+origin+'/sitemap.xml\n':''));
 if(publicIndex)writeFile('sitemap.xml','<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+pages.filter(p=>p.indexCandidate).map(p=>'<url><loc>'+e(origin+p.url)+'</loc></url>').join('')+'</urlset>');
 writeFile('site-manifest.json',JSON.stringify({origin:origin||null,publicIndex,generatedAt:new Date().toISOString(),pages},null,2));
-if(pages.length!==80)throw Error('Expected 80 total pages including home and legal pages; found '+pages.length);
+if(pages.length!==81)throw Error('Expected 81 total pages including the standalone batch tool; found '+pages.length);
 console.log('Generated '+pages.length+' static pages ('+pages.filter(p=>p.indexCandidate).length+' index candidates), publish approved='+publicIndex);
