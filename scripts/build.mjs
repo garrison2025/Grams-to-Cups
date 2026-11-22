@@ -158,7 +158,7 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  const showMeter=to==='cup'&&previewValue>0&&previewValue<=1;
  const meterPercent=showMeter?Math.round(previewValue*100):0;
  const referenceText=f(ref.referenceGrams)+' g per '+f(ref.referenceAmount)+' '+(ref.referenceUnit==='cup'?'US cup':'US tablespoon');
- const initialNote=crossDimension?'Based on '+referenceText+' of '+ref.name+'. This is an approximate recipe measurement.':
+ const initialNote=crossDimension?(ref.id==='water'?'Recipe chart method: King Arthur Baking lists 227 g per US cup of water. This differs from a physical-capacity estimate of about 1 g/mL.':'Based on '+referenceText+' of '+ref.name+'. This is an approximate recipe measurement.'):
   'These units have a defined conversion; an ingredient reference is not needed.';
  const shortUnit=({cup:'US cups',g:'g',kg:'kg',oz:'oz',ml:'mL',tbsp:'tbsp',tsp:'tsp','fl-oz':'US fl oz'})[to]||to;
  return '<div class="calc-card" id="converter"><div class="calc-top"><strong><span class="live-dot" aria-hidden="true"></span>'+e(heading)+'</strong><span class="muted">PRIVATE · INSTANT</span></div>'+
@@ -166,6 +166,7 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  '<div class="field full"><label for="quantity">How much are you measuring?</label><input id="quantity" data-amount type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="'+e(amount)+'" aria-describedby="amount-help"><small id="amount-help">Try 1/4, 1 1/2, or 125.5.</small></div>'+
  '<div class="field full"><div class="quick-row" role="group" aria-label="Common quantities"><span class="micro-label">QUICK VALUES</span>'+amountButtons+'</div></div>'+
  ingredientSelect(ingredient,!crossDimension)+
+ '<div class="standard-line" data-water-mode-row'+(crossDimension&&ref.id==='water'?'':' hidden')+'><label for="water-mode">Water measurement method</label><select id="water-mode" data-water-mode><option value="recipe" selected>Recipe chart · 227 g per US cup</option><option value="capacity">Physical capacity · approximately 1 g/mL</option></select><small>Recipe reference and physical capacity are different estimates; the physical approximation varies with temperature.</small></div>'+
  '<div class="field full" data-density-field'+(crossDimension?'':' hidden')+'><div class="quick-row" role="group" aria-label="Popular ingredients"><span class="micro-label">POPULAR</span>'+foodButtons+'</div></div>'+
  '<div class="unit-stage">'+unitSelect('From unit','from',from)+
  '<button class="unit-switch" type="button" data-swap aria-label="Swap from and to units" title="Swap conversion direction">⇄</button>'+
@@ -186,7 +187,8 @@ function converterForm({amount=100,from='g',to='cup',ingredient='all-purpose-flo
  '<button class="btn btn-ghost" type="button" data-reset>Reset</button></div>'+
  '<p class="source-chip"><span data-feedback role="status"></span>'+
  '<span data-source-ingredient'+(crossDimension?'':' hidden')+'>Ingredient-based estimate from '+link(source,'King Arthur Baking’s published weight chart')+'. Actual food preparation affects measurements.</span>'+
- '<span data-source-fixed'+(crossDimension?' hidden':'')+'>This conversion uses defined units and does not require ingredient weights. '+link('/cooking/sources-and-methods/','View our measurement standards')+'.</span></p>'+
+ '<span data-source-fixed'+(crossDimension?' hidden':'')+'>This conversion uses defined units and does not require ingredient weights. '+link('/cooking/sources-and-methods/','View our measurement standards')+'.</span>'+
+ '<span data-source-capacity hidden>Capacity-based water estimate: approximately 1 g per mL, varying with temperature. This is <strong>not</strong> the 227 g per US cup published recipe reference.</span></p>'+
  '</form></div>';
 }
 
