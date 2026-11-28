@@ -88,10 +88,12 @@ for(const page of pages){
  assert.ok(!descriptionMap.has(description),'Duplicate rendered description '+page.url+' and '+descriptionMap.get(description));
  titleMap.set(title,page.url);
  descriptionMap.set(description,page.url);
- // The site intentionally links to source charts; only its own JS and CSS run.
+ // Initially load only own JS and CSS. The GA4 loader is a first-party script,
+ // allowed only on approved production pages; it must wait for opt-in before external requests.
  const scripts=tag(html,/<script\b[^>]*\bsrc="([^"]+)"[^>]*><\/script>/gi).map(x=>x[1]);
  const styles=tag(html,/<link\b[^>]*\brel="stylesheet"[^>]*\bhref="([^"]+)"[^>]*>/gi).map(x=>x[1]);
- assert.deepEqual(scripts,['/assets/app.js'],'No third-party runtime scripts expected '+page.url);
+ assert.deepEqual(scripts,production&&page.indexCandidate?['/assets/app.js','/assets/optional-analytics.js']:['/assets/app.js'],'Only approved first-party bootstrap scripts expected '+page.url);
+ assert.doesNotMatch(html,/<script\b[^>]*\bsrc="https?:\/\//i,'No third-party script may be embedded in initial HTML '+page.url);
  assert.deepEqual(styles,['/assets/styles.css'],'No third-party CSS expected '+page.url);
  const published=production&&page.indexCandidate;
  if(published){
@@ -169,4 +171,4 @@ if(production){
  assert.ok(!fs.existsSync(path.join(dist,'sitemap.xml')),'No preview sitemap');
 }
 for(const item of warnings)console.warn(item);
-console.log('Publication audit passed:',pages.length,'pages,',eligibility.length,'canonical-eligible pages, mode='+(production?'approved CI production':'noindex preview')+', no third-party runtime scripts.');
+console.log('Publication audit passed:',pages.length,'pages,',eligibility.length,'canonical-eligible pages, mode='+(production?'approved CI production':'noindex preview')+', only approved first-party scripts in initial HTML.');
