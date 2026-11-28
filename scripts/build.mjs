@@ -120,7 +120,7 @@ function doc(spec){
  '<link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/assets/styles.css">'+
  '<noscript><style>@media(max-width:780px){.header-inner{flex-wrap:wrap}.nav-toggle{display:none}.main-nav{display:flex;position:static;flex:1 1 100%;visibility:visible;opacity:1;pointer-events:auto;transform:none;transition:none;box-shadow:none;padding:9px 0 16px}}</style></noscript>'+schema+
  '<script type="module" src="/assets/app.js" defer></script></head><body>'+nav()+'<main id="main">'+
- (url==='/'?'':'<div class="container">'+breadHtml(bread)+'</div>')+body+'</main>'+footer()+'<script defer src="/assets/optional-analytics.js"></script></body></html>';
+ (url==='/'?'':'<div class="container">'+breadHtml(bread)+'</div>')+body+'</main>'+footer()+(permitted?'<script defer src="/assets/optional-analytics.js" data-ga4-id="G-RE4SF27SM3"></script>':'')+'</body></html>';
  writeFile(fileFor(url),html);
  pages.push({url,title,description,kind,indexCandidate:eligible,wordCount:body.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().split(' ').length});
 }
