@@ -9,7 +9,7 @@
   const main = document.querySelector('main');
   const footer = document.querySelector('footer');
   const canonical = document.querySelector('link[rel=canonical]');
-  if (!main || !footer || !canonical) return;
+  if (!main || !footer || !canonical || /noindex/i.test(document.querySelector('meta[name="robots"]')?.content || '')) return;
   let page;
   try {
     const u = new URL(canonical.href);
