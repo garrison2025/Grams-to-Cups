@@ -120,7 +120,7 @@ function doc(spec){
  '<link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/assets/styles.css">'+
  '<noscript><style>@media(max-width:780px){.header-inner{flex-wrap:wrap}.nav-toggle{display:none}.main-nav{display:flex;position:static;flex:1 1 100%;visibility:visible;opacity:1;pointer-events:auto;transform:none;transition:none;box-shadow:none;padding:9px 0 16px}}</style></noscript>'+schema+
  '<script type="module" src="/assets/app.js" defer></script></head><body>'+nav()+'<main id="main">'+
- (url==='/'?'':'<div class="container">'+breadHtml(bread)+'</div>')+body+'</main>'+footer()+'</body></html>';
+ (url==='/'?'':'<div class="container">'+breadHtml(bread)+'</div>')+body+'</main>'+footer()+'<script defer src="/assets/optional-analytics.js"></script></body></html>';
  writeFile(fileFor(url),html);
  pages.push({url,title,description,kind,indexCandidate:eligible,wordCount:body.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().split(' ').length});
 }
@@ -571,17 +571,17 @@ infoPage('about','About Grams & Cups','Grams & Cups is a free, independent kitch
  'How Grams & Cups works',
  '<h3>Ingredient weights and cup sizes</h3><p>We use published recipe weights to estimate mass-to-volume conversions for specific ingredients. The '+link('/cooking/sources-and-methods/','methodology page')+' lists the original measurements, cup sizes and limitations.</p>'+
  '<h3>Calculators in your browser</h3><p>You can convert measurements, adjust recipe quantities and print kitchen charts without creating an account.</p>');
-infoPage('privacy','Privacy Policy','We aim to minimize data collection. The calculator and recipe scaler are local-first browser tools; there is no account, analytics platform or ad network in the current code.',
+infoPage('privacy','Privacy Policy','We aim to minimize data collection. The calculator and recipe scaler are local-first browser tools; there is no account or ad network; optional analytics requires your consent.',
  'How the site handles your data',
  '<h3>Calculator and recipe inputs</h3><p>The amounts and recipe text you enter are processed in your browser. The tools do not require an account or upload these inputs to cloud storage. If you create a converter share link, its selected amount, units and ingredient can appear in the URL.</p>'+
- '<h3>Analytics and advertising</h3><p>The site code does not include analytics, advertising or tracking scripts. If this changes, we will update this policy before adding those services.</p>');
+ '<h3>Analytics and advertising</h3><p>Optional Google Analytics measures visits and traffic sources only after you accept analytics. It may use cookies and technical browser information. The integration sends the canonical page and recognized AI referral source, not recipe text, quantities or shared URL parameters. Rejecting or withdrawing consent via Analytics preferences does not affect the tools. No advertising is included. See <a href="https://policies.google.com/privacy">Google privacy policy</a>.</p>');
 infoPage('contact','Contact and Corrections','Ask a question about a conversion, report a bug, or suggest a correction to a published ingredient weight.',
  'Questions and corrections',
  '<h3>Email</h3><p>Email <!--email_off-->'+link('mailto:'+contactEmail,contactEmail)+'<!--/email_off--> with the ingredient, quantity and selected cup standard. Include the result you expected and a published reference if you have one.</p>'+
  '<h3>Public bug reports</h3><p>For a public bug report, use '+link('https://github.com/garrison2025/Grams-to-Cups/issues','Grams-to-Cups GitHub issues')+'. Keep private details in email.</p>');
 writeFile('404.html','<!doctype html><html lang="en"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page not found | Grams & Cups</title><link rel="stylesheet" href="/assets/styles.css"><main class="container section"><h1>Page not found</h1><p>That page does not exist. Try the conversion tools or the ingredient directory.</p>'+link('/cooking/','Browse cooking tools','btn btn-primary')+'</main></html>');
 writeFile('favicon.svg','<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#122e27"/><path d="M18 20h28l-4 26H22z" fill="none" stroke="#eaf2ad" stroke-width="4" stroke-linejoin="round"/><path d="M21 29h22M24 38h16" stroke="#f8f7f2" stroke-width="3" stroke-linecap="round"/></svg>');
-for(const [src,dst] of [['public/styles.css','assets/styles.css'],['public/app.js','assets/app.js'],['src/core.mjs','assets/core.mjs'],['src/ingredients.json','assets/ingredients.json']]){const out=path.join(dist,dst);fs.mkdirSync(path.dirname(out),{recursive:true});fs.copyFileSync(path.join(root,src),out);}
+for(const [src,dst] of [['public/styles.css','assets/styles.css'],['public/app.js','assets/app.js'],['public/optional-analytics.js','assets/optional-analytics.js'],['src/core.mjs','assets/core.mjs'],['src/ingredients.json','assets/ingredients.json']]){const out=path.join(dist,dst);fs.mkdirSync(path.dirname(out),{recursive:true});fs.copyFileSync(path.join(root,src),out);}
 // Cloudflare Pages supports absolute-URL scoped _headers rules. This keeps
 // pages.dev and branch-preview hosts unindexed even after the canonical custom
 // domain serves indexable HTML. Domain redirect is additionally recommended.
